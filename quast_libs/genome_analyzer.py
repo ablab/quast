@@ -46,19 +46,19 @@ def chromosomes_names_dict(feature, regions, chr_names):
 
     if len(chr_names) == 1 and len(region_2_chr_name) == 1 and region_2_chr_name[regions[0].seqname] is None:
         chr_name = chr_names.pop()
-        logger.notice('Reference name in %ss (%s) does not match the name of the reference (%s). '
-                      'QUAST will ignore this ussue and count as if they matched.' %
+        logger.notice('Reference name in file with genomic features of type "%s" (%s) does not match the name in the reference file (%s). '
+                      'QUAST will ignore this issue and count as if they match.' %
                       (feature, regions[0].seqname, chr_name),
                indent='  ')
         for region in regions:
             region.seqname = chr_name
             region_2_chr_name[region.seqname] = chr_name
     elif all(chr_name is None for chr_name in region_2_chr_name.values()):
-        logger.warning('Reference names in %ss do not match any chromosome. Check your %s file.' % (feature, feature),
+        logger.warning('Reference names in file with genomic features of type "%s" do not match any chromosome. Check your genomic feature file(s).' % (feature),
                 indent='  ')
     elif None in region_2_chr_name.values():
-        logger.warning('Some of the reference names in %ss does not match any chromosome. '
-                       'Check your %s file.' % (feature, feature), indent='  ')
+        logger.warning('Some of the reference names in file with genomic features of type "%s" does not match any chromosome. '
+                       'Check your genomic feature file(s).' % (feature), indent='  ')
 
     return region_2_chr_name
 
@@ -132,7 +132,7 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
                     genome_mapping[chr_name][i] = 1
                 for i in range(1, e1 + 1):
                     genome_mapping[chr_name][i] = 1
-            else: #if s1 <= e1:
+            else:  #if s1 <= e1:
                 for i in range(s1, e1 + 1):
                     genome_mapping[chr_name][i] = 1
 
@@ -177,7 +177,7 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
 
         total_full = 0
         total_partial = 0
-        found_fpath = os.path.join(genome_stats_dirpath, corr_assembly_label + container.kind.lower())
+        found_fpath = os.path.join(genome_stats_dirpath, corr_assembly_label + '_genomic_features_' + container.kind.lower() + '.txt')
         found_file = open(found_fpath, 'w')
         found_file.write('%s\t\t%s\t%s\t%s\t%s\n' % ('ID or #', 'Start', 'End', 'Type', 'Contig'))
         found_file.write('=' * 50 + '\n')
@@ -286,7 +286,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, features_dict, operons
     # ref_file.close()
 
     # RESULTS file
-    result_fpath = genome_stats_dirpath + '/genome_info.txt'
+    result_fpath = os.path.join(genome_stats_dirpath, 'genome_info.txt')
     res_file = open(result_fpath, 'w')
 
     containers = []
@@ -308,11 +308,11 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, features_dict, operons
             container.region_list += genes_parser.get_genes_from_file(fpath, container.kind)
 
         if len(container.region_list) == 0:
-            logger.warning('No ' + container.kind + 's were loaded.', indent='  ')
-            res_file.write(container.kind + 's loaded: ' + 'None' + '\n')
+            logger.warning('No genomic features of type "' + container.kind + '" were loaded.', indent='  ')
+            res_file.write('Genomic features of type "' + container.kind + '" loaded: ' + 'None' + '\n')
         else:
-            logger.info('  Loaded ' + str(len(container.region_list)) + ' ' + container.kind + 's')
-            res_file.write(container.kind + 's loaded: ' + str(len(container.region_list)) + '\n')
+            logger.info('  Loaded ' + str(len(container.region_list)) + ' genomic features of type "' + container.kind + '"')
+            res_file.write('Genomic features of type "' + container.kind + '" loaded: ' + str(len(container.region_list)) + '\n')
             container.chr_names_dict = chromosomes_names_dict(container.kind, container.region_list, list(reference_chromosomes.keys()))
 
     ref_genes_num, ref_operons_num = None, None

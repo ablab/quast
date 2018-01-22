@@ -176,7 +176,7 @@ def parse_gff(file, feature):
 
     for line in file:
         m = gff_pattern.match(line.rstrip())
-        if m and m.group('feature').lower() == feature.lower():
+        if m and (feature == qconfig.ALL_FEATURES_TYPE or m.group('feature').lower() == feature.lower()):
             gene = Gene(seqname=qutils.correct_name(m.group('seqname')),
                         start=int(m.group('start')),
                         end=int(m.group('end')))

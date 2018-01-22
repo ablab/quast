@@ -146,10 +146,16 @@ def parse_features(option, opt_str, value, parser, logger, is_old_format=False):
         assert_file_exists(fpath, 'genomic feature')
         features = dict([('gene', fpath)])
         logger.warning('Option -G is deprecated! Please use --features to specify a file with genomic features.\n'
-                       'If you want QUAST to extract only specific genomic feature from a file, you also can specify it:\n'
-                       '--features CDS:genes.gff --features transcript:transcripts.bed')
+                       'If you want QUAST to extract only a specific genomic feature from the file, \n'
+                       'you should prepend the filepath with the feature name and a colon, for example:\n'
+                       '--features CDS:genes.gff --features transcript:transcripts.bed\n'
+                       'Otherwise, all features would be counted:\n'
+                       '--features genes.gff\n')
     else:
-        feature, fpath = value.split(':')
+        if ':' in value:
+            feature, fpath = value.split(':')
+        else:
+            feature, fpath = qconfig.ALL_FEATURES_TYPE, value  # special case -- read all features
         assert_file_exists(fpath, 'genomic feature')
         features = dict([(feature, fpath)])
     ensure_value(qconfig, 'features', dict()).update(features)
@@ -206,7 +212,7 @@ def wrong_test_option(logger, msg, is_metaquast):
 
 
 def clean_metaquast_args(quast_py_args, contigs_fpaths):
-    opts_with_args_to_remove = ['-o', '--output-dir', '-R', '--reference', '--max-ref-number', '-l', '--labels',
+    opts_with_args_to_remove = ['-o', '--output-dir', '-r', '-R', '--reference', '--max-ref-number', '-l', '--labels',
                                 '--references-list', '--blast-db']
     opts_to_remove = ['-L', '--test', '--test-no-ref', '--unique-mapping']
     for contigs_fpath in contigs_fpaths:
@@ -297,7 +303,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              callback_args=(logger,),
              callback_kwargs={'default_value': 1, 'min_value': 1})
          ),
-        (['-R', '--reference'], dict(
+        (['-r', '-R', '--reference'], dict(
              dest='reference',
              type='string' if is_metaquast else 'file',
              action='callback' if is_metaquast else 'store',
@@ -316,7 +322,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              callback_args=(logger, True),
              callback=parse_features)
          ),
-        (['--features'], dict(
+        (['-g', '--features'], dict(
              dest='features',
              type='string',
              action='callback',

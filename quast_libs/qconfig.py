@@ -184,6 +184,7 @@ space_efficient = False
 analyze_gaps = True
 min_gap_size = 50  # for calculating number or gaps in genome coverage
 min_gene_overlap = 100  # to partial genes/operons finding
+ALL_FEATURES_TYPE = 'ANY'
 
 # basic_stats
 GC_bin_size = 1.0
@@ -343,18 +344,18 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
     stream.write("\n")
 
     stream.write("Options:\n")
-    stream.write("-o  --output-dir  <dirname>   Directory to store all result files [default: quast_results/results_<datetime>]\n")
+    stream.write("-o  --output-dir  <dirname>       Directory to store all result files [default: quast_results/results_<datetime>]\n")
     if meta:
-        stream.write("-R   <filename,filename,...>  Comma-separated list of reference genomes or directory with reference genomes\n")
-        stream.write("--references-list <filename>  Text file with list of reference genomes for downloading from NCBI\n")
-        stream.write("-G  --genes       <filename>  File with gene coordinates in the references (GFF, BED, NCBI or TXT)\n")
+        stream.write("-r   <filename,filename,...>      Comma-separated list of reference genomes or directory with reference genomes\n")
+        stream.write("--references-list <filename>      Text file with list of reference genomes for downloading from NCBI\n")
+        stream.write("-g  --features [type:]<filename>  File with genomic feature coordinates in the references (GFF, BED, NCBI or TXT)\n")
+        stream.write("                                  Optional 'type' can be specified for extracting only a specific feature type from GFF\n")
     else:
-        stream.write("-R                <filename>  Reference genome file\n")
-        stream.write("-G  --genes       <filename>  File with gene coordinates in the reference (GFF, BED, NCBI or TXT)\n")
-    if not short:
-        stream.write("-O  --operons     <filename>  File with operon coordinates in the reference (GFF, BED, NCBI or TXT)\n")
-    stream.write("-m  --min-contig  <int>       Lower threshold for contig length [default: %s]\n" % min_contig)
-    stream.write("-t  --threads     <int>       Maximum number of threads [default: 25% of CPUs]\n")
+        stream.write("-r                <filename>      Reference genome file\n")
+        stream.write("-g  --features [type:]<filename>  File with genomic feature coordinates in the reference (GFF, BED, NCBI or TXT)\n")
+        stream.write("                                  Optional 'type' can be specified for extracting only a specific feature type from GFF\n")
+    stream.write("-m  --min-contig  <int>           Lower threshold for contig length [default: %s]\n" % min_contig)
+    stream.write("-t  --threads     <int>           Maximum number of threads [default: 25% of CPUs]\n")
 
     stream.write("\n")
     if short:
@@ -367,7 +368,9 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("-e  --eukaryote                       Genome is eukaryotic\n")
         stream.write("    --fungus                          Genome is fungal\n")
         stream.write("    --large                           Use optimal parameters for evaluation of large genomes\n")
-        stream.write("    --kmc                             Use KMC for computing k-mer-based metrics (recommended for large genomes).\n"
+        stream.write("                                      In particular, imposes '-m %d -i %d -x %d' (can be overridden manually)\n" %
+                     (LARGE_MIN_CONTIG, LARGE_MIN_ALIGNMENT, LARGE_EXTENSIVE_MIS_THRESHOLD))
+        stream.write("    --kmc                             Use KMC for computing k-mer-based metrics (recommended for large genomes)\n"
                      "                                      This may significantly increase memory and time consumption on large genomes\n")
         if meta:
             stream.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")
@@ -380,17 +383,18 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("                                      [default: %s]\n" % genes_lengths)
         stream.write("    --rna-finding                     Predict ribosomal RNA genes using Barrnap\n")
         stream.write("-b  --find-conserved-genes            Use BUSCO for finding conserved orthologs (only on Linux)\n")
+        stream.write("-O  --operons  <filename>             File with operon coordinates in the reference (GFF, BED, NCBI or TXT)\n")
         if not meta:
             stream.write("    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)\n")
         else:
             stream.write("    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database\n")
             stream.write("                                      Set 0 for not looking in SILVA at all [default: %s]\n" % max_references)
             stream.write("    --blast-db <filename>             Custom BLAST database (.nsq file). By default, MetaQUAST searches references in SILVA database\n")
-            stream.write("    --use-input-ref-order             Use provided order of references in MetaQUAST summary plots (default order: by the best average value).\n")
+            stream.write("    --use-input-ref-order             Use provided order of references in MetaQUAST summary plots (default order: by the best average value)\n")
         stream.write("    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]\n" % contig_thresholds)
         stream.write("-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style.\n")
         stream.write("                                      By default, QUAST filters Minimap\'s alignments to keep only best ones\n")
-        stream.write("-i  --min-alignment <int>             Minimap's parameter: the minimum alignment length [default: %s]\n" % min_alignment)
+        stream.write("-i  --min-alignment <int>             The minimum alignment length [default: %s]\n" % min_alignment)
         stream.write("    --min-identity <float>            The minimum alignment identity (80.0, 100.0) [default: %.1f]\n" % min_IDY)
         stream.write("-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments of a contig when all of them\n")
         stream.write("                                      are almost equally good (see --ambiguity-score) [default: %s]\n" % ambiguity_usage)
@@ -411,8 +415,8 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("    --fragmented                      Reference genome may be fragmented into small pieces (e.g. scaffolded reference) \n")
         stream.write("    --fragmented-max-indent  <int>    Mark translocation as fake if both alignments are located no further than N bases \n")
         stream.write("                                      from the ends of the reference fragments [default: %s]\n" % MAX_INDEL_LENGTH)
-        stream.write("                                      Requires --fragmented option.\n")
-        stream.write("    --optimal-assembly                Simulate theoretically optimal assembly based on reference genome\n")
+        stream.write("                                      Requires --fragmented option\n")
+        stream.write("    --optimal-assembly                Simulate theoretically optimal assembly based on the reference genome\n")
         stream.write("    --est-insert-size  <int>          Use provided insert size in optimal assembly simulation [default: auto detect from reads or %d]\n" % optimal_assembly_default_IS)
         stream.write("    --plots-format  <str>             Save plots in specified format [default: %s]\n" % plot_extension)
         stream.write("                                      Supported formats: %s\n" % ', '.join(supported_plot_extensions))
@@ -425,13 +429,13 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("    --12      <filename>              File with interlaced forward and reverse paired-end reads. (in FASTQ format, may be gzipped)\n")
         stream.write("    --pe1     <filename>              File with forward paired-end reads (in FASTQ format, may be gzipped)\n")
         stream.write("    --pe2     <filename>              File with reverse paired-end reads (in FASTQ format, may be gzipped)\n")
-        stream.write("    --pe12    <filename>              File with interlaced forward and reverse paired-end reads. (in FASTQ format, may be gzipped)\n")
+        stream.write("    --pe12    <filename>              File with interlaced forward and reverse paired-end reads (in FASTQ format, may be gzipped)\n")
         stream.write("    --mp1     <filename>              File with forward mate-pair reads (in FASTQ format, may be gzipped)\n")
         stream.write("    --mp2     <filename>              File with reverse mate-pair reads (in FASTQ format, may be gzipped)\n")
-        stream.write("    --mp12    <filename>              File with interlaced forward and reverse mate-pair reads. (in FASTQ format, may be gzipped)\n")
-        stream.write("    --single  <filename>              File with unpaired reads. (in FASTQ format, may be gzipped)\n")
-        stream.write("    --pacbio  <filename>              File with PacBio reads. (in FASTQ format, may be gzipped)\n")
-        stream.write("    --nanopore  <filename>            File with Oxford Nanopore reads. (in FASTQ format, may be gzipped)\n")
+        stream.write("    --mp12    <filename>              File with interlaced forward and reverse mate-pair reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --single  <filename>              File with unpaired reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --pacbio  <filename>              File with PacBio reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --nanopore  <filename>            File with Oxford Nanopore reads (in FASTQ format, may be gzipped)\n")
         stream.write("    --ref-sam <filename>              SAM alignment file obtained by aligning reads to reference genome file\n")
         stream.write("    --ref-bam <filename>              BAM alignment file obtained by aligning reads to reference genome file\n")
         stream.write("    --sam     <filename,filename,...> Comma-separated list of SAM alignment files obtained by aligning reads to assemblies\n"

@@ -201,6 +201,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
 
     contigs_fpaths = [fpath for fpath in contigs_fpaths if fpath not in checked_assemblies]
     if len(contigs_fpaths) == 0:
+        save_kmers(output_dir)
         logger.info('Done.')
         return
 

@@ -219,7 +219,7 @@ class Fields:
     unaligned_order = [NAME, UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
                        UNALIGNED_PART_LENGTH, UNCALLED]
 
-    kmers_order = [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH,
+    kmers_order = [NAME, KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH,
                    KMER_MISASSEMBLIES, KMER_TRANSLOCATIONS, KMER_RELOCATIONS]
 
     ### Grouping of metrics and set of main metrics for HTML version of main report

@@ -503,7 +503,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
             region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
             misassemblies_by_ref[prev_ref].append(Misassembly.SCAFFOLD_GAP)
             ca_output.icarus_out_f.write('fake: scaffold gap size wrong estimation' + '\n')
-        elif is_potential_mge and is_potential_mge[i]:
+        elif is_extensive_misassembly and is_potential_mge and is_potential_mge[i]:
             ca_output.stdout_f.write(
                 '\t\t\t  Not a misassembly (possible mobile genetic element) between these two alignments\n')
             ca_output.icarus_out_f.write('fake: not a misassembly (possible mobile genetic element)\n')

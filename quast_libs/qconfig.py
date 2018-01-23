@@ -171,6 +171,8 @@ LARGE_MIN_ALIGNMENT = 500
 # BSS fine-tuning params
 BSS_MAX_SETS_NUMBER = 10  # for ambiguous contigs
 BSS_critical_number_of_aligns = 100
+BSS_EXTENSIVE_PENALTY = 250
+BSS_LOCAL_PENALTY = 25
 
 gap_filled_ns_threshold = 0.95
 

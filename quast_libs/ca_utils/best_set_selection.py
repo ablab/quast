@@ -89,8 +89,8 @@ class SolidRegion(object):
 
 def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyclic=False, region_struct_variations=None):
     penalties = dict()
-    penalties['extensive'] = max(50, int(round(min(qconfig.extensive_misassembly_threshold / 4.0, ctg_len * 0.05)))) - 1
-    penalties['local'] = max(2, int(round(min(qconfig.MAX_INDEL_LENGTH / 2.0, ctg_len * 0.01)))) - 1
+    penalties['extensive'] = max(50, min(qconfig.BSS_EXTENSIVE_PENALTY, int(round(ctg_len * 0.05)))) - 1
+    penalties['local'] = max(2, min(qconfig.BSS_LOCAL_PENALTY, int(round(ctg_len * 0.01)))) - 1
     penalties['scaffold'] = 5
     # internal overlap penalty (in any case should be less or equal to corresponding misassembly penalty
     penalties['overlap_multiplier'] = 0.5  # score -= overlap_multiplier * overlap_length

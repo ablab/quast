@@ -32,7 +32,8 @@ else:
 
 # default values for options
 contig_thresholds = "0,1000,5000,10000,25000,50000"
-min_contig = 500
+min_contig = None
+DEFAULT_MIN_CONTIG = 500
 genes_lengths = "0,300,1500,3000"
 ref_fpath = ''
 prokaryote = True  # former cyclic
@@ -44,7 +45,8 @@ ambiguity_score = 0.99
 meta_ambiguity_score = 0.9
 use_all_alignments = False
 max_threads = None
-min_alignment = 65
+min_alignment = None
+DEFAULT_MIN_ALIGNMENT = 65
 min_IDY = 95.0
 estimated_reference_size = None
 strict_NA = False
@@ -160,11 +162,12 @@ phys_cov_fpath = None
 # indels and misassemblies
 SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
 MAX_INDEL_LENGTH = 50  # for separating indels and local misassemblies
-extensive_misassembly_threshold = 1000  # for separating local and extensive misassemblies (relocation)
+DEFAULT_EXT_MIS_SIZE = 1000
+extensive_misassembly_threshold = None  # for separating local and extensive misassemblies (relocation)
 fragmented_max_indent = MAX_INDEL_LENGTH # for fake translocation in fragmented reference
 
 # large genome params
-LARGE_EXTENSIVE_MIS_THRESHOLD = 6000
+LARGE_EXTENSIVE_MIS_THRESHOLD = 7000
 LARGE_MIN_CONTIG = 3000
 LARGE_MIN_ALIGNMENT = 500
 

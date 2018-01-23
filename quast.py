@@ -16,7 +16,7 @@ from quast_libs import qconfig
 
 qconfig.check_python_version()
 
-from quast_libs import qutils, reads_analyzer, run_barrnap, plotter_data, unique_kmers, optimal_assembly
+from quast_libs import qutils, run_barrnap, plotter_data, unique_kmers
 from quast_libs.qutils import cleanup, check_dirpath, check_reads_fpaths
 from quast_libs.options_parser import parse_options
 
@@ -90,6 +90,7 @@ def main(args):
             if not qconfig.pacbio_reads and not qconfig.nanopore_reads and not qconfig.mate_pairs:
                 logger.warning('Optimal assembly cannot be created. It requires mate-pairs or long reads (Pacbio SMRT or Oxford Nanopore).')
             else:
+                from quast_libs import optimal_assembly
                 optimal_assembly_fpath = optimal_assembly.do(ref_fpath, original_ref_fpath,
                                                          os.path.join(output_dirpath, qconfig.optimal_assembly_basename))
                 if optimal_assembly_fpath is not None:
@@ -113,6 +114,7 @@ def main(args):
     cov_fpath = qconfig.cov_fpath
     physical_cov_fpath = qconfig.phys_cov_fpath
     if qconfig.reads_fpaths or qconfig.reference_sam or qconfig.reference_sam or qconfig.sam_fpaths or qconfig.bam_fpaths:
+        from quast_libs import reads_analyzer
         bed_fpath, cov_fpath, physical_cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths,
                                                                      os.path.join(output_dirpath, qconfig.reads_stats_dirname),
                                                                      external_logger=logger)

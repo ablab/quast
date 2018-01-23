@@ -10,6 +10,6 @@ name = os.path.basename(__file__)[5:-3]
 run_quast(name, contigs=['scaffolds_with_many_repeats.fa.gz'], params=' -R ref_with_many_repeats.fa.gz --fast')
 
 assert_metric(name, '# misassemblies', ['8'], 'report.tsv')
-assert_metric(name, '# scaffold gap size misassemblies', ['9'], 'report.tsv')
+assert_metric(name, '# scaffold gap size mis.', ['9'], 'report.tsv')
 assert_metric(name, '# misassembled contigs', ['5'], 'report.tsv')
 assert_metric(name, '# local misassemblies', ['182'], 'report.tsv')

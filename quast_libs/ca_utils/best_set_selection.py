@@ -47,6 +47,7 @@ class PutativeBestSet(object):
 class PSA(object):  # PSA stands for Possibly Solid Alignment (solid alignments are definitely present in the best set)
     overlap_penalty_coeff = 0
     max_single_side_penalty = 0
+    min_unique_len = qconfig.min_alignment
 
     def __init__(self, align, ctg_unique_end=None, num_sides=2):
         self.align = align
@@ -59,8 +60,9 @@ class PSA(object):  # PSA stands for Possibly Solid Alignment (solid alignments 
         self.start_overlap_penalty = self.max_single_side_penalty
 
     def is_solid(self):
-        return self.total_unique_len > self.num_sides * self.max_single_side_penalty + \
-                                       self.start_overlap_penalty + self.end_overlap_penalty
+        return self.total_unique_len > max(self.min_unique_len - 1,
+                                       self.num_sides * self.max_single_side_penalty +
+                                       self.start_overlap_penalty + self.end_overlap_penalty)
 
     def could_be_solid(self):
         return (self.unique_end - self.start + 1) + self.total_unique_len \

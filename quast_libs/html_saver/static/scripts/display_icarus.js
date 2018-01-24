@@ -441,10 +441,13 @@ function drawMapMain(minExtent, maxExtent) {
         .attr('width', function (block) {
             return getItemWidth(block, minExtent, maxExtent);
         })
-        .attr('height', mapItemHeight);
+        .attr('height', mapItemHeight)
+         .on('click',  function(block) {
+            addMapTooltip(block);
+         });;
 
     var mapSiteItems = mapPaths.filter(function (block) {
-        if (block.objClass == 'site' && block.corr_start < maxExtent && block.corr_end > minExtent) {
+        if (block.objClass.indexOf('site') !== -1 && block.corr_start < maxExtent && block.corr_end > minExtent) {
             return block;
         }
     });
@@ -469,7 +472,9 @@ function drawMapMain(minExtent, maxExtent) {
         });
 
     otherSites.append('line')
-         .attr('class', 'site')
+         .attr('class', function(block) {
+             return block.objClass;
+         })
          .attr("x1", 0)
          .attr("y1", y_map(block.lane))
          .attr("x2", 0)
@@ -484,6 +489,20 @@ function drawMapMain(minExtent, maxExtent) {
 function addSiteTooltip(site, event) {
     tooltipText = site ? '<strong> Site ' + site.id + '</strong><span>' +
     ', position: ' + site.start + ', map ID: ' + site.map_id + '</span>' : '';
+    var eventX = event ? event.pageX : d3.event.pageX - 50;
+    var eventY = event ? event.pageY + 5 : d3.event.pageY + 5;
+    if (tooltipText && featureTip.html() != tooltipText) {
+        featureTip.style('opacity', 1);
+        featureTip.html(tooltipText)
+            .style('left', eventX + 'px')
+            .style('top', eventY + 'px');}
+    else
+        removeTooltip();
+}
+
+function addMapTooltip(map, event) {
+    tooltipText = map ? '<strong> Map ID: ' + map.id + '</strong><span>' +
+    ', position: ' + map.map_start + '-' + map.map_end + ', strand: ' + map.strand + '</span>' : '';
     var eventX = event ? event.pageX : d3.event.pageX - 50;
     var eventY = event ? event.pageY + 5 : d3.event.pageY + 5;
     if (tooltipText && featureTip.html() != tooltipText) {

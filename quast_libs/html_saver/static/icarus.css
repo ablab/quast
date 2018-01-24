@@ -406,10 +406,14 @@ path {
 }
 .map_block {
     stroke: black;
+    stroke-width: 1;
     fill: #67889b;
 }
 .site {
     stroke: #ff8300;
+}
+.site.multi {
+    stroke: #ff000b;
 }
 
 .dashed_lines {

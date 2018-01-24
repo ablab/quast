@@ -1007,7 +1007,6 @@ THE SOFTWARE.
           for (var i = 0; i < lane.length; i++) {
               var block = lane[i];
               block.lane = laneId;
-              block.id = itemId;
               block.corr_start = block.start;
               block.corr_end = block.end;
               blocks.push(block);
@@ -1037,6 +1036,7 @@ THE SOFTWARE.
               itemId++;
               numItems++;
           }
+          laneId++;
       }
       return {lanes: lanes, blocks: blocks, points: points}
     }
@@ -1088,14 +1088,14 @@ THE SOFTWARE.
             var y = y_map_mini(d.lane);
             y += .15 * mapMiniLanesHeight;
 
-            result.push({objClass: c, name: d.name, start: d.start, end: d.end, corr_start: d.start, corr_end: d.end,
-                id: d.id, y: y, x: x, lane: d.lane});
+            result.push({objClass: c, name: d.name, start: d.start, end: d.end, map_start: d.map_start, map_end: d.map_end,
+                corr_start: d.start, corr_end: d.end, id: d.id, y: y, x: x, lane: d.lane, strand: d.strand});
             numItem++;
         }
         for (var c, i = 0; i < points.length; i++) {
             d = points[i];
             if (d.lane != curLane) numItem = 0;
-            c = "site";
+            c = "site " + d.class;
 
             points[i].objClass = c;
 

@@ -150,34 +150,41 @@ def parse_features_data(features, cumulative_ref_lengths, ref_names):
 def parse_map_data(map_fpaths, cumulative_ref_lengths):
     map_blocks = []
     map_sites = []
+    map_coords = []
     if map_fpaths:
         for map_fpath in map_fpaths:
-            blocks, sites = parse_electronic_map(map_fpath, cumulative_ref_lengths)
+            blocks, sites, maps = parse_electronic_map(map_fpath, cumulative_ref_lengths)
             map_blocks.append(blocks)
             map_sites.append(sites)
-    map_data = format_electronic_map(map_blocks, map_sites)
+            map_coords.append(maps)
+    map_data = format_electronic_map(map_blocks, map_sites, map_coords)
     return map_data
 
 
-def format_electronic_map(map_blocks, map_sites):
+def format_electronic_map(map_blocks, map_sites, map_coords):
     map_data = 'var map_blocks = [];\n'
     map_data += 'var map_sites = [];\n'
     if map_blocks:
         map_data += 'map_blocks = [ '
-        for map_id, blocks in enumerate(map_blocks):
+        for coords, blocks in zip(map_coords, map_blocks):
             map_data = map_data + '[ '
-            for i, block in enumerate(blocks):
-                start, end = block
-                map_data += '{id: "' + str(i) + '", start: ' + str(start) + ', end: ' + str(end) + \
-                            ', id_: "' + str(i) + '", map_id: "' + str(map_id) + '"},'
+            for block in blocks:
+                start, end, map_id, strand = block
+                map_start, map_end = coords[map_id]
+                map_data += '{id: "' + str(map_id) + '", start: ' + str(start) + ', end: ' + str(end) + \
+                            ', map_start: ' + str(map_start) + ', map_end: ' + str(map_end) + \
+                            ', strand: "' + strand + '"},'
             map_data = map_data[:-1] + '],'
         map_data = map_data[:-1] + '];\n'
     if map_sites:
         map_data += 'map_sites = [ '
-        for map, sites in enumerate(map_sites):
+        for map, sites_data in enumerate(map_sites):
             map_data = map_data + '[ '
-            for i, (pos, map_id, site_id) in enumerate(sites):
-                map_data += '{id: "' + str(site_id) + '", pos: ' + str(pos) + ', map_id:"' + str(map_id) + '"},'
+            for pos, sites in sites_data.items():
+                site_class = 'multi' if len(sites) > 1 else 'single'
+                site_ids, map_ids = [x[0] for x in sites], [x[1] for x in sites]
+                map_data += '{id: "' + str(';'.join(site_ids)) + '", pos: ' + str(pos) + ', map_id:"' + str(';'.join(map_ids)) +\
+                            '", class: "' + site_class + '"},'
             map_data = map_data[:-1] + '],'
         map_data = map_data[:-1] + '];\n'
     return map_data
@@ -185,12 +192,13 @@ def format_electronic_map(map_blocks, map_sites):
 
 def parse_electronic_map(map_fpath, cumulative_ref_lengths):
     blocks = []
-    sites = []
+    sites = defaultdict(list)
+    maps_start = defaultdict(int)
+    maps_end = defaultdict(int)
     with open(map_fpath) as in_f:
         map_id = None
         strand = None
         header = None
-        map_start, map_end = float('Inf'), 0
         map_sites = []
         for line in in_f:
             if line.startswith('//'):
@@ -201,14 +209,16 @@ def parse_electronic_map(map_fpath, cumulative_ref_lengths):
                 continue
             fwd_pos, rv_pos = int(fs[2]), int(fs[3])
             if map_id is not None and fs[0] != map_id:
-                map_start, map_end = (map_sites[0][0], map_sites[-1][0]) if strand == '+' else (map_sites[-1][0], map_sites[0][0])
-                if map_start < map_end:
-                    blocks.append((map_start, map_end))
-                else:
-                    blocks.append((0, map_end))
-                    blocks.append((map_start, cumulative_ref_lengths[-1]))
+                if map_sites:
+                    map_start, map_end = (map_sites[0][0], map_sites[-1][0]) if strand == '+' else (map_sites[-1][0], map_sites[0][0])
+                    maps_start[map_id] = map_start
+                    maps_end[map_id] = map_end
+                    if map_start < map_end:
+                        blocks.append((map_start, map_end, map_id, strand))
+                    else:
+                        blocks.append((0, map_end, map_id, strand))
+                        blocks.append((map_start, cumulative_ref_lengths[-1], map_id, strand))
                 strand = None
-                sites.extend(map_sites)
                 map_sites = []
             if not fwd_pos and not rv_pos:
                 continue
@@ -224,17 +234,20 @@ def parse_electronic_map(map_fpath, cumulative_ref_lengths):
                 pos = rv_pos
             site_id = fs[1]
             map_sites.append((pos, fs[0], site_id))
-            map_start = min(map_start, pos)
-            map_end = max(map_end, pos)
+            sites[pos].append((site_id, fs[0]))
             map_id = fs[0]
         map_start, map_end = (map_sites[0][0], map_sites[-1][0]) if strand == '+' else (map_sites[-1][0], map_sites[0][0])
+        maps_start[map_id] = map_start
+        maps_end[map_id] = map_end
         if map_start < map_end:
-            blocks.append((map_start, map_end))
+            blocks.append((map_start, map_end, map_id, strand))
         else:
-            blocks.append((0, map_end))
-            blocks.append((map_start, cumulative_ref_lengths[-1]))
-        sites.extend(map_sites)
-    return blocks, sites
+            blocks.append((0, map_end, map_id, strand))
+            blocks.append((map_start, cumulative_ref_lengths[-1], map_id, strand))
+    maps = dict()
+    for map_id in maps_start.keys():
+        maps[map_id] = (maps_start[map_id], maps_end[map_id])
+    return blocks, sites, maps
 
 
 def parse_genes_data(contigs_by_assemblies, genes_by_labels):

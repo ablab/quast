@@ -147,6 +147,96 @@ def parse_features_data(features, cumulative_ref_lengths, ref_names):
     return features_data
 
 
+def parse_map_data(map_fpaths, cumulative_ref_lengths):
+    map_blocks = []
+    map_sites = []
+    if map_fpaths:
+        for map_fpath in map_fpaths:
+            blocks, sites = parse_electronic_map(map_fpath, cumulative_ref_lengths)
+            map_blocks.append(blocks)
+            map_sites.append(sites)
+    map_data = format_electronic_map(map_blocks, map_sites)
+    return map_data
+
+
+def format_electronic_map(map_blocks, map_sites):
+    map_data = 'var map_blocks = [];\n'
+    map_data += 'var map_sites = [];\n'
+    if map_blocks:
+        map_data += 'map_blocks = [ '
+        for map_id, blocks in enumerate(map_blocks):
+            map_data = map_data + '[ '
+            for i, block in enumerate(blocks):
+                start, end = block
+                map_data += '{id: "' + str(i) + '", start: ' + str(start) + ', end: ' + str(end) + \
+                            ', id_: "' + str(i) + '", map_id: "' + str(map_id) + '"},'
+            map_data = map_data[:-1] + '],'
+        map_data = map_data[:-1] + '];\n'
+    if map_sites:
+        map_data += 'map_sites = [ '
+        for map, sites in enumerate(map_sites):
+            map_data = map_data + '[ '
+            for i, (pos, map_id, site_id) in enumerate(sites):
+                map_data += '{id: "' + str(site_id) + '", pos: ' + str(pos) + ', map_id:"' + str(map_id) + '"},'
+            map_data = map_data[:-1] + '],'
+        map_data = map_data[:-1] + '];\n'
+    return map_data
+
+
+def parse_electronic_map(map_fpath, cumulative_ref_lengths):
+    blocks = []
+    sites = []
+    with open(map_fpath) as in_f:
+        map_id = None
+        strand = None
+        header = None
+        map_start, map_end = float('Inf'), 0
+        map_sites = []
+        for line in in_f:
+            if line.startswith('//'):
+                continue
+            fs = line.split()
+            if not header:
+                header = fs
+                continue
+            fwd_pos, rv_pos = int(fs[2]), int(fs[3])
+            if map_id is not None and fs[0] != map_id:
+                map_start, map_end = (map_sites[0][0], map_sites[-1][0]) if strand == '+' else (map_sites[-1][0], map_sites[0][0])
+                if map_start < map_end:
+                    blocks.append((map_start, map_end))
+                else:
+                    blocks.append((0, map_end))
+                    blocks.append((map_start, cumulative_ref_lengths[-1]))
+                strand = None
+                sites.extend(map_sites)
+                map_sites = []
+            if not fwd_pos and not rv_pos:
+                continue
+            if fwd_pos and not rv_pos:
+                pos = fwd_pos
+                strand = '+'
+            elif rv_pos and not fwd_pos:
+                pos = rv_pos
+                strand = '-'
+            elif strand == '+' and fwd_pos:
+                pos = fwd_pos
+            else:
+                pos = rv_pos
+            site_id = fs[1]
+            map_sites.append((pos, fs[0], site_id))
+            map_start = min(map_start, pos)
+            map_end = max(map_end, pos)
+            map_id = fs[0]
+        map_start, map_end = (map_sites[0][0], map_sites[-1][0]) if strand == '+' else (map_sites[-1][0], map_sites[0][0])
+        if map_start < map_end:
+            blocks.append((map_start, map_end))
+        else:
+            blocks.append((0, map_end))
+            blocks.append((map_start, cumulative_ref_lengths[-1]))
+        sites.extend(map_sites)
+    return blocks, sites
+
+
 def parse_genes_data(contigs_by_assemblies, genes_by_labels):
     if not genes_by_labels:
         return

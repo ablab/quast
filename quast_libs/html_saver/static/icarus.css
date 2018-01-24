@@ -404,6 +404,13 @@ path {
 .item.disabled.end {
     opacity: 0;
 }
+.map_block {
+    stroke: black;
+    fill: #67889b;
+}
+.site {
+    stroke: #ff8300;
+}
 
 .dashed_lines {
 	stroke: black;

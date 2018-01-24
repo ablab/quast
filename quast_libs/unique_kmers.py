@@ -126,7 +126,7 @@ def downsample_kmers(tmp_dirpath, ref_fpath, kmc_db_fpath, log_fpath, err_fpath)
                         out_f.write('>' + str(prev_kmer_idx + kmer_i) + '\n')
                         out_f.write(seq + '\n')
                         ref_kmers[prev_kmer_idx + kmer_i] = (chrom, kmer_i)
-        prev_kmer_idx = i
+        prev_kmer_idx += i
         if qconfig.space_efficient:
             os.remove(kmc_fasta_fpath)
     return ref_kmers, downsampled_txt_fpath

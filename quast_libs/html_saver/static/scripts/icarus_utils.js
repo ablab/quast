@@ -1032,6 +1032,8 @@ function addSelectionAreas() {
     brush = drawBrush(mini, miniHeight);
     if (!featuresHidden)
         brush_anno = drawBrush(annotationsMini, annotationsMiniHeight, 'features');
+    if (!mapHidden)
+        brush_map = drawBrush(mapMini, mapMiniHeight, 'map');
     if (drawCoverage)
         brush_cov = drawBrush(mini_cov, coverageHeight, 'coverage');
 }

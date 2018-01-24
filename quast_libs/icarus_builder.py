@@ -350,7 +350,7 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures
 
 
 def save_alignment_data_for_one_ref(chr_name, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, data_str, ms_selectors,
-                                    ref_data='', features_data='', assemblies_data='', contigs_structure_str='', additional_assemblies_data=''):
+                                    ref_data='', features_data='', map_data='', assemblies_data='', contigs_structure_str='', additional_assemblies_data=''):
     alignment_viewer_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
     data_dict = dict()
     chr_data = 'chromosome = "' + chr_name + '";\n'
@@ -360,7 +360,7 @@ def save_alignment_data_for_one_ref(chr_name, ref_contigs, ref_name, json_output
         chr_name = ref_name
         chr_name += ' (' + str(len(ref_contigs)) + (' entries)' if len(ref_contigs) > 1 else ' entry)')
     chr_name = chr_name.replace('_', ' ')
-    all_data = ref_data + assemblies_data + additional_assemblies_data + chr_data + features_data + data_str + contigs_structure_str
+    all_data = ref_data + assemblies_data + additional_assemblies_data + chr_data + str(map_data) + features_data + data_str + contigs_structure_str
     data_dict['title'] = 'Contig alignment viewer'
     data_dict['reference'] = chr_name
     data_dict['data'] = '<script type="text/javascript">' + all_data + '</script>'

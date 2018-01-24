@@ -58,6 +58,10 @@ THE SOFTWARE.
             featureMiniHeight = 10,
             annotationLanesHeight = 30,
             featureHeight = 20,
+            mapMainLanesHeight = 45,
+            mapMiniLanesHeight = 18,
+            mapItemHeight = 30,
+            mapItemMiniHeight = 10,
             annotationLanesInterval = 10,
             offsetsY = [0, .3, .15],
             offsetsMiniY = [0, .1, .05],
@@ -113,6 +117,7 @@ THE SOFTWARE.
     var annotationsHeight = 0, annotationsMiniHeight = 0;
     if (chromosome) {
       var featuresData = parseFeaturesData(chromosome);
+      var mapData = parseMapData(chromosome);
       annotationsHeight = annotationLanesHeight * featuresData.lanes.length;
       annotationsMiniHeight = annotationMiniLanesHeight * featuresData.lanes.length;
       var ext = d3.extent(featuresData.lanes, function (d) {
@@ -120,10 +125,17 @@ THE SOFTWARE.
       });
       var y_anno_mini = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsMiniHeight]);
       var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
+      mapHeight = mapMainLanesHeight * mapData.lanes.length;
+      mapMiniHeight = mapMiniLanesHeight * mapData.lanes.length;
+      var ext = d3.extent(mapData.lanes, function (d) {
+          return d.id;
+      });
+      var y_map_mini = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, mapMiniHeight]);
+      var y_map = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, mapHeight]);
     }
 
     var coverageFactor = 10, gcFactor = 100, maxCovDots = chartWidth * 4;
-    var featuresHidden = false, drawCoverage = false;
+    var featuresHidden = false, drawCoverage = false, mapHidden = false;
     var coverageMainHidden = true, physicalCoverageHidden = true, physicalMiniCoverageHidden = true,
         gcHidden = false, gcMiniHidden = false;
     if (!featuresData || featuresData.features.length == 0)
@@ -132,8 +144,11 @@ THE SOFTWARE.
         drawCoverage = true;
     if (typeof gc_window_size != "undefined")
         gcFactor = gc_window_size;
+    if (!mapData || mapData.blocks.length == 0)
+      mapHidden = true;
     var featuresMainHidden = featuresHidden || lanes.length > 3;
-    var brush, brush_cov, brush_anno;
+    var mapMainHidden = mapHidden;
+    var brush, brush_cov, brush_anno, brush_map;
     var offsetX = 20;
 
     var chart = d3.select('body').append('div').attr('id', 'chart')
@@ -158,7 +173,7 @@ THE SOFTWARE.
 
     setInterfaceCoordinates();
 
-    var baseChartHeight = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + margin.top + margin.bottom + 100;
+    var baseChartHeight = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + mapHeight + margin.top + margin.bottom + 100;
     var curChartHeight = baseChartHeight;
 
     var manyChromosomes = !isContigSizePlot && chrContigs.length > 1;
@@ -169,8 +184,16 @@ THE SOFTWARE.
             .attr('id', 'clip')
             .append('rect')
             .attr('width', width)
-            .attr('height', mainHeight + chrLabelsOffsetY);
+            .attr('height', mainHeight + mapHeight + chrLabelsOffsetY);
 
+    if (!mapHidden) {
+        var mapMain = chart.append('g')
+            .attr('transform', 'translate(' + margin.left + ',' + mapMainOffsetY + ')')
+            .attr('width', chartWidth)
+            .attr('height', mapMainLanesHeight)
+            .attr('class', 'main')
+            .attr('id', 'mapMain');
+    }
     //annotations track
     if (!featuresHidden) {
         var annotationsMain = chart.append('g')
@@ -188,6 +211,14 @@ THE SOFTWARE.
             .attr('width', chartWidth)
             .attr('height', miniHeight + miniScale)
             .attr('class', 'main');
+    if (!mapHidden) {
+        var mapMini = chart.append('g')
+            .attr('transform', 'translate(' + margin.left + ',' + mapMiniOffsetY + ')')
+            .attr('width', chartWidth)
+            .attr('height', mapMiniLanesHeight)
+            .attr('class', 'main')
+            .attr('id', 'mapMini');
+    }
     if (!featuresHidden) {
         var annotationsMini = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + annotationsMiniOffsetY + ')')
@@ -204,6 +235,11 @@ THE SOFTWARE.
         var featurePaths = getFeaturePaths(featuresData.features);
         addFeatureTrackInfo(annotationsMini, y_anno_mini);
         addFeatureTrackInfo(annotationsMain, y_anno);
+    }
+    if (!mapHidden) {
+        var mapPaths = getMapPaths(mapData.blocks, mapData.points);
+        addMapTrackInfo(mapMini, y_map_mini);
+        addMapTrackInfo(mapMain, y_map);
     }
 
     var mini_cov, main_cov, x_cov_mini_S, y_cov_mini_S, y_cov_mini_A, y_cov_main_S, y_cov_main_A, y_max, y_max_log, numYTicks;
@@ -325,6 +361,7 @@ THE SOFTWARE.
                         .attr('class', 'feature_tip')
                         .style('opacity', 0);
     if (!featuresHidden) addFeatureTrackItems(annotationsMini, x_mini);
+    if (!mapHidden) addMapTrackItems(mapMini, x_mini);
 
     addSelectionAreas();
 
@@ -441,6 +478,12 @@ THE SOFTWARE.
                                     .attr('pointer-events', 'painted');
     var itemLabels = linesLabelsLayer.append('g');
     var textLayer = itemsLayer.append('g');
+    if (!mapHidden) {
+      var mapPath = mapMain.append('g')
+        .attr('clip-path', 'url(#clip)');
+      var sitePath = mapMain.append('g')
+        .attr('clip-path', 'url(#clip)');
+    }
     if (!featuresHidden)
       var featurePath = annotationsMain.append('g')
         .attr('clip-path', 'url(#clip)');
@@ -710,7 +753,7 @@ THE SOFTWARE.
                 id: laneId,
                 label: assemblyName,
                 maxLines: lastPosInLanes.length,
-                isExpanded: false,
+                isExpanded: false
             });
             laneId++;
         }
@@ -951,6 +994,145 @@ THE SOFTWARE.
                             });
     }
 
+    function parseMapData(chr) {
+      var lanes = [];
+      var blocks = [];
+      var points = [];
+      var data = [];
+      var laneId = 0, itemId = 0;
+
+      for (var numContainer = 0; numContainer < map_blocks.length; numContainer++) {
+          var lane = map_blocks[numContainer];
+          var numItems = 0;
+          for (var i = 0; i < lane.length; i++) {
+              var block = lane[i];
+              block.lane = laneId;
+              block.id = itemId;
+              block.corr_start = block.start;
+              block.corr_end = block.end;
+              blocks.push(block);
+              itemId++;
+              numItems++;
+          }
+          if (numItems > 0) {
+              lanes.push({
+                  id: laneId,
+                  label: 'map',
+                  isExpanded: false });
+              laneId++;
+          }
+      }
+      var laneId = 0;
+      for (var numContainer = 0; numContainer < map_sites.length; numContainer++) {
+          var lane = map_sites[numContainer];
+          var numItems = 0;
+          for (var i = 0; i < lane.length; i++) {
+              var block = lane[i];
+              block.lane = laneId;
+              block.start = block.pos;
+              block.end = block.pos;
+              block.corr_start = block.pos;
+              block.corr_end = block.pos;
+              points.push(block);
+              itemId++;
+              numItems++;
+          }
+      }
+      return {lanes: lanes, blocks: blocks, points: points}
+    }
+
+    function addMapTrackInfo (annotations, scale) {
+        annotations.append('g').selectAll('.laneLines')
+            .data(mapData.lanes)
+            //.enter().append('line')
+            .attr('x1', 0)
+            .attr('y1', function (d) {
+                return d3.round(scale(d.id)) + .5;
+            })
+            .attr('x2', chartWidth)
+            .attr('y2', function (d) {
+                return d3.round(scale(d.id)) + .5;
+            })
+            .attr('stroke', function (d) {
+                return d.label === '' ? 'white' : 'lightgray'
+            });
+
+        annotations.append('g').selectAll('.laneText')
+            .data(mapData.lanes)
+            .enter().append('text')
+            .text(function (d) {
+                return d.label;
+            })
+            .attr('x', -10)
+            .attr('y', function (d) {
+                return scale(d.id + .5);
+            })
+            .attr('dy', '.5ex')
+            .attr('text-anchor', 'end')
+            .attr('class', 'laneText');
+    }
+
+    function getMapPaths(blocks, points) {
+        var d, result = [];
+        var curLane = 0;
+        var numItem = 0;
+
+        for (var c, i = 0; i < blocks.length; i++) {
+            d = blocks[i];
+            if (d.lane != curLane) numItem = 0;
+            c = "map_block";
+
+            blocks[i].objClass = c;
+
+            var x = x_mini(d.start);
+            var y = y_map_mini(d.lane);
+            y += .15 * mapMiniLanesHeight;
+
+            result.push({objClass: c, name: d.name, start: d.start, end: d.end, corr_start: d.start, corr_end: d.end,
+                id: d.id, y: y, x: x, lane: d.lane});
+            numItem++;
+        }
+        for (var c, i = 0; i < points.length; i++) {
+            d = points[i];
+            if (d.lane != curLane) numItem = 0;
+            c = "site";
+
+            points[i].objClass = c;
+
+            var x = x_mini(d.corr_start);
+            var y = y_map_mini(d.lane);
+            y += .15 * mapMiniLanesHeight;
+
+            result.push({objClass: c, name: d.name, start: d.start, end: d.end, corr_start: d.start, corr_end: d.end,
+                id: d.id, map_id: d.map_id, y: y, x: x, lane: d.lane});
+            numItem++;
+        }
+        return result;
+    }
+
+    function addMapTrackItems(annotations, scale) {
+        var miniMapItems = mapPaths.filter(function (block) {
+            if (block.objClass == 'map_block') {
+                return block;
+            }
+        });
+        annotations.append('g').selectAll('miniItems')
+            .data(miniMapItems)
+            .enter().append('rect')
+            .attr('class', function (d) {
+              return d.objClass;
+            })
+            .attr('transform', function (d) {
+              return 'translate(' + d.x + ', ' + d.y + ')';
+            })
+            .attr('width', function (d) {
+              return scale(d.corr_end - d.corr_start);
+            })
+            .attr('height', mapItemMiniHeight)
+            .on('mouseenter', selectFeature)
+            .on('mouseleave', deselectFeature);
+    }
+
     function addFeatureTrackInfo (annotations, scale) {
         annotations.append('g').selectAll('.laneLines')
             .data(featuresData.lanes)
@@ -1028,8 +1210,9 @@ THE SOFTWARE.
 
         var laneLabelOffsetX = 80 + (isContigSizePlot ? 20 : 0);
         addLanesText(main, y_main, lanes, laneLabelOffsetX, true, !isContigSizePlot);
-        if (!isContigSizePlot)
-            addExpandBtns();
+        if (!isContigSizePlot) {
+            addExpandBtns(lanes);
+        }
 
         // draw the lanes for the mini chart
         laneLabelOffsetX = 100;
@@ -1081,10 +1264,10 @@ THE SOFTWARE.
                 .attr('class', 'lane_bg');
     }
 
-    function addExpandBtns() {
+    function addExpandBtns(exp_lanes) {
         var expandableLanes = [];
-        for (var lanes_n = 0; lanes_n < lanes.length; lanes_n++) {
-            lane = lanes[lanes_n];
+        for (var lanes_n = 0; lanes_n < exp_lanes.length; lanes_n++) {
+            lane = exp_lanes[lanes_n];
             if (lane.maxLines > 1)
                 expandableLanes.push(lane);
         }

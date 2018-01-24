@@ -24,6 +24,8 @@ function display() {
         mini_cov.select('.brush').call(brush_cov.extent([minExtent, maxExtent]));
     if (!featuresHidden)
         annotationsMini.select('.brush').call(brush_anno.extent([minExtent, maxExtent]));
+    if (!mapHidden)
+        mapMini.select('.brush').call(brush_map.extent([minExtent, maxExtent]));
 
     x_main.domain([minExtent, maxExtent]);
     document.getElementById('input_coords_start').value = getChromCoords(Math.round(minExtent), 0);
@@ -84,6 +86,7 @@ function display() {
     //update features
     removeTooltip();
     if (!featuresMainHidden) drawFeaturesMain(minExtent, maxExtent);
+    if (!mapMainHidden) drawMapMain(minExtent, maxExtent);
 
     // update the block rects
     visPaths = [];
@@ -397,6 +400,101 @@ function drawCoverageLine(minExtent, maxExtent, useMainCov, covData, plotClass) 
     track.select(plotClass).select('path').attr('d', line);
 }
 
+function drawMapMain(minExtent, maxExtent) {
+    var mapItems = mapPaths.filter(function (block) {
+        if (block.objClass == 'map_block' && block.corr_start < maxExtent && block.corr_end > minExtent) {
+            var drawLimit = 0;
+            var visibleLength = getItemWidth(block, minExtent, maxExtent);
+            if (visibleLength > drawLimit)
+                return block;
+        }
+    });
+    var mapRects = mapPath.selectAll('g')
+        .data(mapItems, function (block) {
+            return block.id;
+        })
+        .attr('transform', function (block) {
+            var x = getItemStart(block, minExtent);
+            var y = y_map(block.lane) + .25 * mapItemHeight;
+            return 'translate(' + x + ', ' + y + ')';
+        });
+
+    mapRects.select('.R')
+        .attr('width', function (block) {
+            return getItemWidth(block, minExtent, maxExtent);
+        })
+        .attr('height', mapItemHeight);
+    mapRects.exit().remove();
+
+    var otherBlocks = mapRects.enter().append('g')
+        .attr('class', function (block) {
+            return block.objClass;
+        })
+        .attr('transform', function (block) {
+            var x = getItemStart(block, minExtent);
+            var y = y_map(block.lane) + .25 * mapItemHeight;
+            return 'translate(' + x + ', ' + y + ')';
+        });
+
+    otherBlocks.append('rect')
+        .attr('class', 'R')
+        .attr('width', function (block) {
+            return getItemWidth(block, minExtent, maxExtent);
+        })
+        .attr('height', mapItemHeight);
+
+    var mapSiteItems = mapPaths.filter(function (block) {
+        if (block.objClass == 'site' && block.corr_start < maxExtent && block.corr_end > minExtent) {
+            return block;
+        }
+    });
+
+    var mapSites = sitePath.selectAll('g')
+        .data(mapSiteItems, function (block) {
+            return block.id;
+        })
+        .attr('transform', function (block) {
+            var x = getItemStart(block, minExtent);
+            var y = y_map(block.lane) + .25 * mapItemHeight;
+            return 'translate(' + x + ', ' + y + ')';
+        });
+    mapSites.select('.site');
+    mapSites.exit().remove();
+
+    var otherSites = mapSites.enter().append('g')
+        .attr('transform', function (block) {
+            var x = getItemStart(block, minExtent);
+            var y = y_map(block.lane) + .25 * mapItemHeight;
+            return 'translate(' + x + ', ' + y + ')';
+        });
+
+    otherSites.append('line')
+         .attr('class', 'site')
+         .attr("x1", 0)
+         .attr("y1", y_map(block.lane))
+         .attr("x2", 0)
+         .attr("y2", y_map(block.lane) + mapItemHeight)
+         .attr("stroke-width", 2)
+         .on('click',  function(block) {
+            addSiteTooltip(block);
+         });
+
+}
+
+function addSiteTooltip(site, event) {
+    tooltipText = site ? '<strong> Site ' + site.id + '</strong><span>' +
+    ', position: ' + site.start + ', map ID: ' + site.map_id + '</span>' : '';
+    var eventX = event ? event.pageX : d3.event.pageX - 50;
+    var eventY = event ? event.pageY + 5 : d3.event.pageY + 5;
+    if (tooltipText && featureTip.html() != tooltipText) {
+        featureTip.style('opacity', 1);
+        featureTip.html(tooltipText)
+            .style('left', eventX + 'px')
+            .style('top', eventY + 'px');}
+    else
+        removeTooltip();
+}
+
 function drawFeaturesMain(minExtent, maxExtent) {
     var featuresItems = featurePaths.filter(function (block) {
         if (block.corr_start < maxExtent && block.corr_end > minExtent) {
@@ -494,6 +592,10 @@ function setupXAxis() {
         addMiniXAxis(annotationsMini, x_mini, annotationsMiniHeight, miniTickValue);
         addMainXAxis(annotationsMain, annotationsHeight);
     }
+    if (!mapHidden) {
+        addMiniXAxis(mapMini, x_mini, mapMiniHeight, miniTickValue);
+        addMainXAxis(mapMain, mapHeight);
+    }
     if (drawCoverage) {
         addMiniXAxis(mini_cov, x_mini, coverageHeight, miniTickValue);
         addMainXAxis(main_cov, coverageHeight);
@@ -574,6 +676,7 @@ function mainAxisUpdate() {
     });
     updateTrack(main);
     if (!featuresMainHidden) updateTrack(annotationsMain);
+    if (!mapMainHidden) updateTrack(mapMain);
     if (!coverageMainHidden) updateTrack(main_cov);
 }
 
@@ -672,6 +775,7 @@ function sync(syncBrush, track) {
     brush.extent([minExtent, maxExtent]);
     if (brush_cov && track != 'coverage') brush_cov.extent([minExtent, maxExtent]);
     if (brush_anno && track != 'features') brush_anno.extent([minExtent, maxExtent]);
+    if (brush_map && track != 'map') brush_map.extent([minExtent, maxExtent]);
     display();
 }
 
@@ -718,6 +822,8 @@ function moveBrush() {
         brush_cov.extent([begin, end]);
     if (!featuresHidden)
         brush_anno.extent([begin, end]);
+    if (!mapHidden)
+        brush_map.extent([begin, end]);
 
     display();
 }

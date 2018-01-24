@@ -156,6 +156,7 @@ contig_len_delta = 0.05
 min_similar_contig_size = 10000
 cov_fpath = None
 phys_cov_fpath = None
+maps = None
 
 # other settings (mostly constants). Can't be changed by command-line options
 

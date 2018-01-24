@@ -563,6 +563,11 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='optimal_assembly',
              action='store_true')
          ),
+        (['--map'], dict(
+             dest='maps',
+             type='file',
+             action='extend')
+         ),
         (['--est-insert-size'], dict(
              dest='optimal_assembly_insert_size',
              type='int',

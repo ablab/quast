@@ -12,7 +12,8 @@ from __future__ import with_statement
 
 from quast_libs.icarus_builder import prepare_alignment_data_for_one_ref, save_alignment_data_for_one_ref, save_contig_size_html, \
     get_assemblies_data, get_contigs_data
-from quast_libs.icarus_parser import parse_contigs_fpath, parse_features_data, parse_cov_fpath, parse_genes_data
+from quast_libs.icarus_parser import parse_contigs_fpath, parse_features_data, parse_cov_fpath, parse_genes_data, \
+    parse_map_data
 from quast_libs.icarus_parser import parse_aligner_contig_report
 from quast_libs.icarus_utils import make_output_dir, group_references, format_cov_data, format_long_numbers, get_info_by_chr, \
     get_assemblies, check_misassembled_blocks
@@ -38,7 +39,7 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
        cov_fpath=None, physical_cov_fpath=None, gc_fpath=None,
-       stdout_pattern=None, find_similar=True, features=None, json_output_dir=None, genes_by_labels=None):
+       stdout_pattern=None, find_similar=True, features=None, json_output_dir=None, genes_by_labels=None, map_fpaths=None):
     make_output_dir(output_dirpath)
 
     lists_of_aligned_blocks = []
@@ -52,6 +53,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
     assemblies = None
     chr_names = []
     features_data = None
+    map_data = None
 
     plot_fpath = None
 
@@ -117,6 +119,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
 
     if ref_fpath:
         features_data = parse_features_data(features, cumulative_ref_lengths, chr_names)
+        map_data = parse_map_data(map_fpaths, cumulative_ref_lengths)
     if contigs_fpaths and qconfig.gene_finding:
         parse_genes_data(contigs_by_assemblies, genes_by_labels)
     if reference_chromosomes and lists_of_aligned_blocks:
@@ -127,7 +130,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
         icarus_html_fpath = js_data_gen(assemblies, contigs_fpaths, reference_chromosomes,
                     output_dirpath, structures_by_labels, contig_names_by_refs=contig_names_by_refs, ref_fpath=ref_fpath, stdout_pattern=stdout_pattern,
                     ambiguity_alignments_by_labels=ambiguity_alignments_by_labels, contigs_by_assemblies=contigs_by_assemblies,
-                    features_data=features_data,
+                    features_data=features_data, map_data=map_data,
                     gc_fpath=gc_fpath, cov_fpath=cov_fpath, physical_cov_fpath=physical_cov_fpath, json_output_dir=json_output_dir)
     else:
         icarus_html_fpath = None
@@ -141,7 +144,7 @@ def natural_sort(string_):
 
 def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, structures_by_labels,
                 contigs_by_assemblies, ambiguity_alignments_by_labels=None, contig_names_by_refs=None, ref_fpath=None,
-                stdout_pattern=None, features_data=None, gc_fpath=None, cov_fpath=None, physical_cov_fpath=None, json_output_dir=None):
+                stdout_pattern=None, features_data=None, map_data=None, gc_fpath=None, cov_fpath=None, physical_cov_fpath=None, json_output_dir=None):
     chr_names = []
     if chromosomes_length and assemblies:
         chr_to_aligned_blocks = OrderedDict()
@@ -225,7 +228,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
                                                contig_names_by_refs=contig_names_by_refs, output_dir_path=output_all_files_dir_path)
         ref_name = qutils.name_from_fpath(ref_fpath)
         save_alignment_data_for_one_ref(chr, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, ref_data_str, ms_selectors,
-                                        ref_data=ref_data, features_data=features_data, assemblies_data=assemblies_data,
+                                        ref_data=ref_data, features_data=features_data, map_data=map_data, assemblies_data=assemblies_data,
                                         contigs_structure_str=contigs_structure_str, additional_assemblies_data=additional_assemblies_data)
 
     contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels,

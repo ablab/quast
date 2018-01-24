@@ -21,13 +21,15 @@ function setInterfaceCoordinates() {
     extraOffsetY = chartOffsetY - baseOffsetY;
     if (itemsLayer)
         itemsLayer.style('top', itemSvgOffsetY + extraOffsetY);
-    annotationsMainOffsetY = mainHeight + mainScale + spaceAfterMain;
+    mapMainOffsetY = mainHeight + mainScale + spaceAfterMain;
+    annotationsMainOffsetY = mapMainOffsetY + mapMainLanesHeight + (mapHidden ? 0 : spaceAfterTrack);
     covMainOffsetY = drawCoverage ? (annotationsMainOffsetY +
                             (featuresHidden ? 0 : spaceAfterTrack)) : annotationsMainOffsetY;
     if (!featuresMainHidden)
         covMainOffsetY += annotationsHeight;
     miniOffsetY = covMainOffsetY + spaceAfterTrack;
-    annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
+    mapMiniOffsetY = miniOffsetY + miniHeight + (mapHidden ? 0 : spaceAfterTrack);
+    annotationsMiniOffsetY = mapMiniOffsetY + mapMiniHeight + (featuresHidden ? 0 : spaceAfterTrack);
     covMiniOffsetY = annotationsMiniOffsetY + annotationsMiniHeight + spaceAfterTrack;
 
     var covBtnOffsetY = 25;
@@ -809,7 +811,7 @@ function expandLane(laneId, isCollapsed) {
     curChartHeight += newOffset;
     chart.attr('height', curChartHeight);
 
-    var changedTracks = [annotationsMain, main_cov, mini, annotationsMini, mini_cov];
+    var changedTracks = [mapMain, annotationsMain, main_cov, mini, mapMini, annotationsMini, mini_cov];
     var changedBtns = [hideBtnAnnotationsMain, hideBtnCoverageMain, hideBtnPhysicalCoverageMain, hideBtnGCMain, covMainControls,
         hideBtnAnnotationsMini, hideBtnCoverageMini, hideBtnPhysicalCoverageMini, hideBtnGCMini, covMiniControls];
     for (var track_n = 0; track_n < changedTracks.length; track_n++)

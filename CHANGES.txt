@@ -1,12 +1,20 @@
 -- Version history --
 
+4.6.2
+      1. Fixed relatively rare bug of BSS when using large --min-alignment.
+
+      2. Improved check of previously generated results before reusing them.
+ 
+      3. GeneMark licence files are updated.
+ 
+
 4.6.1 
       1. Fixes in pip installation:
        - ignoring bdist_wheel and running regular installation instead;
        - no installation of aux files (LICENSE, Manual, etc);
        - proper error message about missing test_data dir (if "--test" is used).
 
-      2. Fixed conda installation (no GeneMark installation if there is no home dir)
+      2. Fixed conda installation (no GeneMark installation if there is no home dir).
 
 
 4.6.0 

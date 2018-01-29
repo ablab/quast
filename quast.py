@@ -242,7 +242,7 @@ def main(args):
                 report_for_icarus_fpath_pattern = None
                 stdout_pattern = None
             draw_alignment_plots = qconfig.create_icarus_html
-            draw_circos_plot = qconfig.draw_plots and ref_fpath and len(aligned_contigs_fpaths) and not qconfig.space_efficient
+            draw_circos_plot = qconfig.draw_circos and ref_fpath and len(aligned_contigs_fpaths)
             number_of_steps = sum([int(bool(value)) for value in [draw_alignment_plots, draw_circos_plot, all_pdf_fpath]])
             if draw_alignment_plots:
                 ########################################################################

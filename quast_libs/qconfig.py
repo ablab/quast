@@ -52,6 +52,7 @@ estimated_reference_size = None
 strict_NA = False
 scaffolds = False
 draw_plots = True
+draw_circos = False
 html_report = True
 save_json = False
 metagenemark = False
@@ -376,6 +377,7 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
                      (LARGE_MIN_CONTIG, LARGE_MIN_ALIGNMENT, LARGE_EXTENSIVE_MIS_THRESHOLD))
         stream.write("    --kmc                             Use KMC for computing k-mer-based metrics (recommended for large genomes)\n"
                      "                                      This may significantly increase memory and time consumption on large genomes\n")
+        stream.write("    --circos                          Draw Circos plot\n")
         if meta:
             stream.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")
         else:

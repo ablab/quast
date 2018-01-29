@@ -584,6 +584,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='use_input_ref_order',
              action='store_true')
          ),
+        (['--circos'], dict(
+             dest='draw_circos',
+             action='store_true')
+         ),
         (['--fast'], dict(
              dest='fast',
              action='callback',

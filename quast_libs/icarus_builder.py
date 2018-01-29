@@ -147,22 +147,23 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref
                             prev_alignments = [alignment]
                         prev_end = max(prev_end, alignment.end)
 
+                contig_more_unaligned = False
                 for alignment in alignments:
                     assemblies_len[assembly] += abs(alignment.end_in_contig - alignment.start_in_contig) + 1
                     assemblies_contigs[assembly].add(alignment.name)
                     contig_structure = structures_by_labels[alignment.label]
-                    contig_more_unaligned = False
                     if alignment.misassembled:
                         num_misassemblies += 1
                         misassemblies, misassembled_ends = get_misassembly_for_alignment(contig_structure[alignment.name], alignment)
-                        for misassembly in misassemblies:
-                            if misassembly:
-                                ms_types[assembly][misassembly] += 1
-                        alignment.misassemblies = ';'.join(misassemblies)
                         if 'unknown' in alignment.misassemblies:
                             alignment.misassemblies = 'unknown'
                             misassembled_ends = ''
                             contig_more_unaligned = True
+                        else:
+                            for misassembly in misassemblies:
+                                if misassembly:
+                                    ms_types[assembly][misassembly] += 1
+                        alignment.misassemblies = ';'.join(misassemblies)
                     else:
                         if contigs[alignment.name].contig_type == 'correct_unaligned':
                             contig_more_unaligned = True
@@ -209,6 +210,9 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref
         assembly_len = assemblies_len[assembly]
         assembly_contigs = len(assemblies_contigs[assembly])
         local_misassemblies = ms_types[assembly]['local'] // 2
+        for ms_type, misassemblies_cnt in ms_types[assembly].items():
+            if misassemblies_cnt % 2 == 1 and ms_type != 'interspecies translocation':
+                ms_types[assembly][ms_type] += 1
         ext_misassemblies = (sum(ms_types[assembly].values()) - ms_types[assembly]['interspecies translocation']) // 2 - \
                             local_misassemblies + ms_types[assembly]['interspecies translocation']
         additional_assemblies_data += 'assemblies_len["' + assembly + '"] = ' + str(assembly_len) + ';\n'

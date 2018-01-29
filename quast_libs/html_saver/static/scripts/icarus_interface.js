@@ -95,6 +95,10 @@ function setupInterface() {
             showMisassemblies();
         });
     }
+    if (checkboxes.length > 1) {
+        checkboxes[checkboxes.length - 1].checked = false;
+        showMisassemblies();
+    }
     window.onresize = function(){ location.reload(); };
     display();
 }

@@ -51,7 +51,7 @@ class PutativeBestSet(object):
 class PSA(object):  # PSA stands for Possibly Solid Alignment (solid alignments are definitely present in the best set)
     overlap_penalty_coeff = 0
     max_single_side_penalty = 0
-    min_unique_len = qconfig.min_alignment
+    min_unique_len = 0
 
     def __init__(self, align, ctg_unique_end=None, num_sides=2):
         self.align = align
@@ -108,6 +108,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
         # they should have unique (not covered by other aligns) region of length > 2 * extensive_penalty
         PSA.max_single_side_penalty = penalties['extensive']
         PSA.overlap_penalty_coeff = penalties['overlap_multiplier']
+        PSA.min_unique_len = qconfig.min_alignment
 
         cur_PSA = PSA(sorted_aligns[-1], num_sides=1)
         ctg_unique_end = cur_PSA.start

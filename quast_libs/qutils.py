@@ -6,6 +6,7 @@
 ############################################################################
 
 from __future__ import with_statement
+from __future__ import division
 import glob
 import hashlib
 import shutil
@@ -646,9 +647,9 @@ def get_free_memory():
             for line in mem:
                 line = line.split()
                 if str(line[0]) == 'MemTotal:':
-                    total_mem = int(line[1]) / 1024 / 1024
+                    total_mem = int(line[1]) // 1024 // 1024
                 if str(line[0]) == 'MemFree:':
-                    free_mem = int(line[1]) / 1024 / 1024
+                    free_mem = int(line[1]) // 1024 // 1024
     return min(total_mem // 4, free_mem // 2)
 
 

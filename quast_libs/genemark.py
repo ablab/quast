@@ -25,14 +25,6 @@ LICENSE_LIMITATIONS_MODE = False
 OUTPUT_FASTA = False  # whether output only .gff or with corresponding .fasta files
 
 
-def gc_content(sequence):
-    GC_count = sequence.count('G') + sequence.count('C')
-    ACGT_length = len(sequence) - sequence.count('N')
-    if not ACGT_length:
-        return 0
-    return 100 * GC_count / ACGT_length
-
-
 def gmhmm_p(tool_exec, fasta_fpath, heu_fpath, out_fpath, err_file, index):
     """ Run GeneMark.hmm with this heuristic model (heu_dirpath)
         prompt> gmhmmp -m heu_11_45.mod sequence

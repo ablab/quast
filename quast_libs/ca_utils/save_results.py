@@ -114,7 +114,7 @@ def save_result(result, report, fname, ref_fpath, genome_size):
         report.add_field(reporting.Fields.MIS_LONG_INDELS, len([i for i in indels_list if i > qconfig.SHORT_INDEL_THRESHOLD]))
 
     if total_aligned_bases:
-        genome_fraction = float(total_aligned_bases) * 100 / float(genome_size)
+        genome_fraction = total_aligned_bases * 100.0 / genome_size
         duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) +
                              misassembly_internal_overlap +
                              ambiguous_contigs_extra_bases -

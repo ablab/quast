@@ -6,7 +6,7 @@
 ############################################################################
 
 from __future__ import with_statement
-import copy
+from __future__ import division
 
 from quast_libs import qconfig
 from quast_libs.ca_utils.misc import is_same_reference, get_ref_by_chromosome, parse_cs_tag

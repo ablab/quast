@@ -476,9 +476,9 @@ function drawMapMain(minExtent, maxExtent) {
              return block.objClass;
          })
          .attr("x1", 0)
-         .attr("y1", y_map(block.lane))
+         .attr("y1", 0)
          .attr("x2", 0)
-         .attr("y2", y_map(block.lane) + mapItemHeight)
+         .attr("y2", mapItemHeight)
          .attr("stroke-width", 2)
          .on('click',  function(block) {
             addSiteTooltip(block);

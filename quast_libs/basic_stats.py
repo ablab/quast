@@ -5,6 +5,8 @@
 # See file LICENSE for details.
 ############################################################################
 
+from __future__ import with_statement
+from __future__ import division
 import os
 import re
 from os.path import join
@@ -12,6 +14,7 @@ from os.path import join
 from quast_libs import fastaparser, qconfig, qutils, reporting, plotter
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+
 
 def GC_content(contigs_fpath, skip=False):
     """

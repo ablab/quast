@@ -46,7 +46,7 @@ class Alignment:
         return self.name + "\n" + str(self.start) + "-" + str(self.end)
 
     def center(self):
-        return (self.end + self.start) / 2
+        return (self.end + self.start) // 2
 
     def compare_inexact(self, alignment):
         if alignment.ref_name != self.ref_name:

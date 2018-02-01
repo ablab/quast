@@ -5,6 +5,7 @@
 # See file LICENSE for details.
 ############################################################################
 from __future__ import with_statement
+from __future__ import division
 import os
 from collections import defaultdict
 
@@ -239,8 +240,8 @@ def calculate_ave_read_support(combined_output_dirpath, assemblies):
                 ref_name, contig_len, contig_cov = line.strip().split('\t')
                 aligned_contigs_by_ref.setdefault(ref_name, []).append((float(contig_len), float(contig_cov)))
         for ref_name, contigs in aligned_contigs_by_ref.items():
-            ref_cov = sum(contig_cov * aligned_len for (aligned_len, contig_cov) in contigs)
-            ref_cov /= sum(aligned_len for (aligned_len, contig_cov) in contigs)
+            ref_cov = sum(contig_cov * aligned_len for (aligned_len, contig_cov) in contigs) / \
+                      sum(aligned_len for (aligned_len, contig_cov) in contigs)
             corr_assembly_label = qutils.label_from_fpath_for_fname(assembly.fpath)
             ref_contigs_fpath = os.path.join(
                         os.path.dirname(assembly.fpath), corr_assembly_label + '_to_' + ref_name + '.fasta')

@@ -584,10 +584,6 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='use_input_ref_order',
              action='store_true')
          ),
-        (['--svg'], dict(
-             dest='draw_svg',
-             action='store_true')
-         ),
         (['--fast'], dict(
              dest='fast',
              action='callback',

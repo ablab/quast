@@ -153,7 +153,6 @@ def main(args):
 
     aligned_contigs_fpaths = []
     aligned_lengths_lists = []
-    contig_alignment_plot_fpath = None
     icarus_html_fpath = None
     circos_png_fpath = None
     if ref_fpath:
@@ -242,7 +241,7 @@ def main(args):
             else:
                 report_for_icarus_fpath_pattern = None
                 stdout_pattern = None
-            draw_alignment_plots = qconfig.draw_svg or qconfig.create_icarus_html
+            draw_alignment_plots = qconfig.create_icarus_html
             draw_circos_plot = qconfig.draw_plots and ref_fpath and len(aligned_contigs_fpaths) and not qconfig.space_efficient
             number_of_steps = sum([int(bool(value)) for value in [draw_alignment_plots, draw_circos_plot, all_pdf_fpath]])
             if draw_alignment_plots:
@@ -251,14 +250,14 @@ def main(args):
                 ########################################################################
                 logger.main_info('  1 of %d: Creating Icarus viewers...' % number_of_steps)
                 from quast_libs import icarus
-                icarus_html_fpath, contig_alignment_plot_fpath = icarus.do(
+                icarus_html_fpath = icarus.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern, output_dirpath, ref_fpath,
                     stdout_pattern=stdout_pattern, features=features_containers,
                     cov_fpath=cov_fpath, physical_cov_fpath=physical_cov_fpath, gc_fpath=icarus_gc_fpath,
                     json_output_dir=qconfig.json_output_dirpath, genes_by_labels=genes_by_labels)
 
             if draw_circos_plot:
-                logger.main_info('  %d of %d: Creating Circos plots...' % (2 if draw_alignment_plots else 1, number_of_steps))
+                logger.main_info('  %d of %d: Creating Circos plot...' % (2 if draw_alignment_plots else 1, number_of_steps))
                 from quast_libs import circos
                 circos_png_fpath, circos_legend_fpath = circos.do(ref_fpath, contigs_fpaths, report_for_icarus_fpath_pattern, circos_gc_fpath,
                                                                   features_containers, cov_fpath, os.path.join(output_dirpath, 'circos'), logger)
@@ -295,9 +294,6 @@ def main(args):
 
     if icarus_html_fpath:
         logger.main_info('  Icarus (contig browser) is saved to %s' % icarus_html_fpath)
-
-    if qconfig.draw_svg and contig_alignment_plot_fpath:
-        logger.main_info('  Contig alignment plot is saved to %s' % contig_alignment_plot_fpath)
 
     cleanup(corrected_dirpath)
     return logger.finish_up(check_test=qconfig.test)

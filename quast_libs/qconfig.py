@@ -133,7 +133,6 @@ used_ls = None
 busco_dirname = 'busco_stats'
 
 # for Icarus
-draw_svg = False
 create_icarus_html = True
 icarus_css_name = 'icarus.css'
 icarus_script_name = 'build_icarus.js'
@@ -473,7 +472,6 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
             stream.write("--cov  <filename>                File with read coverage (for Icarus alignment viewer)\n")
             stream.write("--phys-cov  <filename>           File with physical coverage (for Icarus alignment viewer)\n")
             stream.write("--no-icarus                      Do not create Icarus files\n")
-            stream.write("--svg                            Draw contig alignment plot (in SVG format)\n")
 
         stream.write("\n")
         stream.write("Other:\n")

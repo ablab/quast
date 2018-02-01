@@ -28,8 +28,6 @@ from collections import defaultdict
 from quast_libs import qconfig, qutils, fastaparser, genome_analyzer
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 import quast_libs.html_saver.html_saver as html_saver
-import quast_libs.html_saver.json_saver as json_saver
-from quast_libs.svg_alignment_plotter import draw_alignment_plot
 
 from quast_libs import reporting
 from quast_libs.log import get_logger
@@ -53,8 +51,6 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
     chr_names = []
     features_data = None
 
-    plot_fpath = None
-
     if ref_fpath:
         for name, seq in fastaparser.read_fasta(ref_fpath):
             chr_name = name.split()[0]
@@ -63,8 +59,6 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
             total_genome_size += chr_len
             reference_chromosomes[chr_name] = chr_len
         virtual_genome_shift = 100
-        sorted_ref_names = sorted(reference_chromosomes, key=reference_chromosomes.get, reverse=True)
-        sorted_ref_lengths = sorted(reference_chromosomes.values(), reverse=True)
         cumulative_ref_lengths = [0]
         if ref_labels_by_chromosomes:
             contig_names_by_refs = ref_labels_by_chromosomes
@@ -121,8 +115,6 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
         parse_genes_data(contigs_by_assemblies, genes_by_labels)
     if reference_chromosomes and lists_of_aligned_blocks:
         assemblies = get_assemblies(contigs_fpaths, lists_of_aligned_blocks, virtual_genome_size, find_similar)
-        if qconfig.draw_svg:
-            plot_fpath = draw_alignment_plot(assemblies, virtual_genome_size, output_dirpath, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift)
     if (assemblies or contigs_by_assemblies) and qconfig.create_icarus_html:
         icarus_html_fpath = js_data_gen(assemblies, contigs_fpaths, reference_chromosomes,
                     output_dirpath, structures_by_labels, contig_names_by_refs=contig_names_by_refs, ref_fpath=ref_fpath, stdout_pattern=stdout_pattern,
@@ -132,7 +124,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
     else:
         icarus_html_fpath = None
 
-    return icarus_html_fpath, plot_fpath
+    return icarus_html_fpath
 
 
 def natural_sort(string_):

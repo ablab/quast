@@ -155,7 +155,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref
                     if alignment.misassembled:
                         num_misassemblies += 1
                         misassemblies, misassembled_ends = get_misassembly_for_alignment(contig_structure[alignment.name], alignment)
-                        if 'unknown' in alignment.misassemblies:
+                        if 'unknown' in misassemblies:
                             alignment.misassemblies = 'unknown'
                             misassembled_ends = ''
                             contig_more_unaligned = True

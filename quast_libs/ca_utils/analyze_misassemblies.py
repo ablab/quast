@@ -557,7 +557,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
                 misassemblies_by_ref[prev_ref].append(Misassembly.FRAGMENTED)
                 ca_output.icarus_out_f.write('fake: not a misassembly' + reason_msg + '\n')
             elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and \
-                            count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)[1] <= qconfig.MAX_INDEL_LENGTH:
+                            count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)[1] <= max(qconfig.min_alignment, qconfig.MAX_INDEL_LENGTH):
                 ns_number, not_ns_number = count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)
 
                 if inconsistency == 0:

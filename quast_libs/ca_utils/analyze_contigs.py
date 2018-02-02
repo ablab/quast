@@ -58,13 +58,14 @@ def check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misass
                     '(will be reported as Possible Misassemblies).\n' % total_misassemblies_count)
 
 
-def check_partially_unaligned(sorted_aligns, ctg_len):
+def check_partially_unaligned(seq, sorted_aligns, ctg_len):
     prev_end = 0
     for align in sorted_aligns:
-        if align.start() - prev_end - 1 >= qconfig.unaligned_part_size:
+        unaligned_len = align.start() - prev_end - 1 - seq[prev_end: align.start()].count('N')
+        if unaligned_len >= qconfig.unaligned_part_size:
             return True
         prev_end = align.end()
-    if ctg_len - prev_end - 1 >= qconfig.unaligned_part_size:
+    if ctg_len - prev_end - 1 - seq[prev_end:].count('N') >= qconfig.unaligned_part_size:
         return True
     return False
 
@@ -287,18 +288,19 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
 
                     begin, end = the_only_align.start(), the_only_align.end()
                     unaligned_bases = (begin - 1) + (ctg_len - end)
-                    number_ns = seq[:begin - 1].count('N') + seq[end:].count('N')
+                    number_unaligned_ns = seq[:begin - 1].count('N') + seq[end:].count('N')
                     aligned_bases_in_contig = ctg_len - unaligned_bases
-                    is_partially_unaligned = check_partially_unaligned(real_aligns, ctg_len)
+                    acgt_ctg_len = ctg_len - seq.count('N')
+                    is_partially_unaligned = check_partially_unaligned(seq, real_aligns, ctg_len)
                     if is_partially_unaligned:
                         partially_unaligned += 1
-                        partially_unaligned_bases += unaligned_bases - number_ns
-                        if aligned_bases_in_contig < umt * ctg_len:
+                        partially_unaligned_bases += unaligned_bases - number_unaligned_ns
+                        if aligned_bases_in_contig < umt * acgt_ctg_len:
                             contig_type = 'correct_unaligned'
                         ca_output.stdout_f.write('\t\tThis contig is partially unaligned. '
-                                                 '(Aligned %d out of %d bases (%.2f%%))\n'
-                                                 % (aligned_bases_in_contig, ctg_len,
-                                                    100.0 * aligned_bases_in_contig / ctg_len))
+                                                 '(Aligned %d out of %d non-N bases (%.2f%%))\n'
+                                                 % (aligned_bases_in_contig, acgt_ctg_len,
+                                                    100.0 * aligned_bases_in_contig / acgt_ctg_len))
                         save_unaligned_info(real_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
                     ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(the_only_align))
                     ca_output.icarus_out_f.write(the_only_align.icarus_report_str() + '\n')
@@ -318,27 +320,30 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     #There is more than one alignment of this contig to the reference
                     ca_output.stdout_f.write('\t\tThis contig is misassembled.\n')
                     unaligned_bases = the_best_set.uncovered
-                    number_ns, prev_pos = 0, 0
+                    number_unaligned_ns, prev_pos = 0, 0
                     for align in sorted_aligns:
-                        number_ns += seq[prev_pos: align.start() - 1].count('N')
+                        number_unaligned_ns += seq[prev_pos: align.start() - 1].count('N')
                         prev_pos = align.end()
-                    number_ns += seq[prev_pos:].count('N')
+                    number_unaligned_ns += seq[prev_pos:].count('N')
 
                     aligned_bases_in_contig = ctg_len - unaligned_bases
-                    is_partially_unaligned = check_partially_unaligned(sorted_aligns, ctg_len)
+                    number_ns = seq.count('N')
+                    acgt_ctg_len = ctg_len - number_ns
+                    is_partially_unaligned = check_partially_unaligned(seq, sorted_aligns, ctg_len)
                     if is_partially_unaligned:
                         partially_unaligned += 1
-                        partially_unaligned_bases += unaligned_bases - number_ns
-                        if aligned_bases_in_contig >= umt * ctg_len:
+                        partially_unaligned_bases += unaligned_bases - number_unaligned_ns
+                        if aligned_bases_in_contig >= umt * acgt_ctg_len:
                             ca_output.stdout_f.write('\t\tThis contig is partially unaligned. '
-                                                     '(Aligned %d out of %d bases (%.2f%%))\n'
-                                                     % (aligned_bases_in_contig, ctg_len,
-                                                        100.0 * aligned_bases_in_contig / ctg_len))
+                                                     '(Aligned %d out of %d non-N bases (%.2f%%))\n'
+                                                     % (aligned_bases_in_contig, acgt_ctg_len,
+                                                        100.0 * aligned_bases_in_contig / acgt_ctg_len))
                         save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
 
-                    if aligned_bases_in_contig < umt * ctg_len:
+                    if aligned_bases_in_contig < umt * acgt_ctg_len:
                         ca_output.stdout_f.write('\t\t\tWarning! This contig is more unaligned than misassembled. ' + \
-                            'Contig length is %d and total length of all aligns is %d\n' % (ctg_len, aligned_bases_in_contig))
+                                                 'Contig length is %d (number of Ns: %d) and total length of all aligns is %d\n' %
+                                                 (ctg_len, number_ns, aligned_bases_in_contig))
                         contigs_aligned_lengths[-1] = sum(align.len2 for align in sorted_aligns)
                         for align in sorted_aligns:
                             ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(align))

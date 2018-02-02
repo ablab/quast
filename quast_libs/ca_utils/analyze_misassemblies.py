@@ -424,9 +424,7 @@ def count_ns_and_not_ns_between_aligns(contig_seq, align1, align2):
 
 def is_gap_filled_ns(contig_seq, align1, align2):
     gap_in_contig = contig_seq[align1.end(): align2.start() - 1]
-    if len(gap_in_contig) < qconfig.Ns_break_threshold:
-        return False
-    return gap_in_contig.count('N') / len(gap_in_contig) >= qconfig.gap_filled_ns_threshold
+    return 'N' * qconfig.Ns_break_threshold in gap_in_contig
 
 
 def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, region_misassemblies, ref_lens, ref_aligns,

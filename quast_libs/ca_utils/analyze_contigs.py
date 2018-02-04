@@ -23,7 +23,7 @@ def process_unaligned_part(seq, align, misassemblies_by_ref, refs_with_transloca
     unaligned_len = len(unaligned_part)
     count_ns = unaligned_part.count('N')
     possible_misassemblies = 0
-    if count_ns / float(unaligned_len) < qconfig.gap_filled_ns_threshold and unaligned_len - count_ns >= qconfig.unaligned_part_size:
+    if unaligned_len - count_ns >= qconfig.unaligned_part_size:
         possible_misassemblies = 1
         add_potential_misassembly(align.ref, misassemblies_by_ref, refs_with_translocations)
         if second_align:

@@ -177,8 +177,6 @@ BSS_critical_number_of_aligns = 100
 BSS_EXTENSIVE_PENALTY = 250
 BSS_LOCAL_PENALTY = 25
 
-gap_filled_ns_threshold = 0.95
-
 # for parallelization
 DEFAULT_MAX_THREADS = 4  # this value is used if QUAST fails to determine number of CPUs
 assemblies_num = 1

@@ -8,7 +8,7 @@
 from __future__ import with_statement
 
 import os
-from os.path import isfile, basename
+from os.path import isfile, join, basename, dirname
 import datetime
 import shutil
 import sys
@@ -19,7 +19,7 @@ from quast_libs.ca_utils.misc import bin_fpath, is_emem_aligner, compile_aligner
     create_nucmer_output_dir, clean_tmp_files, get_installed_emem, reset_aligner_selection, draw_mummer_plot
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python2, md5
+from quast_libs.qutils import is_python2, md5, safe_create
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 

@@ -1,10 +1,12 @@
 -- Version history --
 
 4.6.3
-      1. Fixed crash of BSS in MetaQUAST mode (introduced in v4.6.2).
+      1. Fixed crash of quast.py --test (introduced in v4.6.2).
 
-      2. Proper float/integer division in both Python2 and Python3 (
-         affected the number of scaffold gap size misassemblies in Python2).
+      2. Fixed crash of BSS in MetaQUAST mode (introduced in v4.6.2).
+
+      3. Proper float/integer division in both Python2 and Python3 (may affect 
+         the number of scaffold gap size misassemblies in Python2).
 
 
 4.6.2

@@ -421,7 +421,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                             if not seqname:
                                 continue
                             species_name = get_species_name(seqname)
-                            if species_name and 'uncultured' not in seqname:
+                            if species_name and 'uncultured' not in seqname and 'gut_metagenome' not in species_name:
                                 if refs_for_query == 0:
                                     if species_name not in assembly_species:
                                         assembly_scores.append((seqname, query_id, score))

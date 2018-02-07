@@ -352,13 +352,15 @@ def check_misassembled_blocks(aligned_blocks, misassembled_id_to_structure, filt
 def parse_misassembly_info(misassembly):
     ms_description = misassembly
     ms_type = 'real'
-    if not is_misassembly_real(ms_description):
+    if qconfig.large_genome and ('local' in ms_description or 'fake' in ms_description or 'indel' in ms_description):
+        ms_type = 'skip'
+    elif not is_misassembly_real(ms_description):
         if 'unknown' in ms_description:
             return 'unknown', 'unknown'
         if 'fake' in ms_description:
             ms_type = 'fake'
         elif 'indel' in ms_description:
-            ms_type = 'indel'
+            ms_type = 'skip'
         ms_description = ms_description.split(':')[1]
     return ms_description, ms_type
 
@@ -368,7 +370,7 @@ def get_misassembly_for_alignment(contig_structure, alignment):
     misassemblies = []
     for num_alignment, el in enumerate(contig_structure):
         if isinstance(el, Alignment):
-            if el.start == alignment.start and el.end == alignment.end:
+            if el.start == alignment.start and el.end == alignment.end and el.start_in_contig == alignment.start_in_contig:
                 break
     is_misassembly = False
     if type(contig_structure[num_alignment - 1]) == str:

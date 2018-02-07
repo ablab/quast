@@ -502,8 +502,9 @@ THE SOFTWARE.
 
     function getBreakpointLines() {
         var lines = [];
-        var contigStart = true;
-        var prev_pos = 0;
+        var prevPos = 0;
+        var prevBreakpointPos = 0;
+        var prevLineType = null;
         var fullsizeBlock = false;
         for (var i = 0; i < items.length; i++) {
         	block = items[i];
@@ -513,22 +514,25 @@ THE SOFTWARE.
                     continue;
                 }
                 fullsizeBlock = false;
-            	y = y_main(block.lane) + .25 * lanesInterval + 10;
-            	if (!contigStart) {
-                    var linePos = block.start_in_contig < block.end_in_contig ? block.corr_start : block.corr_end;
-            		if (Math.abs(prev_pos - linePos) > 2) {
-                        if (block.mstype != "indel")
-                            lines.push({pos: linePos, y: y, type: block.mstype});
-            		}
-            	}
-            	else contigStart = false;
-            	prev_pos = block.corr_end;
-                if (block.mstype != "indel")
-            	    lines.push({pos: block.corr_end, y: y, type: block.mstype});
+                y = y_main(block.lane) + .25 * lanesInterval + 10;
+                if (prevBreakpointPos && Math.abs(prevBreakpointPos - block.corr_start) > 2) {
+                    lines.push({pos: block.corr_start, y: y, type: prevLineType});
+                }
+                var linePos = block.corr_end;
+                if (Math.abs(prevPos - linePos) > 2) {
+                    if (block.mstype != "skip" && block.contig_type != "correct") {
+                        prevBreakpointPos = linePos;
+                        prevLineType = block.mstype;
+                        lines.push({pos: linePos, y: y, type: block.mstype});
+                    }
+                    else prevBreakpointPos = null;
+                }
+                else prevBreakpointPos = null;
+                prevPos = linePos;
             }
             else {
-            	contigStart = true;
-                if (!fullsizeBlock) lines.pop();
+                if (!fullsizeBlock && prevBreakpointPos) lines.pop();
+                prevBreakpointPos = null;
             }
         }
         return lines;

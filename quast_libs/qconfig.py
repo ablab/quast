@@ -10,6 +10,7 @@ import os
 import platform
 import sys
 from distutils.version import LooseVersion
+from os.path import basename
 
 QUAST_HOME = os.path.abspath(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 PACKAGE_NAME = 'quast_libs'
@@ -326,21 +327,45 @@ def quast_version():
     #     return version
 
 
-def print_version(meta=False):
+def get_mode():
+    mode = None
+    if basename(sys.argv[0]).startswith("metaquast"):
+        mode = 'meta'
+    elif basename(sys.argv[0]).startswith("quast-lg"):
+        mode = 'large'
+    return mode
+
+
+def print_version(mode=None):
+    if mode is None:
+        mode = get_mode()
     full_version = 'QUAST v' + quast_version()
-    if meta:
+    if mode == 'meta':
         full_version += ' (MetaQUAST mode)'
+    elif mode == 'large':
+        full_version += ' (QUAST-LG mode)'
     sys.stdout.write(full_version + '\n')
     sys.stdout.flush()
 
 
-def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
+def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
+    if mode is None:
+        mode = get_mode()
     stream.write("")
-    if meta:
-        stream.write('MetaQUAST: QUality ASsessment Tool for Metagenome Assemblies\n')
+    meta = True if mode == 'meta' else False
+    if mode == 'meta':
+        stream.write('MetaQUAST: Quality Assessment Tool for Metagenome Assemblies\n')
+    elif mode == 'large':
+        stream.write('QUAST-LG: Quality Assessment Tool for Large Genome Assemblies\n')
     else:
-        stream.write('QUAST: QUality ASsessment Tool for Genome Assemblies\n')
+        stream.write('QUAST: Quality Assessment Tool for Genome Assemblies\n')
     stream.write("Version: " + quast_version() + '\n')
+
+    # defaults which depend on options (--large or not)
+    if mode == 'large':
+        m_default, i_default, x_default = LARGE_MIN_CONTIG, LARGE_MIN_ALIGNMENT, LARGE_EXTENSIVE_MIS_THRESHOLD
+    else:
+        m_default, i_default, x_default = DEFAULT_MIN_CONTIG, DEFAULT_MIN_ALIGNMENT, DEFAULT_EXT_MIS_SIZE
 
     stream.write("\n")
     stream.write('Usage: python ' + sys.argv[0] + ' [options] <files_with_contigs>\n')
@@ -357,7 +382,7 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("-r                <filename>      Reference genome file\n")
         stream.write("-g  --features [type:]<filename>  File with genomic feature coordinates in the reference (GFF, BED, NCBI or TXT)\n")
         stream.write("                                  Optional 'type' can be specified for extracting only a specific feature type from GFF\n")
-    stream.write("-m  --min-contig  <int>           Lower threshold for contig length [default: %s]\n" % min_contig)
+    stream.write("-m  --min-contig  <int>           Lower threshold for contig length [default: %s]\n" % m_default)
     stream.write("-t  --threads     <int>           Maximum number of threads [default: 25% of CPUs]\n")
 
     stream.write("\n")
@@ -368,16 +393,19 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison\n")
         stream.write("-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes\n")
         stream.write("-L                                    Take assembly names from their parent directory names\n")
-        stream.write("-e  --eukaryote                       Genome is eukaryotic\n")
-        stream.write("    --fungus                          Genome is fungal\n")
-        stream.write("    --large                           Use optimal parameters for evaluation of large genomes\n")
-        stream.write("                                      In particular, imposes '-m %d -i %d -x %d' (can be overridden manually)\n" %
-                     (LARGE_MIN_CONTIG, LARGE_MIN_ALIGNMENT, LARGE_EXTENSIVE_MIS_THRESHOLD))
+        if mode != 'large':
+            stream.write("-e  --eukaryote                       Genome is eukaryotic\n")
+            stream.write("    --fungus                          Genome is fungal\n")
+            stream.write("    --large                           Use optimal parameters for evaluation of large genomes\n")
+            stream.write("                                      In particular, imposes '-e -m %d -i %d -x %d' (can be overridden manually)\n" %
+                         (LARGE_MIN_CONTIG, LARGE_MIN_ALIGNMENT, LARGE_EXTENSIVE_MIS_THRESHOLD))
         stream.write("    --kmc                             Use KMC for computing k-mer-based metrics (recommended for large genomes)\n"
                      "                                      This may significantly increase memory and time consumption on large genomes\n")
         stream.write("    --circos                          Draw Circos plot\n")
-        if meta:
+        if mode == 'meta':
             stream.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")
+        elif mode == 'large':
+            stream.write("-f  --gene-finding                    Predict genes using GeneMark-ES\n")
         else:
             stream.write("-f  --gene-finding                    Predict genes using GeneMarkS (prokaryotes, default) or GeneMark-ES (eukaryotes, use --eukaryote)\n")
         stream.write("    --glimmer                         Use GlimmerHMM for gene prediction (instead of the default finder, see above)\n")
@@ -398,7 +426,7 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]\n" % contig_thresholds)
         stream.write("-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style.\n")
         stream.write("                                      By default, QUAST filters Minimap\'s alignments to keep only best ones\n")
-        stream.write("-i  --min-alignment <int>             The minimum alignment length [default: %s]\n" % min_alignment)
+        stream.write("-i  --min-alignment <int>             The minimum alignment length [default: %s]\n" % i_default)
         stream.write("    --min-identity <float>            The minimum alignment identity (80.0, 100.0) [default: %.1f]\n" % min_IDY)
         stream.write("-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments of a contig when all of them\n")
         stream.write("                                      are almost equally good (see --ambiguity-score) [default: %s]\n" % ambiguity_usage)
@@ -411,7 +439,7 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("    --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx\n")
         stream.write("                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)\n")
         stream.write("-x  --extensive-mis-size  <int>       Lower threshold for extensive misassembly size. All relocations with inconsistency\n")
-        stream.write("                                      less than extensive-mis-size are counted as local misassemblies [default: %s]\n" % extensive_misassembly_threshold)
+        stream.write("                                      less than extensive-mis-size are counted as local misassemblies [default: %s]\n" % x_default)
         stream.write("    --scaffold-gap-max-size  <int>    Max allowed scaffold gap length difference. All relocations with inconsistency\n")
         stream.write("                                      less than scaffold-gap-size are counted as scaffold gap misassemblies [default: %s]\n" % scaffolds_gap_threshold)
         stream.write("    --unaligned-part-size  <int>      Lower threshold for detecting partially unaligned contigs. Such contig should have\n")

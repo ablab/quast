@@ -15,6 +15,7 @@ import sys
 
 from quast_libs import qconfig, qutils
 from quast_libs.qutils import assert_file_exists, set_up_output_dir, check_dirpath, is_non_empty_file
+from qconfig import get_mode
 
 test_data_dir_basename = 'test_data'
 test_data_dir = join(qconfig.QUAST_HOME, test_data_dir_basename)
@@ -202,9 +203,9 @@ def set_large_genome_parameters():
     qconfig.show_snps = False
 
 
-def wrong_test_option(logger, msg, is_metaquast):
+def wrong_test_option(logger, msg):
     logger.error(msg)
-    qconfig.usage(meta=is_metaquast, stream=sys.stderr)
+    qconfig.usage(stream=sys.stderr)
     sys.exit(2)
 
 
@@ -253,13 +254,17 @@ def prepare_regular_quast_args(quast_py_args, combined_output_dirpath):
         quast_py_args += [qconfig.phys_cov_fpath]
 
 
-def parse_options(logger, quast_args, is_metaquast=False):
+def parse_options(logger, quast_args):
+    mode = get_mode()
+    is_metaquast = True if mode == 'meta' else False
+    qconfig.large_genome = True if mode == 'large' else False
+
     if '-h' in quast_args or '--help' in quast_args or '--help-hidden' in quast_args:
-        qconfig.usage('--help-hidden' in quast_args, meta=is_metaquast, short=False)
+        qconfig.usage('--help-hidden' in quast_args, mode=mode, short=False)
         sys.exit(0)
 
     if '-v' in quast_args or '--version' in quast_args:
-        qconfig.print_version(meta=is_metaquast)
+        qconfig.print_version(mode)
         sys.exit(0)
 
     quast_py_args = quast_args[1:]
@@ -707,10 +712,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
 
     if qconfig.test_sv and is_metaquast:
         msg = "Option --test-sv can be used for QUAST only\n"
-        wrong_test_option(logger, msg, is_metaquast)
+        wrong_test_option(logger, msg)
     if qconfig.test_no_ref and not is_metaquast:
         msg = "Option --test-no-ref can be used for MetaQUAST only\n"
-        wrong_test_option(logger, msg, is_metaquast)
+        wrong_test_option(logger, msg)
 
     if qconfig.test or qconfig.test_no_ref or qconfig.test_sv:
         qconfig.output_dirpath = abspath(qconfig.test_output_dirname)
@@ -722,7 +727,8 @@ def parse_options(logger, quast_args, is_metaquast=False):
                 qconfig.features = test_features
                 qconfig.operons = test_operons
                 qconfig.glimmer = True
-                qconfig.gene_finding = True
+                if not qconfig.large_genome:  # special case -- large mode imposes eukaryote gene finding (GeneMark-ES) and our test data is too small for it.
+                    qconfig.gene_finding = True
         if qconfig.test_sv:
             qconfig.forward_reads = test_forward_reads
             qconfig.reverse_reads = test_reverse_reads
@@ -739,7 +745,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
 
     if not contigs_fpaths:
         logger.error("You should specify at least one file with contigs!\n", to_stderr=True)
-        qconfig.usage(meta=is_metaquast, stream=sys.stderr)
+        qconfig.usage(stream=sys.stderr)
         sys.exit(2)
 
     if qconfig.large_genome:

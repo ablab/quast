@@ -193,23 +193,22 @@ def main(args):
             os.path.join(output_dirpath, 'genome_stats'))
 
     genes_by_labels = None
+    if qconfig.glimmer:
+        ########################################################################
+        ### Glimmer
+        ########################################################################
+        from quast_libs import glimmer
+        genes_by_labels = glimmer.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'))
     if qconfig.gene_finding:
-        if qconfig.glimmer:
-            ########################################################################
-            ### Glimmer
-            ########################################################################
-            from quast_libs import glimmer
-            genes_by_labels = glimmer.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'))
-        if not qconfig.glimmer or qconfig.test:
-            ########################################################################
-            ### GeneMark
-            ########################################################################
-            from quast_libs import genemark
-            genes_by_labels = genemark.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'),
-                        qconfig.prokaryote, qconfig.metagenemark)
-    else:
+        ########################################################################
+        ### GeneMark
+        ########################################################################
+        from quast_libs import genemark
+        genes_by_labels = genemark.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'),
+                    qconfig.prokaryote, qconfig.metagenemark)
+    if genes_by_labels is None:
         logger.main_info("")
-        logger.notice("Genes are not predicted by default. Use --gene-finding option to enable it.")
+        logger.notice("Genes are not predicted by default. Use --gene-finding or --glimmer option to enable it.")
 
     if qconfig.rna_gene_finding:
         run_barrnap.do(contigs_fpaths, os.path.join(output_dirpath, 'predicted_genes'), logger)

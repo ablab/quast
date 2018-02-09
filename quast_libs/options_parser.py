@@ -15,7 +15,7 @@ import sys
 
 from quast_libs import qconfig, qutils
 from quast_libs.qutils import assert_file_exists, set_up_output_dir, check_dirpath, is_non_empty_file
-from qconfig import get_mode
+from quast_libs.qconfig import get_mode
 
 test_data_dir_basename = 'test_data'
 test_data_dir = join(qconfig.QUAST_HOME, test_data_dir_basename)
@@ -549,9 +549,7 @@ def parse_options(logger, quast_args):
          ),
         (['--glimmer'], dict(
              dest='glimmer',
-             action='callback',
-             callback=set_multiple_variables,
-             callback_kwargs={'store_true_values': ['gene_finding', 'glimmer']},
+             action='store_true',
              default=False)
          ),
         (['-b', '--find-conserved-genes'], dict(
@@ -716,6 +714,10 @@ def parse_options(logger, quast_args):
     if qconfig.test_no_ref and not is_metaquast:
         msg = "Option --test-no-ref can be used for MetaQUAST only\n"
         wrong_test_option(logger, msg)
+
+    if qconfig.glimmer and qconfig.gene_finding:
+        logger.error("You cannot use --glimmer and " + ("--mgm" if qconfig.metagenemark else "--gene-finding") + \
+                     " simultaneously!", exit_with_code=3)
 
     if qconfig.test or qconfig.test_no_ref or qconfig.test_sv:
         qconfig.output_dirpath = abspath(qconfig.test_output_dirname)

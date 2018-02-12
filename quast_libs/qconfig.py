@@ -330,7 +330,7 @@ def quast_version():
 def get_mode(binary_path=None):
     if binary_path is None:
         binary_path = sys.argv[0]
-    mode = None
+    mode = 'default'
     if basename(binary_path).startswith("metaquast"):
         mode = 'meta'
     elif basename(binary_path).startswith("quast-lg"):

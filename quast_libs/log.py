@@ -244,14 +244,15 @@ class QLogger(object):
         self._logger.info("Main parameters: ")
         text = '  '
         line = indent
-        options = [('Threads: ', qconfig.max_threads), ('eukaryotic: ', not qconfig.prokaryote),
-                   ('scaffolds: ', qconfig.scaffolds), ('minimum contig length: ', qconfig.min_contig),
-                   ('minimum alignment length: ', qconfig.min_alignment),
-                   ('ambiguity: ', qconfig.ambiguity_usage), ('use all alignments: ', qconfig.use_all_alignments),
-                   ('threshold for extensive misassembly size: ', qconfig.extensive_misassembly_threshold)]
+        options = [('MODE', qconfig.get_mode()),
+                   ('threads', qconfig.max_threads), ('eukaryotic', not qconfig.prokaryote),
+                   ('scaffolds', qconfig.scaffolds), ('minimum contig length', qconfig.min_contig),
+                   ('minimum alignment length', qconfig.min_alignment),
+                   ('ambiguity', qconfig.ambiguity_usage), ('use all alignments', qconfig.use_all_alignments),
+                   ('threshold for extensive misassembly size', qconfig.extensive_misassembly_threshold)]
         for i, (option, value) in enumerate(options):
             if value:
-                line += option + str(value).lower()
+                line += option + ': ' + str(value).lower()
 
                 if i == len(options) - 1:
                     text += line

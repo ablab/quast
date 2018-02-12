@@ -255,7 +255,7 @@ def prepare_regular_quast_args(quast_py_args, combined_output_dirpath):
 
 
 def parse_options(logger, quast_args):
-    mode = get_mode()
+    mode = get_mode(quast_args[0])
     is_metaquast = True if mode == 'meta' else False
     qconfig.large_genome = True if mode == 'large' else False
 

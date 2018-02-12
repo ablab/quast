@@ -327,11 +327,13 @@ def quast_version():
     #     return version
 
 
-def get_mode():
+def get_mode(binary_path=None):
+    if binary_path is None:
+        binary_path = sys.argv[0]
     mode = None
-    if basename(sys.argv[0]).startswith("metaquast"):
+    if basename(binary_path).startswith("metaquast"):
         mode = 'meta'
-    elif basename(sys.argv[0]).startswith("quast-lg"):
+    elif basename(binary_path).startswith("quast-lg"):
         mode = 'large'
     return mode
 

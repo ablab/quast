@@ -52,7 +52,7 @@ def main(args):
             locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
         except Exception:
             logger.warning('Python locale settings can\'t be changed')
-    quast_path = [os.path.realpath(__file__)]
+    quast_path = [__file__]
     quast_py_args, contigs_fpaths = parse_options(logger, quast_path + args)
     output_dirpath, ref_fpath, labels = qconfig.output_dirpath, qconfig.reference, qconfig.labels
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)

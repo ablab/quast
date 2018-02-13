@@ -1,5 +1,96 @@
 -- Version history --
 
+5.0.0
+      1. QUAST-LG mode is added ("--large") for evaluating large genomes!
+         Significant speed up on large genomes achieved by the switch to fast Minimap2
+         aligner and huge refactoring of the post processing bottlenecks in QUAST code.
+         The more adequate output is due to improved handling of transposable elements (TEs)
+         causing many false positive misassemblies in regular QUAST runs and use of proper
+         thresholds on minimal alignment, contig length, and extensive misassembly sizes.
+
+      2. New module: upper bound assembly ("--optimal-assembly").
+         We determine which part of the reference genome could be potentially reconstructed
+         using given set of reads. The algorithm takes into account zero covered regions
+         and genomic repeats (identified with Red repeat finder). The constructed assembly
+         is added to the evaluation and gives user the theoretical limits on the assembly
+         completeness and correctness quality metrics for a given genome and set of reads.
+
+      3. New module: k-mer-based statistics ("--kmc").
+         We identify unique 101-mers in the reference genome (using KMC tool) and track
+         their presence and relative location in assemblies. The percentage of the assembled
+         k-mers is a novel completeness measure and the number of large inconsistencies
+         (translocations or relocation with > 100 kbp difference in reference and assembly
+         positions) is a novel correctness measure.
+
+      4. Improved and extended gene prediction/annotation functionality:
+       — Barrnap for rRNA genes prediction ("--rna-finding") is added;
+       — BUSCO for finding conserved orthologs ("--find-conserved-genes"; eukaryotes only;
+         Linux only) is added;
+       — regular predicted genes (using GeneMark or Glimmer) are split into full and partial;
+       — "--fungus" option is added for more accurate processing of fungus assemblies using
+         GeneMark-ES and BUSCO;
+       — "--features" option is added to replace "-G/--genes", it allows to count all genomic
+         features from GFF or any specific feature type (e.g., 'CDS').
+
+      5. Icarus updates:
+       — changes in alignment viewers:
+           * GC% track is added to read coverage pane;
+           * button for highlighting all assembly misassemblies is added;
+           * local misassemblies are unchecked (hidden) by default.
+       — added static Circos plot of alignments ("--circus");
+       — natural sorting of chromosome names in the main menu (chr1, chr2, ..., chr10
+         instead of chr1, chr10, chr2, ...).
+
+      6. Improved reads support:
+       — reads are now mapped to assemblies and various alignment stats are reported;
+       — single ("--single") and interlaced ("--12") reads are supported;
+       — multiple read libraries are supported, including paired ends ("--pe1/2/12") and
+         mate pairs ("--mp1/2/12");
+       — Oxford Nanopores ("--nanopore") and PacBio SMRT ("--pacbio") are supported;
+       — ready SAM and BAM files can be provided both for reads mapped against assemblies
+         ("--sam/bam") and reads mapped against the reference genome ("--ref-sam/bam").
+
+      7. Modified processing of undefined nucleotides ('N'):
+       — reference Ns are excluded from Genome Fraction computation (100% if all ACGT bases
+         are covered);
+       — assembly Ns are excluded from "Unaligned" and "partially unaligned length"
+         computation;
+       — scaffold gaps are now defined as simply a gap between alignments having at least 10
+         consecutive Ns (affects "# scaffold gap size mis.", previously it was underestimated
+         due to a strict threshold on the percentage of Ns in the gap sequence).
+
+      8. MetaQUAST changes:
+       — trying to download next best match if a reference genome is not found in NCBI
+         (without references mode only);
+       - link to the combined reference report is added to the main report HTML;
+       — sample summary reports (TXT, TEX, etc) are renamed to exclude special characters in
+         the filenames ('#', '%', etc.).
+
+      9. Changes in the list of embedded third-party tools:
+       — removed: GAGE, gnuplot;
+       — replaced: MUMmer and E-MEM (new: Minimap2), Manta (new: GRIDDS);
+       — added: BUSCO, Barrnap, KMC, Red.
+
+      10. Fixed several minor bugs.
+
+
+4.6.3
+      1. Fixed crash of quast.py --test (introduced in v4.6.2).
+
+      2. Fixed crash of BSS in MetaQUAST mode (introduced in v4.6.2).
+
+      3. Proper float/integer division in both Python2 and Python3 (may affect
+         the number of scaffold gap size misassemblies in Python2).
+
+
+4.6.2
+      1. Fixed relatively rare bug of BSS when using large --min-alignment.
+
+      2. Improved check of previously generated results before reusing them.
+
+      3. GeneMark licence files are updated.
+
+
 4.6.1 
       1. Fixes in pip installation:
        - ignoring bdist_wheel and running regular installation instead;
@@ -342,7 +433,8 @@
 
       5. MetaQUAST output directory content is reformatted. Per reference reports are saved
          inside the directory <output_dir>/runs_per_reference, summary reports are under summary directory.
-         The only top-level files are metaquast.log and report.html (summary HTML report with links to all subreports).
+         The only top-level files are metaquast.log and report.html (summary HTML report with links to
+         all subreports).
 
       6. Colors in HTML reports and PDF/PNG plots are synchronized, now they are the same
          for the same assemblies.

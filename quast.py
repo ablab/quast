@@ -88,14 +88,14 @@ def main(args):
         ref_fpath = qutils.correct_reference(ref_fpath, corrected_dirpath)
         if qconfig.optimal_assembly:
             if not qconfig.pacbio_reads and not qconfig.nanopore_reads and not qconfig.mate_pairs:
-                logger.warning('Optimal assembly cannot be created. It requires mate-pairs or long reads (Pacbio SMRT or Oxford Nanopore).')
+                logger.warning('Upper Bound Assembly cannot be created. It requires mate-pairs or long reads (Pacbio SMRT or Oxford Nanopore).')
             else:
                 from quast_libs import optimal_assembly
                 optimal_assembly_fpath = optimal_assembly.do(ref_fpath, original_ref_fpath,
                                                          os.path.join(output_dirpath, qconfig.optimal_assembly_basename))
                 if optimal_assembly_fpath is not None:
                     contigs_fpaths.insert(0, optimal_assembly_fpath)
-                    labels.insert(0, 'Optimal')
+                    labels.insert(0, 'UpperBound')
                     labels = qutils.process_labels(contigs_fpaths, labels)
     else:
         ref_fpath = ''
@@ -219,7 +219,7 @@ def main(args):
             logger.warning("BUSCO can be run on Linux only")
         elif sys.version[0:3] == '2.5':
             logger.main_info("")
-            logger.warning("BUSCO does not support Python versions older than 2.6.")
+            logger.warning("BUSCO does not support Python versions earlier than 2.6.")
         else:
             from quast_libs import run_busco
             run_busco.do(contigs_fpaths, os.path.join(output_dirpath, qconfig.busco_dirname), logger)

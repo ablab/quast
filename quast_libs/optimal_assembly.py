@@ -349,7 +349,7 @@ def get_unique_covered_regions(ref_fpath, tmp_dir, log_fpath, binary_fpath, inse
 
 def do(ref_fpath, original_ref_fpath, output_dirpath):
     logger.print_timestamp()
-    logger.main_info("Simulating Optimal Assembly...")
+    logger.main_info("Generating Upper Bound Assembly...")
 
     uncovered_fpath = None
     reads_analyzer_dir = join(dirname(output_dirpath), qconfig.reads_stats_dirname)
@@ -374,21 +374,21 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
 
     if os.path.isfile(result_fpath) or os.path.isfile(ref_prepared_optimal_assembly):
         already_done_fpath = result_fpath if os.path.isfile(result_fpath) else ref_prepared_optimal_assembly
-        logger.notice('  Will reuse already generated Optimal Assembly with insert size %d (%s)' %
+        logger.notice('  Will reuse already generated Upper Bound Assembly with insert size %d (%s)' %
                       (insert_size, already_done_fpath))
         return already_done_fpath
 
     if qconfig.platform_name == 'linux_32':
-        logger.warning('  Sorry, can\'t create Optimal Assembly on this platform, skipping...')
+        logger.warning('  Sorry, can\'t create Upper Bound Assembly on this platform, skipping...')
         return None
 
     red_dirpath = get_dir_for_download('red', 'Red', ['Red'], logger)
     binary_fpath = download_external_tool('Red', red_dirpath, 'red', platform_specific=True, is_executable=True)
     if not binary_fpath or not os.path.isfile(binary_fpath):
-        logger.warning('  Sorry, can\'t create Optimal Assembly, skipping...')
+        logger.warning('  Sorry, can\'t create Upper Bound Assembly, skipping...')
         return None
 
-    log_fpath = os.path.join(output_dirpath, 'optimal_assembly.log')
+    log_fpath = os.path.join(output_dirpath, 'upper_bound_assembly.log')
     tmp_dir = os.path.join(output_dirpath, 'tmp')
     if os.path.isdir(tmp_dir):
         shutil.rmtree(tmp_dir)
@@ -396,7 +396,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
 
     unique_covered_regions, repeats_regions = get_unique_covered_regions(ref_fpath, tmp_dir, log_fpath, binary_fpath, insert_size, uncovered_fpath)
     if unique_covered_regions is None:
-        logger.error('  Failed to create Optimal Assembly, see log for details: ' + log_fpath)
+        logger.error('  Failed to create Upper Bound Assembly, see log for details: ' + log_fpath)
         return None
 
     reference = list(fastaparser.read_fasta(ref_fpath))
@@ -422,7 +422,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
                     result_fasta.append((chrom + '_' + str(idx), seq[region[0]: region[1]]))
 
     fastaparser.write_fasta(result_fpath, result_fasta)
-    logger.info('  ' + 'Theoretically optimal Assembly saved to ' + result_fpath)
+    logger.info('  ' + 'Theoretical Upper Bound Assembly saved to ' + result_fpath)
     logger.notice('You can copy it to ' + ref_prepared_optimal_assembly +
                   ' and QUAST will reuse it in further runs against the same reference (' + original_ref_fpath + ')')
 

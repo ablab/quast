@@ -108,7 +108,7 @@ html_aux_dir = "report_html_aux"
 contig_report_fname_pattern = 'contigs_report_%s'
 icarus_report_fname_pattern = 'all_alignments_%s.tsv'
 minimap_output_dirname = 'minimap_output'
-optimal_assembly_basename = 'optimal_assembly'
+optimal_assembly_basename = 'upper_bound_assembly'
 
 # for MetaQUAST
 downloaded_dirname = "quast_downloaded_references"
@@ -377,7 +377,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
     stream.write("-o  --output-dir  <dirname>       Directory to store all result files [default: quast_results/results_<datetime>]\n")
     if meta:
         stream.write("-r   <filename,filename,...>      Comma-separated list of reference genomes or directory with reference genomes\n")
-        stream.write("--references-list <filename>      Text file with list of reference genomes for downloading from NCBI\n")
+        stream.write("--references-list <filename>      Text file with list of reference genome names for downloading from NCBI\n")
         stream.write("-g  --features [type:]<filename>  File with genomic feature coordinates in the references (GFF, BED, NCBI or TXT)\n")
         stream.write("                                  Optional 'type' can be specified for extracting only a specific feature type from GFF\n")
     else:
@@ -396,12 +396,12 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes\n")
         stream.write("-L                                    Take assembly names from their parent directory names\n")
         if mode != 'large':
-            stream.write("-e  --eukaryote                       Genome is eukaryotic\n")
-            stream.write("    --fungus                          Genome is fungal\n")
+            stream.write("-e  --eukaryote                       Genome is eukaryotic (primarily affects gene prediction)\n")
+            stream.write("    --fungus                          Genome is fungal (primarily affects gene prediction)\n")
             stream.write("    --large                           Use optimal parameters for evaluation of large genomes\n")
             stream.write("                                      In particular, imposes '-e -m %d -i %d -x %d' (can be overridden manually)\n" %
                          (LARGE_MIN_CONTIG, LARGE_MIN_ALIGNMENT, LARGE_EXTENSIVE_MIS_THRESHOLD))
-        stream.write("    --kmc                             Use KMC for computing k-mer-based metrics (recommended for large genomes)\n"
+        stream.write("-k  --k-mer-stats                     Compute k-mer-based quality metrics (recommended for large genomes)\n"
                      "                                      This may significantly increase memory and time consumption on large genomes\n")
         stream.write("    --circos                          Draw Circos plot\n")
         if mode == 'meta':
@@ -416,12 +416,12 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("    --gene-thresholds <int,int,...>   Comma-separated list of threshold lengths of genes to search with Gene Finding module\n")
         stream.write("                                      [default: %s]\n" % genes_lengths)
         stream.write("    --rna-finding                     Predict ribosomal RNA genes using Barrnap\n")
-        stream.write("-b  --find-conserved-genes            Use BUSCO for finding conserved orthologs (only on Linux)\n")
+        stream.write("-b  --conserved-genes-finding         Count conserved orthologs using BUSCO (only on Linux)\n")
         stream.write("-O  --operons  <filename>             File with operon coordinates in the reference (GFF, BED, NCBI or TXT)\n")
         if not meta:
             stream.write("    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)\n")
         else:
-            stream.write("    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database\n")
+            stream.write("    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database.\n")
             stream.write("                                      Set 0 for not looking in SILVA at all [default: %s]\n" % max_references)
             stream.write("    --blast-db <filename>             Custom BLAST database (.nsq file). By default, MetaQUAST searches references in SILVA database\n")
             stream.write("    --use-input-ref-order             Use provided order of references in MetaQUAST summary plots (default order: by the best average value)\n")
@@ -438,7 +438,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         if meta:
             stream.write("    --unique-mapping                  Disable --ambiguity-usage=all for the combined reference run,\n")
             stream.write("                                      i.e. use user-specified or default ('%s') value of --ambiguity-usage\n" % ambiguity_usage)
-        stream.write("    --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx\n")
+        stream.write("    --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx.\n")
         stream.write("                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)\n")
         stream.write("-x  --extensive-mis-size  <int>       Lower threshold for extensive misassembly size. All relocations with inconsistency\n")
         stream.write("                                      less than extensive-mis-size are counted as local misassemblies [default: %s]\n" % x_default)
@@ -450,13 +450,13 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("    --fragmented-max-indent  <int>    Mark translocation as fake if both alignments are located no further than N bases \n")
         stream.write("                                      from the ends of the reference fragments [default: %s]\n" % MAX_INDEL_LENGTH)
         stream.write("                                      Requires --fragmented option\n")
-        stream.write("    --optimal-assembly                Simulate theoretically optimal assembly based on the reference genome\n")
-        stream.write("    --est-insert-size  <int>          Use provided insert size in optimal assembly simulation [default: auto detect from reads or %d]\n" % optimal_assembly_default_IS)
-        stream.write("    --plots-format  <str>             Save plots in specified format [default: %s]\n" % plot_extension)
+        stream.write("    --upper-bound-assembly            Simulate upper bound assembly based on the reference genome and reads\n")
+        stream.write("    --est-insert-size  <int>          Use provided insert size in upper bound assembly simulation [default: auto detect from reads or %d]\n" % optimal_assembly_default_IS)
+        stream.write("    --plots-format  <str>             Save plots in specified format [default: %s].\n" % plot_extension)
         stream.write("                                      Supported formats: %s\n" % ', '.join(supported_plot_extensions))
-        stream.write("    --memory-efficient                Run everything using one thread, separately per each assembly\n")
+        stream.write("    --memory-efficient                Run everything using one thread, separately per each assembly.\n")
         stream.write("                                      This may significantly reduce memory consumption on large genomes\n")
-        stream.write("    --space-efficient                 Create only reports and plots files. .stdout, .stderr, .coords and other aux files will not be created\n")
+        stream.write("    --space-efficient                 Create only reports and plots files. Aux files including .stdout, .stderr, .coords will not be created.\n")
         stream.write("                                      This may significantly reduce space consumption on large genomes. Icarus viewers also will not be built\n")
         stream.write("-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped)\n")
         stream.write("-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped)\n")
@@ -508,7 +508,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("    --silent                          Do not print detailed information about each step to stdout (log file is not affected)\n")
         if meta:
             stream.write("    --test                            Run MetaQUAST on the data from the test_data folder, output to quast_test_output\n")
-            stream.write("    --test-no-ref                     Run MetaQUAST without references on the data from the test_data folder, output to quast_test_output\n")
+            stream.write("    --test-no-ref                     Run MetaQUAST without references on the data from the test_data folder, output to quast_test_output.\n")
             stream.write("                                      MetaQUAST will download SILVA 16S rRNA database (~170 Mb) for searching reference genomes\n")
             stream.write("                                      Internet connection is required\n")
         else:

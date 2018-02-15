@@ -552,17 +552,17 @@ def parse_options(logger, quast_args):
              action='store_true',
              default=False)
          ),
-        (['-b', '--find-conserved-genes'], dict(
+        (['-b', '--conserved-genes-finding'], dict(
              dest='run_busco',
              action='store_true',
              default=False)
          ),
-        (['--kmc'], dict(
+        (['-k', '--k-mer-stats'], dict(
              dest='use_kmc',
              action='store_true',
              default=False)
          ),
-        (['--optimal-assembly'], dict(
+        (['--upper-bound-assembly'], dict(
              dest='optimal_assembly',
              action='store_true')
          ),

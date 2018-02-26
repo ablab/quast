@@ -1,4 +1,4 @@
-#include "minimap.h"
+#include "mmpriv.h"
 
 int mm_verbose = 1;
 int mm_dbg_flag = 0;
@@ -86,6 +86,8 @@ double cputime()
 
 	return kernelModeTime + userModeTime;
 }
+
+long peakrss(void) { return 0; }
 #else
 #include <sys/resource.h>
 #include <sys/time.h>
@@ -96,6 +98,18 @@ double cputime(void)
 	getrusage(RUSAGE_SELF, &r);
 	return r.ru_utime.tv_sec + r.ru_stime.tv_sec + 1e-6 * (r.ru_utime.tv_usec + r.ru_stime.tv_usec);
 }
+
+long peakrss(void)
+{
+	struct rusage r;
+	getrusage(RUSAGE_SELF, &r);
+#ifdef __linux__
+	return r.ru_maxrss * 1024;
+#else
+	return r.ru_maxrss;
+#endif
+}
+
 #endif /* WIN32 || _WIN32 */
 
 double realtime(void)

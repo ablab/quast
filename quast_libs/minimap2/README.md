@@ -38,7 +38,7 @@ man ./minimap2.1
   - [Advanced features](#advanced)
     - [Working with >65535 CIGAR operations](#long-cigar)
     - [The cs optional tag](#cs)
-    - [Evaluation scripts](#eval)
+    - [Working with the PAF format](#paftools)
   - [Algorithm overview](#algo)
   - [Getting help](#help)
   - [Citing minimap2](#cite)
@@ -68,9 +68,9 @@ Detailed evaluations are available from the [minimap2 preprint][preprint].
 Minimap2 is optimized for x86-64 CPUs. You can acquire precompiled binaries from
 the [release page][release] with:
 ```sh
-curl -L https://github.com/lh3/minimap2/releases/download/v2.7/minimap2-2.7_x64-linux.tar.bz2 \
+curl -L https://github.com/lh3/minimap2/releases/download/v2.9/minimap2-2.9_x64-linux.tar.bz2 \
   | tar -jxvf -
-./minimap2-2.7_x64-linux/minimap2
+./minimap2-2.9_x64-linux/minimap2
 ```
 If you want to compile from the source, you need to have a C compiler, GNU make
 and zlib development files installed. Then type `make` in the source code
@@ -256,26 +256,13 @@ the alignment. The above example will become
 `=CGATCG-ata=AATAGAGTAG+gtc=GAAT*at=GCA`. The long form of `cs` encodes both
 reference and query sequences in one string.
 
-#### <a name="eval"></a>Evaluation scripts
+#### <a name="paftools"></a>Working with the PAF format
 
-Minimap2 comes with several (java)scripts for evaluating the accuracy of
-minimap2. These scripts require the [k8][k8] javascript shell to run.
-Recent minimap2 binary release tar-balls contain a copy of k8 executable, a
-single file. Here are a few examples on how to use these scripts:
-
-```sh
-# Generate reads from PBSIM alignment (truth encoded in read names)
-k8 misc/sim-pbsim.js ref.fa.fai pbsim-aln.maf > pbsim-reads.fq
-# Generate reads from mason2 alignment (not tested for simulated SVs)
-k8 misc/sim-mason2.js mason2-aln.sam > mason2-reads.fq
-# Evaluate mapping accuracy with ROC-like curve
-k8 misc/sim-eval.js my-aln.sam.gz > result.txt
-k8 misc/sim-eval.js my-aln.paf.gz > result.txt
-# Collect alignment statistics
-k8 misc/mapstat.js my-aln.sam > result.txt
-# Compare spliced junctions to existing gene annotations
-k8 misc/intron-eval.js anno.gtf my-spliced-aln.sam > result.txt
-```
+Minimap2 also comes with a (java)script [paftools.js](misc/paftools.js) that
+processes alignments in the PAF format. It calls variants from
+assembly-to-reference alignment, lifts over BED files based on alignment,
+converts between formats and provides utilities for various evaluations. For
+details, please see [misc/README.md](misc/README.md).
 
 ### <a name="algo"></a>Algorithm overview
 
@@ -358,10 +345,6 @@ mappy` or [from BioConda][mappyconda] via `conda install -c bioconda mappy`.
 * Minimap2 requires SSE2 instructions on x86 CPUs or NEON on ARM CPUs. It is
   possible to add non-SIMD support, but it would make minimap2 slower by
   several times.
-
-In general, minimap2 is a young project with most code written since June, 2017.
-It may have bugs and room for improvements. Bug reports and suggestions are
-warmly welcomed.
 
 
 

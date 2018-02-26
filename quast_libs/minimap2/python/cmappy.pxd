@@ -26,11 +26,12 @@ cdef extern from "minimap.h":
 		int min_join_flank_sc
 		int a, b, q, e, q2, e2
 		int noncan
-		int zdrop
+		int zdrop, zdrop_inv
 		int end_bonus
 		int min_dp_max
 		int min_ksw_len
 		int anchor_ext_len, anchor_ext_shift
+		float max_clip_ratio
 		int pe_ori, pe_bonus
 		float mid_occ_frac
 		int32_t mid_occ
@@ -57,7 +58,7 @@ cdef extern from "minimap.h":
 		mm_idx_seq_t *seq
 		uint32_t *S
 		mm_idx_bucket_t *B
-		void *km
+		void *km, *h
 
 	ctypedef struct mm_idx_reader_t:
 		pass
@@ -67,6 +68,8 @@ cdef extern from "minimap.h":
 	void mm_idx_reader_close(mm_idx_reader_t *r)
 	void mm_idx_destroy(mm_idx_t *mi)
 	void mm_mapopt_update(mm_mapopt_t *opt, const mm_idx_t *mi)
+
+	int mm_idx_index_name(mm_idx_t *mi)
 
 	#
 	# Mapping (key struct defined in cmappy.h below)
@@ -79,7 +82,6 @@ cdef extern from "minimap.h":
 
 	mm_tbuf_t *mm_tbuf_init()
 	void mm_tbuf_destroy(mm_tbuf_t *b)
-	mm_reg1_t *mm_map(const mm_idx_t *mi, int l_seq, const char *seq, int *n_regs, mm_tbuf_t *b, const mm_mapopt_t *opt, const char *name)
 
 #
 # Helper header (because it is hard to expose mm_reg1_t with Cython)
@@ -92,11 +94,14 @@ cdef extern from "cmappy.h":
 		int32_t blen, mlen, NM, ctg_len
 		uint8_t mapq, is_primary
 		int8_t strand, trans_strand
+		int32_t seg_id
 		int32_t n_cigar32
 		uint32_t *cigar32
 
 	void mm_reg2hitpy(const mm_idx_t *mi, mm_reg1_t *r, mm_hitpy_t *h)
 	void mm_free_reg1(mm_reg1_t *r)
+	mm_reg1_t *mm_map_aux(const mm_idx_t *mi, const char *seq1, const char *seq2, int *n_regs, mm_tbuf_t *b, const mm_mapopt_t *opt)
+	char *mappy_fetch_seq(const mm_idx_t *mi, const char *name, int st, int en, int *l)
 
 	ctypedef struct kstring_t:
 		unsigned l, m
@@ -114,5 +119,6 @@ cdef extern from "cmappy.h":
 	void mm_fastx_close(kseq_t *ks)
 	int kseq_read(kseq_t *seq)
 
+	char *mappy_revcomp(int l, const uint8_t *seq)
 	int mm_verbose_level(int v)
 	void mm_reset_timer()

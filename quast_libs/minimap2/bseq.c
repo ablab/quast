@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#define __STDC_LIMIT_MACROS
 #include "bseq.h"
 #include "kvec.h"
 #include "kseq.h"
@@ -53,15 +54,23 @@ void mm_bseq_close(mm_bseq_file_t *fp)
 	free(fp);
 }
 
+static inline char *kstrdup(const kstring_t *s)
+{
+	char *t;
+	t = (char*)malloc(s->l + 1);
+	memcpy(t, s->s, s->l + 1);
+	return t;
+}
+
 static inline void kseq2bseq(kseq_t *ks, mm_bseq1_t *s, int with_qual)
 {
 	int i;
-	s->name = strdup(ks->name.s);
-	s->seq = strdup(ks->seq.s);
+	s->name = kstrdup(&ks->name);
+	s->seq = kstrdup(&ks->seq);
 	for (i = 0; i < ks->seq.l; ++i) // convert U to T
 		if (s->seq[i] == 'u' || s->seq[i] == 'U')
 			--s->seq[i];
-	s->qual = with_qual && ks->qual.l? strdup(ks->qual.s) : 0;
+	s->qual = with_qual && ks->qual.l? kstrdup(&ks->qual) : 0;
 	s->l_seq = ks->seq.l;
 }
 
@@ -114,10 +123,15 @@ mm_bseq1_t *mm_bseq_read_frag(int n_fp, mm_bseq_file_t **fp, int chunk_size, int
 	*n_ = 0;
 	if (n_fp < 1) return 0;
 	while (1) {
+		int n_read = 0;
 		for (i = 0; i < n_fp; ++i)
-			if (kseq_read(fp[i]->ks) < 0)
-				break;
-		if (i != n_fp) break; // some file reaches the end
+			if (kseq_read(fp[i]->ks) >= 0)
+				++n_read;
+		if (n_read < n_fp) {
+			if (n_read > 0)
+				fprintf(stderr, "[W::%s]\033[1;31m query files have different number of records; extra records skipped.\033[0m\n", __func__);
+			break; // some file reaches the end
+		}
 		if (a.m == 0) kv_resize(mm_bseq1_t, 0, a, 256);
 		for (i = 0; i < n_fp; ++i) {
 			mm_bseq1_t *s;

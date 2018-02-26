@@ -5,26 +5,30 @@
 #include <stdio.h>
 #include <sys/types.h>
 
-#define MM_F_NO_SELF     0x001
-#define MM_F_AVA         0x002
-#define MM_F_CIGAR       0x004
-#define MM_F_OUT_SAM     0x008
-#define MM_F_NO_QUAL     0x010
-#define MM_F_OUT_CG      0x020
-#define MM_F_OUT_CS      0x040
-#define MM_F_SPLICE      0x080 // splice mode
-#define MM_F_SPLICE_FOR  0x100 // match GT-AG
-#define MM_F_SPLICE_REV  0x200 // match CT-AC, the reverse complement of GT-AG
-#define MM_F_NO_LJOIN    0x400
-#define MM_F_OUT_CS_LONG 0x800
-#define MM_F_SR          0x1000
-#define MM_F_FRAG_MODE   0x2000
+#define MM_F_NO_DIAG       0x001 // no exact diagonal hit
+#define MM_F_NO_DUAL       0x002 // skip pairs where query name is lexicographically larger than target name
+#define MM_F_CIGAR         0x004
+#define MM_F_OUT_SAM       0x008
+#define MM_F_NO_QUAL       0x010
+#define MM_F_OUT_CG        0x020
+#define MM_F_OUT_CS        0x040
+#define MM_F_SPLICE        0x080 // splice mode
+#define MM_F_SPLICE_FOR    0x100 // match GT-AG
+#define MM_F_SPLICE_REV    0x200 // match CT-AC, the reverse complement of GT-AG
+#define MM_F_NO_LJOIN      0x400
+#define MM_F_OUT_CS_LONG   0x800
+#define MM_F_SR            0x1000
+#define MM_F_FRAG_MODE     0x2000
 #define MM_F_NO_PRINT_2ND  0x4000
 #define MM_F_2_IO_THREADS  0x8000
 #define MM_F_LONG_CIGAR    0x10000
 #define MM_F_INDEPEND_SEG  0x20000
 #define MM_F_SPLICE_FLANK  0x40000
 #define MM_F_SOFTCLIP      0x80000
+#define MM_F_FOR_ONLY      0x100000
+#define MM_F_REV_ONLY      0x200000
+#define MM_F_HEAP_SORT     0x400000
+#define MM_F_ALL_CHAINS    0x800000
 
 #define MM_I_HPC          0x1
 #define MM_I_NO_SEQ       0x2
@@ -55,7 +59,7 @@ typedef struct {
 	mm_idx_seq_t *seq;         // sequence name, length and offset
 	uint32_t *S;               // 4-bit packed sequence
 	struct mm_idx_bucket_s *B; // index (hidden)
-	void *km;
+	void *km, *h;
 } mm_idx_t;
 
 // minimap2 alignment
@@ -78,7 +82,7 @@ typedef struct {
 	int32_t mlen, blen;     // seeded exact match length; seeded alignment block length
 	int32_t n_sub;          // number of suboptimal mappings
 	int32_t score0;         // initial chaining score (before chain merging/spliting)
-	uint32_t mapq:8, split:2, rev:1, inv:1, sam_pri:1, proper_frag:1, pe_thru:1, seg_split:1, dummy:16;
+	uint32_t mapq:8, split:2, rev:1, inv:1, sam_pri:1, proper_frag:1, pe_thru:1, seg_split:1, seg_id:8, split_inv:1, dummy:7;
 	uint32_t hash;
 	float div;
 	mm_extra_t *p;
@@ -112,11 +116,12 @@ typedef struct {
 
 	int a, b, q, e, q2, e2; // matching score, mismatch, gap-open and gap-ext penalties
 	int noncan;      // cost of non-canonical splicing sites
-	int zdrop;       // break alignment if alignment score drops too fast along the diagonal
+	int zdrop, zdrop_inv;   // break alignment if alignment score drops too fast along the diagonal
 	int end_bonus;
 	int min_dp_max;  // drop an alignment if the score of the max scoring segment is below this threshold
 	int min_ksw_len;
 	int anchor_ext_len, anchor_ext_shift;
+	float max_clip_ratio; // drop an alignment if BOTH ends are clipped above this ratio
 
 	int pe_ori, pe_bonus;
 
@@ -276,6 +281,8 @@ void mm_tbuf_destroy(mm_tbuf_t *b);
  */
 mm_reg1_t *mm_map(const mm_idx_t *mi, int l_seq, const char *seq, int *n_regs, mm_tbuf_t *b, const mm_mapopt_t *opt, const char *name);
 
+void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **seqs, int *n_regs, mm_reg1_t **regs, mm_tbuf_t *b, const mm_mapopt_t *opt, const char *qname);
+
 /**
  * Align a fasta/fastq file and print alignments to stdout
  *
@@ -289,6 +296,11 @@ mm_reg1_t *mm_map(const mm_idx_t *mi, int l_seq, const char *seq, int *n_regs, m
 int mm_map_file(const mm_idx_t *idx, const char *fn, const mm_mapopt_t *opt, int n_threads);
 
 int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_mapopt_t *opt, int n_threads);
+
+// query sequence name and sequence in the minimap2 index
+int mm_idx_index_name(mm_idx_t *mi);
+int mm_idx_name2id(const mm_idx_t *mi, const char *name);
+int mm_idx_getseq(const mm_idx_t *mi, uint32_t rid, uint32_t st, uint32_t en, uint8_t *seq);
 
 // deprecated APIs for backward compatibility
 void mm_mapopt_init(mm_mapopt_t *opt);

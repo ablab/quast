@@ -1,6 +1,7 @@
 from libc.stdint cimport uint8_t, int8_t
 from libc.stdlib cimport free
 cimport cmappy
+import sys
 
 cmappy.mm_reset_timer()
 
@@ -10,9 +11,10 @@ cdef class Alignment:
 	cdef int _NM, _mlen, _blen
 	cdef int8_t _strand, _trans_strand
 	cdef uint8_t _mapq, _is_primary
+	cdef int _seg_id
 	cdef _ctg, _cigar # these are python objects
 
-	def __cinit__(self, ctg, cl, cs, ce, strand, qs, qe, mapq, cigar, is_primary, mlen, blen, NM, trans_strand):
+	def __cinit__(self, ctg, cl, cs, ce, strand, qs, qe, mapq, cigar, is_primary, mlen, blen, NM, trans_strand, seg_id):
 		self._ctg = ctg if isinstance(ctg, str) else ctg.decode()
 		self._ctg_len, self._r_st, self._r_en = cl, cs, ce
 		self._strand, self._q_st, self._q_en = strand, qs, qe
@@ -21,6 +23,7 @@ cdef class Alignment:
 		self._cigar = cigar
 		self._is_primary = is_primary
 		self._trans_strand = trans_strand
+		self._seg_id = seg_id
 
 	@property
 	def ctg(self): return self._ctg
@@ -65,6 +68,9 @@ cdef class Alignment:
 	def cigar(self): return self._cigar
 
 	@property
+	def read_num(self): return self._seg_id + 1
+
+	@property
 	def cigar_str(self):
 		return "".join(map(lambda x: str(x[0]) + 'MIDNSH'[x[1]], self._cigar))
 
@@ -106,7 +112,7 @@ cdef class Aligner:
 		if min_chain_score is not None: self.map_opt.min_chain_score = min_chain_score
 		if min_dp_score is not None: self.map_opt.min_dp_max = min_dp_score
 		if bw is not None: self.map_opt.bw = bw
-		if best_n is not None: self.best_n = best_n
+		if best_n is not None: self.map_opt.best_n = best_n
 
 		cdef cmappy.mm_idx_reader_t *r;
 		if fn_idx_out is None:
@@ -117,6 +123,7 @@ cdef class Aligner:
 			self._idx = cmappy.mm_idx_reader_read(r, n_threads) # NB: ONLY read the first part
 			cmappy.mm_idx_reader_close(r)
 			cmappy.mm_mapopt_update(&self.map_opt, self._idx)
+			cmappy.mm_idx_index_name(self._idx)
 
 	def __dealloc__(self):
 		if self._idx is not NULL:
@@ -125,7 +132,7 @@ cdef class Aligner:
 	def __bool__(self):
 		return (self._idx != NULL)
 
-	def map(self, seq, buf=None):
+	def map(self, seq, seq2=None, buf=None):
 		cdef cmappy.mm_reg1_t *regs
 		cdef cmappy.mm_hitpy_t h
 		cdef ThreadBuffer b
@@ -134,7 +141,13 @@ cdef class Aligner:
 		if self._idx is NULL: return None
 		if buf is None: b = ThreadBuffer()
 		else: b = buf
-		regs = cmappy.mm_map(self._idx, len(seq), str.encode(seq), &n_regs, b._b, &self.map_opt, NULL)
+
+		_seq = seq if isinstance(seq, bytes) else seq.encode()
+		if seq2 is None:
+			regs = cmappy.mm_map_aux(self._idx, _seq, NULL,  &n_regs, b._b, &self.map_opt)
+		else:
+			_seq2 = seq2 if isinstance(seq2, bytes) else seq2.encode()
+			regs = cmappy.mm_map_aux(self._idx, _seq, _seq2, &n_regs, b._b, &self.map_opt)
 
 		for i in range(n_regs):
 			cmappy.mm_reg2hitpy(self._idx, &regs[i], &h)
@@ -142,11 +155,28 @@ cdef class Aligner:
 			for k in range(h.n_cigar32):
 				c = h.cigar32[k]
 				cigar.append([c>>4, c&0xf])
-			yield Alignment(h.ctg, h.ctg_len, h.ctg_start, h.ctg_end, h.strand, h.qry_start, h.qry_end, h.mapq, cigar, h.is_primary, h.mlen, h.blen, h.NM, h.trans_strand)
+			yield Alignment(h.ctg, h.ctg_len, h.ctg_start, h.ctg_end, h.strand, h.qry_start, h.qry_end, h.mapq, cigar, h.is_primary, h.mlen, h.blen, h.NM, h.trans_strand, h.seg_id)
 			cmappy.mm_free_reg1(&regs[i])
 		free(regs)
 
-def fastx_read(fn):
+	def seq(self, str name, int start=0, int end=0x7fffffff):
+		cdef int l
+		cdef char *s = cmappy.mappy_fetch_seq(self._idx, name.encode(), start, end, &l)
+		if l == 0: return None
+		r = s[:l] if isinstance(s, str) else s[:l].decode()
+		free(s)
+		return r
+
+	@property
+	def k(self): return self._idx.k
+
+	@property
+	def w(self): return self._idx.w
+
+	@property
+	def n_seq(self): return self._idx.n_seq
+
+def fastx_read(fn, read_comment=False):
 	cdef cmappy.kseq_t *ks
 	ks = cmappy.mm_fastx_open(str.encode(fn))
 	if ks is NULL: return None
@@ -155,8 +185,21 @@ def fastx_read(fn):
 		else: qual = None
 		name = ks.name.s if isinstance(ks.name.s, str) else ks.name.s.decode()
 		seq = ks.seq.s if isinstance(ks.seq.s, str) else ks.seq.s.decode()
-		yield name, seq, qual
+		if read_comment:
+			if ks.comment.l > 0: comment = ks.comment.s if isinstance(ks.comment.s, str) else ks.comment.s.decode()
+			else: comment = None
+			yield name, seq, qual, comment
+		else:
+			yield name, seq, qual
 	cmappy.mm_fastx_close(ks)
+
+def revcomp(seq):
+	l = len(seq)
+	bseq = seq if isinstance(seq, bytes) else seq.encode()
+	cdef char *s = cmappy.mappy_revcomp(l, bseq)
+	r = s[:l] if isinstance(s, str) else s[:l].decode()
+	free(s)
+	return r
 
 def verbose(v=None):
 	if v is None: v = -1

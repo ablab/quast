@@ -34,6 +34,8 @@ The following Python script demonstrates the key functionality of mappy:
 	import mappy as mp
 	a = mp.Aligner("test/MT-human.fa")  # load or build index
 	if not a: raise Exception("ERROR: failed to load/build index")
+	s = a.seq("MT_human", 100, 200)     # retrieve a subsequence from the index
+	print(mp.revcomp(s))                # reverse complement
 	for name, seq, qual in mp.fastx_read("test/MT-orang.fa"): # read a fasta/q sequence
 		for hit in a.map(seq): # traverse alignments
 			print("{}\t{}\t{}\t{}".format(hit.ctg, hit.r_st, hit.r_en, hit.cigar_str))
@@ -81,10 +83,21 @@ This constructor accepts the following arguments:
 
 .. code:: python
 
-	mappy.Aligner.map(seq)
+	mappy.Aligner.map(seq, seq2=None)
 
 This method aligns :code:`seq` against the index. It is a generator, *yielding*
-a series of :code:`mappy.Alignment` objects.
+a series of :code:`mappy.Alignment` objects. If :code:`seq2` is present, mappy
+performs paired-end alignment, assuming the two ends are in the FR orientation.
+Alignments of the two ends can be distinguished by the :code:`read_num` field
+(see Class mappy.Alignment below).
+
+.. code:: python
+
+	mappy.Aligner.seq(name, start=0, end=0x7fffffff)
+
+This method retrieves a (sub)sequence from the index and returns it as a Python
+string. :code:`None` is returned if :code:`name` is not present in the index or
+the start/end coordinates are invalid.
 
 Class mappy.Alignment
 ~~~~~~~~~~~~~~~~~~~~~
@@ -118,6 +131,9 @@ properties:
 * **is_primary**: if the alignment is primary (typically the best and the first
   to generate)
 
+* **read_num**: read number that the alignment corresponds to; 1 for the first
+  read and 2 for the second read
+
 * **cigar_str**: CIGAR string
 
 * **cigar**: CIGAR returned as an array of shape :code:`(n_cigar,2)`. The two
@@ -133,13 +149,22 @@ the following format:
 It is effectively the PAF format without the QueryName and QueryLength columns
 (the first two columns in PAF).
 
-Function mappy.fastx_read
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Miscellaneous Functions
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: python
 
-	mappy.fastx_read(fn)
+	mappy.fastx_read(fn, read_comment=False)
 
 This generator function opens a FASTA/FASTQ file and *yields* a
 :code:`(name,seq,qual)` tuple for each sequence entry. The input file may be
-optionally gzip'd.
+optionally gzip'd. If :code:`read_comment` is True, this generator yields
+a :code:`(name,seq,qual,comment)` tuple instead.
+
+.. code:: python
+
+	mappy.revcomp(seq)
+
+Return the reverse complement of DNA string :code:`seq`. This function
+recognizes IUB code and preserves the letter cases. Uracil :code:`U` is
+complemented to :code:`A`.

@@ -191,7 +191,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
         if qconfig.create_icarus_html or qconfig.draw_plots:
             icarus_gc_fpath = join(output_dirpath, 'gc.icarus.txt')
             save_icarus_GC(ref_fpath, icarus_gc_fpath)
-        if qconfig.draw_plots:
+        if qconfig.draw_circos:
             circos_gc_fpath = join(output_dirpath, 'gc.circos.txt')
             save_circos_GC(ref_fpath, reference_length, circos_gc_fpath)
 

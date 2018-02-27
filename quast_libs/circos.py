@@ -502,7 +502,7 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
             radius -= track_intervals[i]
         out_f.write('track%d_pos = %f\n' % (len(track_intervals), radius))
         out_f.write('<image>\n')
-        out_f.write('dir = .\n')
+        out_f.write('dir = %s\n' % output_dir)
         out_f.write('file = %s\n' % circos_png_fname)
         out_f.write('png = yes\n')
         out_f.write('svg = no\n')

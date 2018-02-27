@@ -334,7 +334,7 @@ def get_mode(binary_path=None):
     mode = 'default'
     if basename(binary_path).startswith("metaquast"):
         mode = 'meta'
-    elif basename(binary_path).startswith("quast-lg"):
+    elif basename(binary_path).startswith("quast-lg") or large_genome:
         mode = 'large'
     return mode
 

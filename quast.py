@@ -288,8 +288,9 @@ def main(args):
         logger.main_info('  PDF version (tables and plots) is saved to ' + all_pdf_fpath)
 
     if circos_png_fpath:
-        logger.main_info('  Circos plot is saved to %s (the annotation is in %s). Circos configuration file is saved to %s' %
-                         (circos_png_fpath, circos_legend_fpath, circos_png_fpath.replace('.png', '.conf')))
+        logger.main_info('  Circos plot is saved to %s (legend is in %s, configuration file is in %s)' %
+                         (circos_png_fpath, os.path.basename(circos_legend_fpath),
+                          os.path.basename(circos_png_fpath.replace('.png', '.conf'))))
 
     if icarus_html_fpath:
         logger.main_info('  Icarus (contig browser) is saved to %s' % icarus_html_fpath)

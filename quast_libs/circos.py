@@ -432,17 +432,17 @@ def set_window_size(ref_len):
 def create_legend(assemblies, min_gc, max_gc, features_containers, coverage_fpath, output_dir):
     legend_fpath = join(output_dir, 'legend.txt')
     with open(legend_fpath, 'w') as out_f:
-        out_f.write('1) The outer circle represents reference contigs with GC (%%) heatmap [from %d%% (white) to %d%% (black)].\n' %
+        out_f.write('1) The outer circle represents reference sequence(s) with GC (%%) heatmap [from %d%% (white) to %d%% (black)].\n' %
                     (min_gc, max_gc))
         if qconfig.is_combined_ref:
-            out_f.write('Color bars help to distinguish different references.\n')
+            out_f.write('Color bars help to distinguish between different references.\n')
 
-        out_f.write('2) Assemblies tracks.\n')
+        out_f.write('2) Assembly tracks.\n')
         for i, assembly in enumerate(assemblies):
             out_f.write('Assembly %d - %s\n' % (i, assembly.label))
-        out_f.write('Assemblies tracks is combined with mismatches visualization: higher columns mean more mismatches.\n')
+        out_f.write('Assembly tracks are combined with mismatches visualization: higher columns indicate larger mismatch rate.\n')
         if features_containers:
-            out_f.write('3) User-provided genes. The darker colour mean more density of genes.\n')
+            out_f.write('3) User-provided genes. A darker color indicates higher density of genes.\n')
         if coverage_fpath:
             out_f.write('%d) The inner circle represents read coverage histogram.\n' % 4 if features_containers else 3)
     return legend_fpath
@@ -594,7 +594,7 @@ def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, gc_fpath, feature
         logger.warning('Circos is not installed!\n'
                        'If you want to create Circos plots, install Circos as described at http://circos.ca/tutorials/lessons/configuration/distribution_and_installation '
                        'and run the following command:\n circos -conf ' + conf_fpath + '.\n '
-                       'The plot annotation is saved to ' + circos_legend_fpath)
+                       'The plot legend is saved to ' + circos_legend_fpath)
         return None, None
 
     cmdline = [circos_exec, '-conf', conf_fpath]

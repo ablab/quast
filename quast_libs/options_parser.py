@@ -591,11 +591,15 @@ def parse_options(logger, quast_args):
              dest='draw_circos',
              action='store_true')
          ),
+        (['--no-read-stats'], dict(
+             dest='no_read_stats',
+             action='store_true')
+         ),
         (['--fast'], dict(
              dest='fast',
              action='callback',
              callback=set_multiple_variables,
-             callback_kwargs={'store_true_values': ['no_gc', 'no_sv', 'no_gzip'],
+             callback_kwargs={'store_true_values': ['no_gc', 'no_sv', 'no_gzip', 'no_read_stats'],
                               'store_false_values': ['show_snps', 'draw_plots', 'html_report', 'create_icarus_html', 'analyze_gaps']},
              default=False)
          ),

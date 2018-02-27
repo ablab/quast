@@ -92,7 +92,7 @@ def main(args):
             else:
                 from quast_libs import optimal_assembly
                 optimal_assembly_fpath = optimal_assembly.do(ref_fpath, original_ref_fpath,
-                                                         os.path.join(output_dirpath, qconfig.optimal_assembly_basename))
+                                                             os.path.join(output_dirpath, qconfig.optimal_assembly_basename))
                 if optimal_assembly_fpath is not None:
                     contigs_fpaths.insert(0, optimal_assembly_fpath)
                     labels.insert(0, 'UpperBound')

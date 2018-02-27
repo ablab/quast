@@ -67,6 +67,7 @@ no_check_meta = False  # for metaQUAST, without checking min-contig
 unique_mapping = False  # for metaQUAST only
 no_gc = False
 no_sv = False
+no_read_stats = False
 no_gzip = False
 show_snps = True
 glimmer = False
@@ -489,6 +490,10 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("    --no-gc                           Do not compute GC% and GC-distribution\n")
         stream.write("    --no-sv                           Do not run structural variation detection (make sense only if reads are specified)\n")
         stream.write("    --no-gzip                         Do not compress large output files\n")
+        stream.write("    --no-read-stats                   Do not align reads to assemblies\n"
+                     "                                      Reads will be aligned to reference and used for coverage analysis,\n"
+                     "                                      upper bound assembly simulation, and structural variation detection.\n"
+                     "                                      Use this option if you do not need read statistics for assemblies.\n")
         stream.write("    --fast                            A combination of all speedup options except --no-check\n")
         if show_hidden:
             stream.write("\n")

@@ -357,20 +357,28 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
                 (not qconfig.create_icarus_html or (is_non_empty_file(cov_fpath) and is_non_empty_file(physical_cov_fpath))):
             required_files = []
 
-    n_jobs = min(qconfig.max_threads, len(contigs_fpaths) + 1)
-    max_threads_per_job = max(1, qconfig.max_threads // n_jobs)
-    sam_fpaths = qconfig.sam_fpaths or [None] * len(contigs_fpaths)
-    bam_fpaths = qconfig.bam_fpaths or [None] * len(contigs_fpaths)
-    parallel_align_args = [(contigs_fpath, output_dir, temp_output_dir, log_path, err_fpath, max_threads_per_job,
-                            sam_fpaths[index], bam_fpaths[index], index) for index, contigs_fpath in enumerate(contigs_fpaths)]
+    if not qconfig.no_read_stats:
+        n_jobs = min(qconfig.max_threads, len(contigs_fpaths) + 1)
+        max_threads_per_job = max(1, qconfig.max_threads // n_jobs)
+        sam_fpaths = qconfig.sam_fpaths or [None] * len(contigs_fpaths)
+        bam_fpaths = qconfig.bam_fpaths or [None] * len(contigs_fpaths)
+        parallel_align_args = [(contigs_fpath, output_dir, temp_output_dir, log_path, err_fpath, max_threads_per_job,
+                                sam_fpaths[index], bam_fpaths[index], index) for index, contigs_fpath in enumerate(contigs_fpaths)]
+    else:
+        n_jobs = 1
+        max_threads_per_job = qconfig.max_threads
+        parallel_align_args = []
+
     if main_ref_fpath:
         parallel_align_args.append((main_ref_fpath, output_dir, temp_output_dir, log_path, err_fpath,
                                     max_threads_per_job, qconfig.reference_sam, qconfig.reference_bam, None, required_files, True))
-    correct_chr_names, sam_fpaths, bam_fpaths = run_parallel(align_single_file, parallel_align_args, n_jobs)
-    qconfig.sam_fpaths = sam_fpaths[:len(contigs_fpaths)]
-    qconfig.bam_fpaths = bam_fpaths[:len(contigs_fpaths)]
-    add_statistics_to_report(output_dir, contigs_fpaths, main_ref_fpath)
-    save_reads(output_dir)
+    if parallel_align_args:
+        correct_chr_names, sam_fpaths, bam_fpaths = run_parallel(align_single_file, parallel_align_args, n_jobs)
+        if not qconfig.no_read_stats:
+            qconfig.sam_fpaths = sam_fpaths[:len(contigs_fpaths)]
+            qconfig.bam_fpaths = bam_fpaths[:len(contigs_fpaths)]
+        add_statistics_to_report(output_dir, contigs_fpaths, main_ref_fpath)
+        save_reads(output_dir)
     if not main_ref_fpath:
         return None, None, None
 

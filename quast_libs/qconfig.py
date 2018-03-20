@@ -173,6 +173,14 @@ LARGE_EXTENSIVE_MIS_THRESHOLD = 7000
 LARGE_MIN_CONTIG = 3000
 LARGE_MIN_ALIGNMENT = 500
 
+# Upperbound
+upperbound_min_connections = None
+MIN_CONNECT_MP = 2  # minimal reads for scaffolding
+MIN_CONNECT_LR = 1
+
+# k-mer stats
+unique_kmer_len = 101
+
 # BSS fine-tuning params
 BSS_MAX_SETS_NUMBER = 10  # for ambiguous contigs
 BSS_critical_number_of_aligns = 100

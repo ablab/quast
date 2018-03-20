@@ -562,9 +562,21 @@ def parse_options(logger, quast_args):
              action='store_true',
              default=False)
          ),
+        (['--k-mer-size'], dict(
+             dest='unique_kmer_len',
+             type='int')
+         ),
         (['--upper-bound-assembly'], dict(
              dest='optimal_assembly',
              action='store_true')
+         ),
+        (['--upper-bound-min-con'], dict(
+             dest='upperbound_min_connections',
+             type='int',
+             action='callback',
+             callback=check_arg_value,
+             callback_args=(logger,),
+             callback_kwargs={'min_value': 1})
          ),
         (['--est-insert-size'], dict(
              dest='optimal_assembly_insert_size',

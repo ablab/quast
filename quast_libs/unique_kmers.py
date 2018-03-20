@@ -20,7 +20,6 @@ from quast_libs.qutils import get_free_memory, md5, download_external_tool, \
 from quast_libs.ra_utils.misc import minimap_fpath, compile_minimap
 from quast_libs.reporting import save_kmers
 
-KMERS_LEN = 101
 KMER_FRACTION = 0.001
 KMERS_INTERVAL = 1000
 MAX_CONTIGS_NUM = 10000
@@ -77,10 +76,10 @@ def get_kmers_cnt(tmp_dirpath, kmc_db_fpath, log_fpath, err_fpath):
     return kmers_cnt
 
 
-def count_kmers(tmp_dirpath, fpath, log_fpath, err_fpath):
+def count_kmers(tmp_dirpath, fpath, kmer_len, log_fpath, err_fpath):
     kmc_out_fpath = join(tmp_dirpath, basename(fpath) + '.kmc')
     max_mem = max(2, get_free_memory())
-    run_kmc(['-m' + str(max_mem), '-n128', '-k' + str(KMERS_LEN), '-fm', '-cx1', '-ci1', fpath, kmc_out_fpath, tmp_dirpath],
+    run_kmc(['-m' + str(max_mem), '-n128', '-k' + str(kmer_len), '-fm', '-cx1', '-ci1', fpath, kmc_out_fpath, tmp_dirpath],
             log_fpath, err_fpath, use_kmc_tools=False)
     return kmc_out_fpath
 
@@ -102,7 +101,7 @@ def align_kmers(output_dir, ref_fpath, kmers_fpath, log_err_fpath, max_threads):
     return kmers_by_chrom, kmers_pos_by_chrom
 
 
-def downsample_kmers(tmp_dirpath, ref_fpath, kmc_db_fpath, log_fpath, err_fpath):
+def downsample_kmers(tmp_dirpath, ref_fpath, kmc_db_fpath, kmer_len, log_fpath, err_fpath):
     downsampled_txt_fpath = join(tmp_dirpath, 'kmc.downsampled.txt')
     open(downsampled_txt_fpath, 'w').close()
     ref_kmers = dict()
@@ -110,9 +109,9 @@ def downsample_kmers(tmp_dirpath, ref_fpath, kmc_db_fpath, log_fpath, err_fpath)
     for chrom, seq in read_fasta(ref_fpath):
         kmc_fasta_fpath = join(tmp_dirpath, 'kmers_' + chrom + '.fasta')
         with open(kmc_fasta_fpath, 'w') as out_f:
-            for i in range(len(seq) - KMERS_LEN + 1):
+            for i in range(len(seq) - kmer_len + 1):
                 out_f.write('>' + str(i) + '\n')
-                out_f.write(seq[i: i + KMERS_LEN] + '\n')
+                out_f.write(seq[i: i + kmer_len] + '\n')
         filtered_fpath = join(tmp_dirpath, 'kmers_' + chrom + '.filtered.fasta')
         filter_contigs(kmc_fasta_fpath, filtered_fpath, kmc_db_fpath, log_fpath, err_fpath, min_kmers=1)
         filtered_kmers = set()
@@ -127,7 +126,7 @@ def downsample_kmers(tmp_dirpath, ref_fpath, kmc_db_fpath, log_fpath, err_fpath)
                         out_f.write('>' + str(prev_kmer_idx + kmer_i) + '\n')
                         out_f.write(seq + '\n')
                         ref_kmers[prev_kmer_idx + kmer_i] = (chrom, kmer_i)
-        prev_kmer_idx = i
+        prev_kmer_idx += i
         if qconfig.space_efficient:
             os.remove(kmc_fasta_fpath)
     return ref_kmers, downsampled_txt_fpath
@@ -172,7 +171,8 @@ def _get_dist_inconstistency(pos, prev_pos, ref_pos, prev_ref_pos, cyclic_ref_le
 
 def do(output_dir, ref_fpath, contigs_fpaths, logger):
     logger.print_timestamp()
-    logger.main_info('Running analysis based on unique ' + str(KMERS_LEN) + '-mers...')
+    kmer_len = qconfig.unique_kmer_len
+    logger.main_info('Running analysis based on unique ' + str(kmer_len) + '-mers...')
 
     checked_assemblies = []
     for contigs_fpath in contigs_fpaths:
@@ -230,7 +230,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
     tmp_dirpath = join(output_dir, 'tmp')
     if not isdir(tmp_dirpath):
         os.makedirs(tmp_dirpath)
-    ref_kmc_out_fpath = count_kmers(tmp_dirpath, ref_fpath, log_fpath, err_fpath)
+    ref_kmc_out_fpath = count_kmers(tmp_dirpath, ref_fpath, kmer_len, log_fpath, err_fpath)
     unique_kmers = get_kmers_cnt(tmp_dirpath, ref_kmc_out_fpath, log_fpath, err_fpath)
     if not unique_kmers:
         logger.warning('KMC failed, check ' + log_fpath + ' and ' + err_fpath + '. Skipping...')
@@ -240,7 +240,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
     kmc_out_fpaths = []
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
-        kmc_out_fpath = count_kmers(tmp_dirpath, contigs_fpath, log_fpath, err_fpath)
+        kmc_out_fpath = count_kmers(tmp_dirpath, contigs_fpath, kmer_len, log_fpath, err_fpath)
         intersect_out_fpath = intersect_kmers(tmp_dirpath, [ref_kmc_out_fpath, kmc_out_fpath], log_fpath, err_fpath)
         matched_kmers = get_kmers_cnt(tmp_dirpath, intersect_out_fpath, log_fpath, err_fpath)
         completeness = matched_kmers * 100.0 / unique_kmers
@@ -249,7 +249,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
 
     logger.info('Analyzing assemblies correctness...')
     ref_contigs = [name for name, _ in read_fasta(ref_fpath)]
-    ref_kmers, downsampled_kmers_fpath = downsample_kmers(tmp_dirpath, ref_fpath, ref_kmc_out_fpath, log_fpath, err_fpath)
+    ref_kmers, downsampled_kmers_fpath = downsample_kmers(tmp_dirpath, ref_fpath, ref_kmc_out_fpath, kmer_len, log_fpath, err_fpath)
     for contigs_fpath, kmc_db_fpath in zip(contigs_fpaths, kmc_out_fpaths):
         report = reporting.get(contigs_fpath)
         corr_len = None

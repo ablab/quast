@@ -712,7 +712,7 @@ def check_java_version(version):
     try:
         p = subprocess.Popen(['java', '-version'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, stderr = p.communicate()
-        version_pattern = re.compile('java version "(\d\.\d+)')
+        version_pattern = re.compile('version "(\d\.\d+)')
         return float(version_pattern.findall(str(stdout))[0]) >= version
     except:
         return False
@@ -1069,3 +1069,18 @@ def md5(fname):
                 break
             hash_md5.update(buf)
     return hash_md5.hexdigest()
+
+
+def percentile(values, percent):
+    import math
+    percentile_idx = int(math.ceil((len(values) * percent) / 100)) - 1
+    return values[max(0, percentile_idx)]
+
+
+def calc_median(values):
+    if len(values) % 2 == 1:  # odd number of values
+        median = values[(len(values) - 1) // 2]
+    else:  # even number of values - take the avg of central
+        median = (values[len(values) // 2] + values[len(values) // 2 - 1]) // 2
+    return median
+

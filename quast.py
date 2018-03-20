@@ -229,7 +229,7 @@ def main(args):
     ########################################################################
     ### LARGE DRAWING TASKS
     ########################################################################
-    if qconfig.draw_plots or qconfig.create_icarus_html:
+    if qconfig.draw_plots or qconfig.create_icarus_html or qconfig.draw_circos:
         logger.print_timestamp()
         logger.main_info('Creating large visual summaries...')
         logger.main_info('This may take a while: press Ctrl-C to skip this step..')

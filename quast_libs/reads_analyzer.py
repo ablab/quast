@@ -24,7 +24,7 @@ from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, sambamba_fpat
     all_read_names_correct, clean_read_names, check_cov_file, bam_to_bed, get_safe_fpath, sambamba_view, \
     calculate_genome_cov, minimap_fpath
 from quast_libs.qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, run_parallel, \
-    get_path_to_program, check_java_version
+    get_path_to_program, check_java_version, percentile, calc_median
 
 from quast_libs.log import get_logger
 from quast_libs.reporting import save_reads
@@ -144,7 +144,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_fpath, max_threads, bam_f
         qutils.call_subprocess(['java', '-ea', '-Xmx' + str(max_mem) + 'g', '-Dsamjdk.create_index=true', '-Dsamjdk.use_async_io_read_samtools=true',
                                 '-Dsamjdk.use_async_io_write_samtools=true', '-Dsamjdk.use_async_io_write_tribble=true',
                                 '-cp', get_gridss_fpath(), 'gridss.CallVariants', 'I=' + bam_sorted_fpath, 'O=' + vcf_fpath,
-                                'ASSEMBLY=' + join(vcf_output_dirpath, ref_name + '.gridss.bam'), 'REFERENCE_SEQUENCE=' + cur_ref_fpath,
+                                'ASSEMBLY=' + join(vcf_output_dirpath, ref_name + '.gridss.bam'), 'R=' + cur_ref_fpath,
                                 'WORKER_THREADS=' + str(max_threads), 'WORKING_DIR=' + vcf_output_dirpath],
                                 stderr=open(err_fpath, 'a'), logger=logger, env=env)
     if is_non_empty_file(vcf_fpath):
@@ -286,7 +286,7 @@ def align_reference(ref_fpath, output_dir, using_reads='all', calculate_coverage
                                                                 is_reference=True, alignment_only=True, using_reads=using_reads)
     if not qconfig.optimal_assembly_insert_size or qconfig.optimal_assembly_insert_size == 'auto':
         if using_reads == 'pe' and sam_fpath:
-            insert_size, std_dev = calculate_insert_size(sam_fpath, output_dir, ref_name)
+            insert_size, _, _ = calculate_insert_size(sam_fpath, output_dir, ref_name)
             if not insert_size:
                 logger.info('  Failed calculating insert size.')
             else:
@@ -590,6 +590,7 @@ def align_reads(ref_fpath, sam_fpath, using_reads, output_dir, err_fpath, max_th
 def run_aligner(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type):
     bwa_cmd = bwa_fpath('bwa') + ' mem -t ' + str(max_threads)
     insert_sizes = []
+    temp_sam_fpaths = []
     for idx, reads in enumerate(read_fpaths):
         if isinstance(reads, str):
             if reads_type == 'pacbio' or reads_type == 'nanopore':
@@ -618,10 +619,19 @@ def run_aligner(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, e
                 if exists(bam_dedup_fpath):
                     shutil.move(bam_dedup_fpath, bam_fpath)
         if reads_type == 'pe':
-            insert_size, std_dev = calculate_insert_size(output_fpath, output_dir, basename(sam_fpath))
+            insert_size, _, _ = calculate_insert_size(output_fpath, output_dir, qutils.name_from_fpath(sam_fpath))
             if insert_size < qconfig.optimal_assembly_max_IS:
                 insert_sizes.append(insert_size)
-        out_sam_fpaths.append(output_fpath)
+        temp_sam_fpaths.append(output_fpath)
+
+    if len(temp_sam_fpaths) == 1:
+        final_sam_fpath = add_suffix(sam_fpath, reads_type)
+        final_bam_fpath = final_sam_fpath.replace('.sam', '.bam')
+        shutil.move(temp_sam_fpaths[0], final_sam_fpath)
+        shutil.move(temp_sam_fpaths[0].replace('.sam', '.bam'), final_bam_fpath)
+        out_sam_fpaths.append(final_sam_fpath)
+    else:
+        out_sam_fpaths.extend(temp_sam_fpaths)
 
     if insert_sizes:
         qconfig.optimal_assembly_insert_size = max(insert_sizes)
@@ -831,15 +841,22 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
             os.remove(raw_cov_fpath)
 
 
+def get_max_min_is(insert_sizes):
+    decile_1 = percentile(insert_sizes, 10)
+    decile_9 = percentile(insert_sizes, 90)
+    return decile_1, decile_9
+
+
 def calculate_insert_size(sam_fpath, output_dir, ref_name, reads_suffix=''):
-    insert_size_fpath = join(output_dir, ref_name + reads_suffix + '.is.txt')
+    insert_size_fpath = join(output_dir, ref_name + ('.' + reads_suffix if reads_suffix else '') + '.is.txt')
     if is_non_empty_file(insert_size_fpath):
         try:
             with open(insert_size_fpath) as f:
                 insert_size = int(f.readline())
-                std_dev = int(f.readline())
+                min_insert_size = int(f.readline())
+                max_insert_size = int(f.readline())
             if insert_size:
-                return insert_size, std_dev
+                return insert_size, min_insert_size, max_insert_size
         except:
             pass
     insert_sizes = []
@@ -858,19 +875,17 @@ def calculate_insert_size(sam_fpath, output_dir, ref_name, reads_suffix=''):
             insert_sizes.append(insert_size)
 
     if insert_sizes:
-        insert_sizes = sorted(insert_sizes)
-        if len(insert_sizes) % 2 == 1:  # odd number of values
-            median_is = insert_sizes[(len(insert_sizes) - 1) // 2]
-        else:  # even number of values - take the avg of central
-            median_is = (insert_sizes[len(insert_sizes) // 2] + insert_sizes[len(insert_sizes) // 2 - 1]) // 2
+        insert_sizes.sort()
+        median_is = calc_median(insert_sizes)
         if median_is <= 0:
-            return None, None
-        std_dev = sqrt(sum([(insert_size - median_is) ** 2 for insert_size in insert_sizes]) / len(insert_sizes))
+            return None, None, None
+        min_insert_size, max_insert_size = get_max_min_is(insert_sizes)
         insert_size = max(qconfig.optimal_assembly_min_IS, median_is)
         with open(insert_size_fpath, 'w') as out_f:
             out_f.write(str(insert_size) + '\n')
-            out_f.write(str(std_dev))
-        return insert_size, std_dev
+            out_f.write(str(min_insert_size) + '\n')
+            out_f.write(str(max_insert_size) + '\n')
+        return insert_size, min_insert_size, max_insert_size
     return None, None
 
 

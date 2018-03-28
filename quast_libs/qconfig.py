@@ -393,7 +393,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("-r                <filename>      Reference genome file\n")
         stream.write("-g  --features [type:]<filename>  File with genomic feature coordinates in the reference (GFF, BED, NCBI or TXT)\n")
         stream.write("                                  Optional 'type' can be specified for extracting only a specific feature type from GFF\n")
-    stream.write("-m  --min-contig  <int>           Lower threshold for contig length [default: %s]\n" % m_default)
+    stream.write("-m  --min-contig  <int>           Lower threshold for contig length [default: %d]\n" % m_default)
     stream.write("-t  --threads     <int>           Maximum number of threads [default: 25% of CPUs]\n")
 
     stream.write("\n")
@@ -412,6 +412,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
                          (LARGE_MIN_CONTIG, LARGE_MIN_ALIGNMENT, LARGE_EXTENSIVE_MIS_THRESHOLD))
         stream.write("-k  --k-mer-stats                     Compute k-mer-based quality metrics (recommended for large genomes)\n"
                      "                                      This may significantly increase memory and time consumption on large genomes\n")
+        stream.write("    --k-mer-size                      Size of k used in --k-mer-stats [default: %d]\n" % unique_kmer_len)
         stream.write("    --circos                          Draw Circos plot\n")
         if mode == 'meta':
             stream.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")
@@ -419,9 +420,9 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
             stream.write("-f  --gene-finding                    Predict genes using GeneMark-ES\n")
         else:
             stream.write("-f  --gene-finding                    Predict genes using GeneMarkS (prokaryotes, default) or GeneMark-ES (eukaryotes, use --eukaryote)\n")
-        stream.write("    --glimmer                         Use GlimmerHMM for gene prediction (instead of the default finder, see above)\n")
         if not meta:
             stream.write("    --mgm                             Use MetaGeneMark for gene prediction (instead of the default finder, see above)\n")
+        stream.write("    --glimmer                         Use GlimmerHMM for gene prediction (instead of the default finder, see above)\n")
         stream.write("    --gene-thresholds <int,int,...>   Comma-separated list of threshold lengths of genes to search with Gene Finding module\n")
         stream.write("                                      [default: %s]\n" % genes_lengths)
         stream.write("    --rna-finding                     Predict ribosomal RNA genes using Barrnap\n")
@@ -460,6 +461,8 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("                                      from the ends of the reference fragments [default: %s]\n" % MAX_INDEL_LENGTH)
         stream.write("                                      Requires --fragmented option\n")
         stream.write("    --upper-bound-assembly            Simulate upper bound assembly based on the reference genome and reads\n")
+        stream.write("    --upper-bound-min-con  <int>      Minimal number of 'connecting reads' needed for joining upper bound contigs into a scaffold\n")
+        stream.write("                                      [default: %d for mate-pairs and %d for long reads]\n" % (MIN_CONNECT_MP, MIN_CONNECT_LR))
         stream.write("    --est-insert-size  <int>          Use provided insert size in upper bound assembly simulation [default: auto detect from reads or %d]\n" % optimal_assembly_default_IS)
         stream.write("    --plots-format  <str>             Save plots in specified format [default: %s].\n" % plot_extension)
         stream.write("                                      Supported formats: %s\n" % ', '.join(supported_plot_extensions))

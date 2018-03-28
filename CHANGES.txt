@@ -8,23 +8,24 @@
          causing many false positive misassemblies in regular QUAST runs and use of proper
          thresholds on minimal alignment, contig length, and extensive misassembly sizes.
 
-      2. New module: upper bound assembly ("--optimal-assembly").
+      2. New module: upper bound assembly ("--upper-bound-assembly").
          We determine which part of the reference genome could be potentially reconstructed
          using given set of reads. The algorithm takes into account zero covered regions
          and genomic repeats (identified with Red repeat finder). The constructed assembly
          is added to the evaluation and gives user the theoretical limits on the assembly
          completeness and correctness quality metrics for a given genome and set of reads.
 
-      3. New module: k-mer-based statistics ("--kmc").
-         We identify unique 101-mers in the reference genome (using KMC tool) and track
+      3. New module: k-mer-based statistics ("--k-mer-stats").
+         We identify unique k-mers in the reference genome (using KMC tool) and track
          their presence and relative location in assemblies. The percentage of the assembled
          k-mers is a novel completeness measure and the number of large inconsistencies
          (translocations or relocation with > 100 kbp difference in reference and assembly
-         positions) is a novel correctness measure.
+         positions) is a novel correctness measure. By default, k is 101 bp and it can be
+         specified with "--k-mer-size" option.
 
       4. Improved and extended gene prediction/annotation functionality:
        — Barrnap for rRNA genes prediction ("--rna-finding") is added;
-       — BUSCO for finding conserved orthologs ("--find-conserved-genes"; eukaryotes only;
+       — BUSCO for finding conserved orthologs ("--conserved-genes-finding"; eukaryotes only;
          Linux only) is added;
        — regular predicted genes (using GeneMark or Glimmer) are split into full and partial;
        — "--fungus" option is added for more accurate processing of fungus assemblies using
@@ -68,7 +69,7 @@
 
       9. Changes in the list of embedded third-party tools:
        — removed: GAGE, gnuplot;
-       — replaced: MUMmer and E-MEM (new: Minimap2), Manta (new: GRIDDS);
+       — replaced: MUMmer and E-MEM (new: Minimap2), Manta (new: GRIDSS);
        — added: BUSCO, Barrnap, KMC, Red.
 
       10. Fixed several minor bugs.

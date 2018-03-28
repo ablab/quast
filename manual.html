@@ -70,35 +70,37 @@
 
 <p> QUAST stands for <u>QU</u>ality <u>AS</u>sessment <u>T</u>ool.
     The tool evaluates genome assemblies by computing various metrics. This document provides instructions
-    for the general <b>QUAST</b> tool for genome assemblies, <b>MetaQUAST</b>, the extension for metagenomic datasets,
-    and <b>Icarus</b>, interactive visualizer for these tools.
+    for the general <b>QUAST</b> tool for genome assemblies, <b>MetaQUAST</b>, the extension for metagenomic datasets, <b>QUAST-LG</b>, the extension for large genomes (e.g., mammalians), and <b>Icarus</b>, interactive visualizer for these tools.
     <br>
     <br>
     You can find all project news and the latest version of the tool
     at <a href="http://quast.sf.net/">http://quast.sf.net/</a>.
     <br>
     <br>
-    QUAST utilizes <a href="https://github.com/lh3/minimap2">Minimap2</a>,
+    QUAST default pipeline utilizes <a href="https://github.com/lh3/minimap2">Minimap2</a>.
+    Functional elements prediction modules use
     <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>,
     <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>,
     <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
-    <a href="http://http://sun.aei.polsl.pl/kmc">KMC</a>,
-    <a href="https://github.com/tseemann/barrnap">Barrnap</a>, <a href="http://circos.ca">Circos</a>, and <a href="http://toolsmith.ens.utulsa.edu">Red</a>.
+    <a href="https://github.com/tseemann/barrnap">Barrnap</a>,
+    and <a href="http://busco.ezlab.org/">BUSCO</a>.
+    QUAST module for finding structural variants applies <a href="https://github.com/lh3/bwa">BWA</a>,
+    <a href="https://github.com/lomereiter/sambamba">Sambamba</a>,
+    and <a href="https://github.com/PapenfussLab/gridss">GRIDSS</a>.
+    Also we use <a href="http://bedtools.readthedocs.io/">bedtools</a> for calculating raw and physical read coverage, which is shown in Icarus contig alignment viewer. Icarus also can use <a href="http://circos.ca">Circos</a> if it is installed in PATH.
+    QUAST-LG introduced modules requiring <a href="http://http://sun.aei.polsl.pl/kmc">KMC</a>
+    and <a href="http://toolsmith.ens.utulsa.edu">Red</a>.
     In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/meta_gmhmmp_instructions.html">MetaGeneMark</a>,
     <a href="http://sourceforge.net/p/krona/home/krona/">Krona tools</a>,
     <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and
     <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database.
-    Starting from version 3.2, QUAST package includes reads processing tools for finding structural variants between the reference genome and actual organism.
-    These tools are <a href="https://github.com/lh3/bwa">BWA</a>,
-    <a href="https://github.com/lomereiter/sambamba">Sambamba</a>, and <a href="https://github.com/PapenfussLab/gridss">GRIDSS</a>.
-    Also we use <a href="http://bedtools.readthedocs.io/">bedtools</a> for calculating raw and physical read coverage, which is shown in Icarus contig alignment viewer.
     <br>
-    All tools above are built in into the QUAST package which is ready for use by academic, non-profit institutions and U.S. Government agencies.
+    Almost all tools listed above are built in into the QUAST package which is ready for use by academic, non-profit institutions and U.S. Government agencies.
     If you are not in one of these categories please refer to <a href="LICENSE.txt">LICENSE</a> section 'Third-party tools incorporated into QUAST'
     for guidelines on how to complete the licensing process.
     <br>
     <br>
-    Version 5.0.0 of QUAST was released under GPL v2 on XX January 2018. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
+    Version 5.0.0 of QUAST was released under GPL v2 on XX March 2018. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -136,29 +138,29 @@
 <h2>1. Installation</h2>
 
 <p>
-    QUAST can be run on Linux or macOS (OS X).
+    QUAST can be run on Linux (64-bit and 32-bit with slightly limited functionality) or macOS (OS X).
 </p>
 <p>
     Its default pipeline requires:
 </p>
 <ul>
     <li>Python2 (2.5 or higher) or Python3 (3.3 or higher)</li>
-    <li>Perl 5.6.0 or higher</li>
     <li>GCC 4.7 or higher</li>
-    <li>basic UNIX tools (make, sh, sed, awk, ar)</li>
+    <li>Perl 5.6.0 or higher</li>
+    <li>GNU make and ar</li>
+    <li>zlib development files</li>
 </ul>
 <p>
     In addition, QUAST submodules require:
 </p>
 <ul>
-    <li>Time::HiRes perl module for GeneMark-ES</li>
-    <li>Java 1.8 or later for GRIDSS (needed for SV detection)</li>
-    <li>R for GRIDSS (needed for SV detection)</li>
+    <li>Time::HiRes perl module for GeneMark-ES (gene prediction in eukaryotes)</li>
+    <li>Java 1.8 or later for GRIDSS (SV detection)</li>
+    <li>R for GRIDSS (SV detection)</li>
 </ul>
 All those tools are usually pre installed on Linux.<br>
 MacOS, however, initially misses <code>make</code>, <code>gcc</code> and <code>ar</code>, so you will have to install
-<a href='https://developer.apple.com/xcode/'>Xcode</a> (or only
-<a href='https://developer.apple.com/downloads/index.action?name=Command%20Line%20Tools'>Command Line Tools for Xcode</a>) to make them available.
+<a href='https://developer.apple.com/xcode/'>Xcode</a> to make them available.
 <br>
 <br>
 QUAST draws plots in two formats: HTML and PDF. If you need the PDF versions, make sure that you have installed <a href="http://matplotlib.sourceforge.net/">Matplotlib</a> Python library. We recommend to use Matplotlib version 1.1 or higher. QUAST is fully tested with Matplotlib v.1.3.1.
@@ -222,17 +224,13 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
     The tool accepts assemblies and reference genomes in FASTA format. Files may be compressed with zip, gzip, or&nbsp;bzip2.<br>
     A reference genome with multiple chromosomes can be provided as a single FASTA file with separate sequence for each chromosome inside.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
-    Maximum total assembly length is 4.29<span class="rhs">&nbsp;</span>Gbp.<br>
-    Maximum length of a reference sequence (e.g. a chromosome) is 536<span class="rhs">&nbsp;</span>Mbp. The number of sequences in a reference file is not limited.<br>
-    <br>
     <b>Genes and operons</b><br>
     One can also specify files with gene and operon positions in the reference genome. QUAST will count fully and partially aligned regions,
     and output <a href='#genes'>total values</a> as well as <a href='#gene_plot'>cumulative plots</a>.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
     The following file formats are supported:
     <ul>
-        <li>GFF, versions <a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">2</a> and <a href="http://www.sequenceontology.org/gff3.shtml">3</a>
-        (note: &lt;feature&gt;/&lt;type&gt; field should be either "gene" or "operon");
+        <li>GFF, versions <a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">2</a> and <a href="http://www.sequenceontology.org/gff3.shtml">3</a>;
         <li><a href="http://www.ensembl.org/info/website/upload/bed.html">BED</a>: sequence name, start position, end position, gene/operon id, optional fields;
         <li>the <a href="http://www.ncbi.nlm.nih.gov/gene">format used by NCBI</a> for genes ("Summary (text)");
         <li>four tab-separated columns: sequence name, gene/operon id, start position, end position.
@@ -264,21 +262,31 @@ Note: QUAST reuses existing alignments if run repeatedly with the same output di
 Thus, you can efficiently reuse already computed results when running QUAST with different parameters, or adding more assemblies to the existing comparison.
 
 <div class='option'>
-<code><b>-R</b> &lt;path&gt;</code>
+<code><b>-r</b> &lt;path&gt;</code>
 </div>
 Reference genome file. Optional. Many metrics can't be evaluated without a reference. If this is omitted, QUAST will only report the metrics that can be evaluated without a reference.
 
 <div class='option'>
-<code><b>-G</b> &lt;path&gt;</code> (or <code>--genes &lt;path&gt;</code>)
+<code><b>-g</b> &lt;path&gt;</code> (or <code>--features &lt;path&gt;</code>)
 </div>
-File with gene positions in the reference genome. See details about the file format in <a href="#sec2.2">section 2.2</a>.<br>
+File with genomic feature positions in the reference genome. See details about the file format in <a href="#sec2.2">section 2.2</a>.<br>
+If you use GFF format and would like to count only a specific feature from it (e.g., only "CDS" or only "gene") you can
+    specify this feature followed by a colon (":") as the filepath prefix (do not use spaces!). For example:<br>
+<div style='margin-left: 30px; margin-top: 5px; margin-bottom: 10px;'>
+<code>--features CDS:~/data/my_genome_annotation.gff</code>
+</div>
+    or<br>
+<div style='margin-left: 30px; margin-top: 5px; margin-bottom: 10px;'>
+<code>--features gene:./test_data/genes.gff</code>
+</div>
+    Otherwise, all features from the file will be considered.
 <span style='line-height: 50%;'>&nbsp;</span><br>
-If you do not have gene positions, you can make QUAST predict genes with <code><a href='#gene_finding'>--gene-finding</a></code>.<br>
+If you do not have the annotated positions, you can make QUAST predict genes with <code><a href='#gene_finding'>--gene-finding</a></code>.<br>
 
 <div class='option'>
 <code><b>-O</b> &lt;path&gt;</code> (or <code>--operons &lt;path&gt;</code>)
 </div>
-File with operon positions in the reference genome. See details about the file format in <a href="#sec2.2">section 2.2</a>
+File with operon positions in the reference genome. See details about the file format in <a href="#sec2.2">section 2.2</a>.
 
 <div class='option'>
 <a name='min_contig'></a>
@@ -288,13 +296,21 @@ Lower threshold for a contig length (in bp). Shorter contigs won't be taken into
 (except for specific metrics, see <a href="#sec3">section 3</a>). The default value is 500.
 </div>
 
-<br>
-Advanced options:
-<div class='options'>
 <div class='option'>
 <a name='threads_opt'></a><code><b>--threads</b></code> (or <code>-t</code>) <code>&lt;int&gt;</code>
 </div>
 Maximum number of threads. The default value is 25% of all available CPUs but not less than 1. If QUAST fails to determine the number of CPUs, maximum threads number is set to 4.
+
+<br>
+Advanced options:
+<div class='options'>
+<div class='option'>
+    <a name='scaffolds'></a><code><b>--scaffolds</b></code> (or <code>-s</code>)
+</div>
+The assemblies are scaffolds (rather than contigs). QUAST will add split versions
+of assemblies to the comparison (named &lt;assembly_name&gt;_broken).
+Assemblies are split by continuous fragments of N's of length &ge; 10.
+If broken version is equal to the original assembly (i.e. nothing was split) it is not included in the comparison.
 
 <div class='option'>
 <code><b>--labels</b></code> (or <code>-l</code>) <code>&lt;label,label...&gt;</code>
@@ -315,6 +331,60 @@ If your labels include spaces, use quotes:<br>
     <code><b>-L</b></code>
 </div>
 Take assembly names from their parent directory names.
+
+<div class='option'>
+    <a name="eukaryote"></a>
+    <code><b>--eukaryote</b></code> (or <code>-e</code>)
+</div>
+Genome is eukaryotic. Affects gene finding, conserved orthologs finding and contig alignment:<br>
+<ol class='my_ol' style='margin-top: 0;'>
+<li>For prokaryotes (which is default), GeneMarkS is used. For eukaryotes, GeneMark-ES is used.
+<li><a href='#rna_finding'>Barrnap</a> will use eukaryotic database to predict ribosomal RNA genes.
+<li><a href='#busco'>BUSCO</a> will use eukaryotic database to find conserved orthologs.
+<li>By default, QUAST assumes that a genome is circular and correctly processes its linear representation.
+This options indicates that the genome is not circular.
+</ol>
+
+<div class='option'>
+    <a name="fungus"></a>
+    <code><b>--fungus</b></code>
+</div>
+Genome is fungal. Affects gene finding, conserved orthologs finding and contig alignment:<br>
+<ol class='my_ol' style='margin-top: 0;'>
+<li>For gene finding, GeneMark-ES is used with <code>--fungus</code> option.
+<li><a href='#rna_finding'>Barrnap</a> will use eukaryotic database to predict ribosomal RNA genes.
+<li>><a href='#busco'>BUSCO</a> will use fungal database to find conserved orthologs.
+<li>By default, QUAST assumes that a genome is circular and correctly processes its linear representation.
+This options indicates that the genome is not circular.
+</ol>
+
+<div class='option'>
+    <a name="large"></a>
+    <code><b>--large</b></code>
+</div>
+Genome is large (typically &gt; 100 Mbp). Use optimal parameters for evaluation of large genomes.
+Affects speed and accuracy. In particular, imposes <code>--eukaryote --min-contig 3000 --min-alignment 500 --extensive-mis-size 7000</code>
+(can be overridden manually with the corresponding options). In addition, this mode tries to identify misassemblies caused by transposable elements
+    and exclude them from the number of misassemblies.
+
+<div class='option'>
+    <a name='k_mer_stats'></a><code><b>--k-mer-stats</b></code> (or <code>-k</code>)
+</div>
+    Compute k-mer-based quality metrics, such as <span class='metric-ref'>k-mer-based completeness, # k-mer-based misjoins</span>.
+    Recommended for large genomes (see also <code>--large</code> option).
+    Affects performance, thus disabled by default.<br>
+
+<div class='option'>
+    <a name='k_mer_size'></a><code><b>--k-mer-size</b></code> <code>&lt;int&gt;</code>
+</div>
+    Size of <code>k</code> used in <code>--k-mer-stats</code> options. The default value is 101. Use smaller values for genomes
+    with high levels of heterozygosity. However, note that very small k-mer sizes may give irrelevant results for repeat-rich genomes.
+
+<div class='option'>
+    <a name='circos'></a><code><b>--circos</b></code>
+</div>
+    Plot Circos version of Icarus contig alignment viewer. Note that Circos software is not embedded in QUAST, so if
+    Circos is not installed on your machine (in <code>PATH</code> environment variable) only its configuration files will be created.
 
 <div class='option'>
     <a name='gene_finding'></a><code><b>--gene-finding</b></code> (or <code>-f</code>)
@@ -358,33 +428,17 @@ Note: this list is used only if <code>--gene-finding</code> or <code>--glimmer</
 Enables ribosomal RNA gene finding. Disabled by default.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>
 By default, we assume that the genome is prokaryotic, and Barrnap uses the bacterial database for rRNA prediction.
-If the genome is eukaryotic, use <a href='#eukaryote'><code>--eukaryote</code></a> option to force Barrnap to work with the eukaryotic database.
+If the genome is eukaryotic (fungal), use <a href='#eukaryote'><code>--eukaryote</code></a> (<a href='#fungus'><code>--fungus</code></a>)
+    option to force Barrnap to work with the eukaryotic (fungal) database.
 
 <div class='option'>
-    <a name="eukaryote"></a>
-    <code><b>--eukaryote</b></code> (or <code>-e</code>)
+    <a name='busco'></a><code><b>--conserved-genes-finding</b></code> (or <code>-b</code>)
 </div>
-Genome is eukaryotic. Affects gene finding, conserved orthologs finding and contig alignment:<br>
-<ol class='my_ol' style='margin-top: 0;'>
-<li>For prokaryotes (which is default), GeneMarkS is used. For eukaryotes, GeneMark-ES is used.
-<li><a href='#rna_finding'>Barrnap</a> will use eukaryotic database to predict ribosomal RNA genes.
-<li>BUSCO will use eukaryotic database to find conserved orthologs.
-<li>By default, QUAST assumes that a genome is circular and correctly processes its linear representation.
-This options indicates that the genome is not circular.
-</ol>
-
-<div class='option'>
-    <a name="fungus"></a>
-    <code><b>--fungus</b></code>
-</div>
-Genome is fungal. Affects gene finding, conserved orthologs finding and contig alignment:<br>
-<ol class='my_ol' style='margin-top: 0;'>
-<li>For gene finding, GeneMark-ES is used with <code>--fungus</code> option.
-<li><a href='#rna_finding'>Barrnap</a> will use eukaryotic database to predict ribosomal RNA genes.
-<li>BUSCO will use fungal database to find conserved orthologs.
-<li>By default, QUAST assumes that a genome is circular and correctly processes its linear representation.
-This options indicates that the genome is not circular.
-</ol>
+Enables search for Universal Single-Copy Orthologs using BUSCO (only on Linux). Disabled by default.<br>
+<span style='line-height: 50%;'>&nbsp;</span><br>
+By default, we assume that the genome is prokaryotic, and BUSCO uses the bacterial database of orthologs.
+If the genome is eukaryotic (fungal), use <a href='#eukaryote'><code>--eukaryote</code></a> (<a href='#fungus'><code>--fungus</code></a>)
+    option to force BUSCO to work with the eukaryotic (fungal) database.
 
 <div class='option'>
     <a name='est_ref_size'></a><code><b>--est-ref-size</b> &lt;int&gt;</code>
@@ -397,14 +451,6 @@ not specified (see <code>-R</code> option).
 </div>
 Comma-separated list of contig length thresholds (in bp). Used in <span class='metric-ref'># contigs &ge; x</span> and
 <span class='metric-ref'>total length (&ge; x)</span> metrics (see <a href="#sec3">section 3</a>). The default value is 0,1000.
-
-<div class='option'>
-    <a name='scaffolds'></a><code><b>--scaffolds</b></code> (or <code>-s</code>)
-</div>
-The assemblies are scaffolds (rather than contigs). QUAST will add split versions
-of assemblies to the comparison (named &lt;assembly_name&gt;_broken).
-Assemblies are split by continuous fragments of N's of length &ge; 10.
-If broken version is equal to the original assembly (i.e. nothing was split) it is not included in the comparison.
 
 <div class='option'>
     <code><b>--use-all-alignments</b></code> (or <code>-u</code>)
@@ -483,8 +529,30 @@ Note: QUAST will not detect misassemblies caused by the linear representation of
 </div>
 Mark translocation as fake if both alignments are located no further than N bases from the ends of the reference fragments.
 The value should be less than extensive misassembly size
-(see <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>, its default value is 1000 bp). Default value is 85.
+(see <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>, its default value is 1000 bp). Default value is 50.
 Note: requires <a href='#fragmented'><code>--fragmented</code></a> option.
+
+<div class='option'>
+    <a name='fragmented_indent'></a><code><b>--upper-bound-assembly</b></code>
+</div>
+    Simulate upper bound assembly based on the reference genome and a given set reads.
+    This assembly is added to the comparison and could be useful for estimating the upper bounds of completeness and contiguity
+    that theoretically can be reached by assembly software from this particular set of reads.
+    The concept is based on the fact that the reference genome cannot be completely reconstructed from raw reads due to long genomic repeats and low covered regions.
+
+<div class='option'>
+    <a name='fragmented_indent'></a><code><b>--upper-bound-min-con</b></code> <code>&lt;int&gt;</code>
+</div>
+    Minimal number of 'connecting reads' needed for joining upper bound contigs into a scaffold
+    (see also <code>--upper-bound-assembly</code>). This is important for a realistic estimation of genome assembly fragmentation due to long repeats. The default values is 2 for mate-pairs and 1 for long reads (PacBio or Nanopore libraries).
+
+<div class='option'>
+    <a name='fragmented_indent'></a><code><b>--est-insert-size</b></code> <code>&lt;int&gt;</code>
+</div>
+    Paired-reads insert size used in the upper bound assembly construction (see also <code>--upper-bound-assembly</code>).
+    It is used for detecting minimal repeat size that spans the upper bound assembly into contigs.
+    By default, the value is automatically detected as the median insert size of provided paired-end reads.
+    If no paired-end reads are provided, 255 is used as the default value.
 
 <div class='option'>
 <code><b>--plots-format</b></code>  <code>&lt;format&gt;</code>

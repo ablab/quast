@@ -119,6 +119,10 @@ def correct_fasta(original_fpath, min_contig, corrected_fpath=None, is_reference
                 if not corr_seq:
                     return False
             else:
+                if re.compile(r'[^ACGTN]').search(seq):
+                    logger.error('File ' + original_fpath + ' contains non-ACGTN characters. '
+                                 'Please re-run QUAST without --no-check.', indent='    ', exit_with_code=1)
+                    return False
                 corr_seq = seq
             modified_fasta_entries.append((uniq_name, corr_seq))
 

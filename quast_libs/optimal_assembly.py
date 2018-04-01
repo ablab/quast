@@ -27,58 +27,20 @@ MIN_OVERLAP = 10
 MIN_CONTIG_LEN = 100
 REPEAT_CONF_INTERVAL = 100
 
-def parse_uncovered_fpath(uncovered_fpath, fasta_fpath, return_covered_regions=True):
+def parse_bed(bed_fpath):
     regions = defaultdict(list)
-    prev_start = defaultdict(int)
-    if uncovered_fpath and exists(uncovered_fpath):
-        with open(uncovered_fpath) as f:
+    if bed_fpath and exists(bed_fpath):
+        with open(bed_fpath) as f:
             for line in f:
                 fs = line.split('\t')
                 chrom, start, end = fs[0], fs[1], fs[2]
-                if return_covered_regions:
-                    if prev_start[chrom] != int(start):
-                        regions[chrom].append((prev_start[chrom], int(start)))
-                    prev_start[chrom] = int(end)
-                else:
-                    regions[chrom].append((int(start), int(end)))
-    if return_covered_regions:
-        for name, seq in fastaparser.read_fasta(fasta_fpath):
-            if name in regions:
-                if prev_start[name] != len(seq):
-                    regions[name].append((prev_start[name], len(seq)))
-            else:
-                regions[name].append((0, len(seq)))
+                regions[chrom].append((int(start), int(end)))
     return regions
 
 
-def merge_bed(repeats_fpath, uncovered_fpath, insert_size, output_dirpath, err_path):
-    combined_bed_fpath = join(output_dirpath, 'skipped_regions.bed')
-    with open(combined_bed_fpath, 'w') as out:
-        if exists(repeats_fpath):
-            with open(repeats_fpath) as in_f:
-                for line in in_f:
-                    l = line.split('\t')
-                    repeat_len = int(l[2]) - int(l[1])
-                    if repeat_len >= insert_size:
-                        out.write(line)
-        if exists(uncovered_fpath):
-            with open(uncovered_fpath) as in_f:
-                for line in in_f:
-                    out.write(line)
-
-    sorted_bed_fpath = add_suffix(combined_bed_fpath, 'sorted')
-    qutils.call_subprocess(['sort', '-k1,1', '-k2,2n', combined_bed_fpath],
-                           stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-    merged_bed_fpath = add_suffix(combined_bed_fpath, 'merged')
-    qutils.call_subprocess([bedtools_fpath('bedtools'), 'merge', '-i', sorted_bed_fpath],
-                           stdout=open(merged_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-    return merged_bed_fpath
-
-
-def remove_repeat_regions(ref_fpath, repeats_fpath, insert_size, tmp_dir, uncovered_fpath, err_fpath):
-    # merged_fpath = merge_bed(repeats_fpath, uncovered_fpath, insert_size, tmp_dir, err_fpath)
-    repeats_regions = parse_uncovered_fpath(repeats_fpath, ref_fpath, return_covered_regions=False)
-    uncovered_regions = parse_uncovered_fpath(uncovered_fpath, ref_fpath, return_covered_regions=False)
+def remove_repeat_regions(ref_fpath, repeats_fpath, uncovered_fpath):
+    repeats_regions = parse_bed(repeats_fpath)
+    uncovered_regions = parse_bed(uncovered_fpath)
     unique_regions = defaultdict(list)
     for name, seq in fastaparser.read_fasta(ref_fpath):
         if name in repeats_regions:
@@ -109,19 +71,21 @@ def remove_repeat_regions(ref_fpath, repeats_fpath, insert_size, tmp_dir, uncove
                 if uncov_end < cur_contig_start:
                     continue
                 if uncov_start <= cur_contig_start and uncov_end >= cur_contig_end:
-                    pass
+                    cur_contig_idx += 1
+                    if cur_contig_idx >= len(unique_regions[name]):
+                        break
+                    cur_contig_start, cur_contig_end = unique_regions[name][cur_contig_idx]
                 elif cur_contig_start <= uncov_start <= cur_contig_end or cur_contig_start <= uncov_end <= cur_contig_end:
                     if uncov_start > cur_contig_start:
-                        unique_covered_regions[name].append([cur_contig_start, min(uncov_start, cur_contig_end)])
+                        unique_covered_regions[name].append([cur_contig_start, uncov_start])
                     if uncov_end < cur_contig_end:
-                        cur_contig_start = max(cur_contig_start, uncov_end)
+                        cur_contig_start = uncov_end
                     else:
                         cur_contig_idx += 1
                         if cur_contig_idx >= len(unique_regions[name]):
                             break
                         cur_contig_start, cur_contig_end = unique_regions[name][cur_contig_idx]
                 else:
-                    print(cur_contig_start, uncov_start, cur_contig_end, uncov_end)
                     unique_covered_regions[name].append([cur_contig_start, cur_contig_end])
             for contig in unique_regions[name][cur_contig_idx:]:
                 unique_covered_regions[name].append(contig)
@@ -235,7 +199,12 @@ def scaffolding(regions, region_pairing):
         ref_coords_to_output = regions[:region_pairing[0][0]]  # output regions before the first scaffold "as is"
         scaf_start_reg = region_pairing[0][0]
         scaf_end_reg = region_pairing[0][1]
+        last_scaf = -1
         for rp in region_pairing[1:]:
+            if scaf_start_reg > last_scaf + 1:
+                for skipped_reg in range(last_scaf + 1, scaf_start_reg):
+                    ref_coords_to_output.append((regions[skipped_reg][0], regions[skipped_reg][1]))
+            last_scaf = scaf_end_reg
             if rp[0] <= scaf_end_reg:  # start of the next scaffold is within the current scaffold
                 scaf_end_reg = max(scaf_end_reg, rp[1])
             else:  # dump the previous scaffold and switch to extension of the current one
@@ -347,12 +316,11 @@ def check_repeats_instances(coords_fpath, repeats_fpath, use_long_reads=False):
                     i_start, i_end = mapped_repeats[0]
                     merged_interval = (i_start, i_end)
                     for s, e in mapped_repeats[1:]:
-                        if s <= merged_interval[1] and e > merged_interval[0]:
-                            merged_interval = min(merged_interval[0], s), max(merged_interval[1], e)
+                        if s <= merged_interval[1]:
+                            merged_interval = (merged_interval[0], max(merged_interval[1], e))
                         else:
-                            if merged_interval:
-                                merged_intervals.append(merged_interval)
-                            merged_interval = s, e
+                            merged_intervals.append(merged_interval)
+                            merged_interval = (s, e)
                     merged_intervals.append(merged_interval)
                     aligned_bases = sum([end - start + 1 for start, end in merged_intervals])
                     if aligned_bases >= (int(fs[2]) - int(fs[1])) * 0.9:
@@ -360,8 +328,8 @@ def check_repeats_instances(coords_fpath, repeats_fpath, use_long_reads=False):
                             solid_repeats = []
                             full_repeat_pos = int(fs[1])
                             mapped_repeats.sort(key=lambda x: (x[1], x[1] - x[0]), reverse=True)
-                            cur_repeat_start, cur_repeat_end = mapped_repeats[1]
-                            for repeat_start, repeat_end in mapped_repeats[2:]:
+                            cur_repeat_start, cur_repeat_end = mapped_repeats[0]
+                            for repeat_start, repeat_end in mapped_repeats[1:]:
                                 if (cur_repeat_start >= repeat_start - REPEAT_CONF_INTERVAL and cur_repeat_end <= repeat_end + REPEAT_CONF_INTERVAL) or \
                                         (repeat_start >= cur_repeat_start - REPEAT_CONF_INTERVAL and repeat_end <= cur_repeat_end + REPEAT_CONF_INTERVAL):
                                     cur_repeat_start, cur_repeat_end = min(repeat_start, cur_repeat_start), max(repeat_end, cur_repeat_end)
@@ -422,7 +390,7 @@ def get_unique_covered_regions(ref_fpath, tmp_dir, log_fpath, binary_fpath, inse
                        '-t', str(qconfig.max_threads), '-z', '200', ref_fpath, repeats_fasta_fpath]
             qutils.call_subprocess(cmdline, stdout=open(coords_fpath, 'w'), stderr=open(log_fpath, 'a'))
         filtered_repeats_fpath, repeats_regions = check_repeats_instances(coords_fpath, long_repeats_fpath, use_long_reads)
-        unique_covered_regions = remove_repeat_regions(ref_fpath, filtered_repeats_fpath, insert_size, tmp_dir, uncovered_fpath, log_fpath)
+        unique_covered_regions = remove_repeat_regions(ref_fpath, filtered_repeats_fpath, uncovered_fpath)
         return unique_covered_regions, repeats_regions
     return None, None
 
@@ -489,7 +457,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
             join_reads = 'mp'
         sam_fpath, bam_fpath, _ = reads_analyzer.align_reference(ref_fpath, reads_analyzer_dir, using_reads=join_reads)
         joiners = get_joiners(qutils.name_from_fpath(ref_fpath), sam_fpath, bam_fpath, tmp_dir, log_fpath, join_reads)
-        uncovered_regions = parse_uncovered_fpath(uncovered_fpath, ref_fpath, return_covered_regions=False) if join_reads == 'mp' else defaultdict(list)
+        uncovered_regions = parse_bed(uncovered_fpath) if join_reads == 'mp' else defaultdict(list)
         mp_len = calculate_read_len(sam_fpath) if join_reads == 'mp' else None
         for chrom, seq in reference:
             region_pairing = get_regions_pairing(unique_covered_regions[chrom], joiners[chrom], mp_len)

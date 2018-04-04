@@ -303,7 +303,7 @@ def align_reference(ref_fpath, output_dir, using_reads='all', calculate_coverage
         return sam_fpath, bam_fpath, uncovered_fpath
     if not sam_fpath:
         logger.info('  Failed detecting uncovered regions.')
-        return None, None
+        return None, None, None
 
     if calculate_coverage:
         bam_mapped_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_fpath, 'mapped'))
@@ -620,7 +620,7 @@ def run_aligner(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, e
                     shutil.move(bam_dedup_fpath, bam_fpath)
         if reads_type == 'pe':
             insert_size, _, _ = calculate_insert_size(output_fpath, output_dir, qutils.name_from_fpath(sam_fpath))
-            if insert_size < qconfig.optimal_assembly_max_IS:
+            if insert_size is not None and insert_size < qconfig.optimal_assembly_max_IS:
                 insert_sizes.append(insert_size)
         temp_sam_fpaths.append(output_fpath)
 
@@ -886,7 +886,7 @@ def calculate_insert_size(sam_fpath, output_dir, ref_name, reads_suffix=''):
             out_f.write(str(min_insert_size) + '\n')
             out_f.write(str(max_insert_size) + '\n')
         return insert_size, min_insert_size, max_insert_size
-    return None, None
+    return None, None, None
 
 
 def print_uncovered_regions(raw_cov_fpath, uncovered_fpath, correct_chr_names):

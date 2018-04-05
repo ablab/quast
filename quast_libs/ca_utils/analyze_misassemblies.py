@@ -134,9 +134,9 @@ def cyclic_back_ends_overlap(align1, align2):
 
 
 def __get_border_gaps(align1, align2, ref_lens):
-    breakpoint1 = align1.e1 if align1.pos_strand() else align1.s1
-    breakpoint2 = align2.s1 if align2.pos_strand() else align2.e1
-    return [min(abs(bp - ref_lens[align.ref]), abs(bp - 1)) for bp, align in zip([breakpoint1, breakpoint2], [align1, align2])]
+    gap1 = ref_lens[align1.ref] - align1.e1 if align1.pos_strand() else align1.s1 - 1
+    gap2 = align2.s1 - 1 if align2.pos_strand() else ref_lens[align2.ref] - align2.e1
+    return [gap1, gap2]
 
 
 def is_fragmented_ref_fake_translocation(align1, align2, ref_lens):

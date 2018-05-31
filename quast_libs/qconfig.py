@@ -163,7 +163,7 @@ phys_cov_fpath = None
 
 # indels and misassemblies
 SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
-MAX_INDEL_LENGTH = 50  # for separating indels and local misassemblies
+MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies
 DEFAULT_EXT_MIS_SIZE = 1000
 extensive_misassembly_threshold = None  # for separating local and extensive misassemblies (relocation)
 fragmented_max_indent = MAX_INDEL_LENGTH # for fake translocation in fragmented reference

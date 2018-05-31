@@ -24,7 +24,9 @@ cdef extern from "minimap.h":
 		int best_n
 		int max_join_long, max_join_short
 		int min_join_flank_sc
+		float min_join_flank_ratio;
 		int a, b, q, e, q2, e2
+		int sc_ambi
 		int noncan
 		int zdrop, zdrop_inv
 		int end_bonus
@@ -34,6 +36,7 @@ cdef extern from "minimap.h":
 		float max_clip_ratio
 		int pe_ori, pe_bonus
 		float mid_occ_frac
+		int32_t min_mid_occ
 		int32_t mid_occ
 		int32_t max_occ
 		int mini_batch_size
@@ -58,7 +61,8 @@ cdef extern from "minimap.h":
 		mm_idx_seq_t *seq
 		uint32_t *S
 		mm_idx_bucket_t *B
-		void *km, *h
+		void *km
+		void *h
 
 	ctypedef struct mm_idx_reader_t:
 		pass

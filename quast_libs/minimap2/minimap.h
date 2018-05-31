@@ -29,6 +29,9 @@
 #define MM_F_REV_ONLY      0x200000
 #define MM_F_HEAP_SORT     0x400000
 #define MM_F_ALL_CHAINS    0x800000
+#define MM_F_OUT_MD        0x1000000
+#define MM_F_COPY_COMMENT  0x2000000
+#define MM_F_EQX           0x4000000 // use =/X instead of M
 
 #define MM_I_HPC          0x1
 #define MM_I_NO_SEQ       0x2
@@ -113,8 +116,10 @@ typedef struct {
 
 	int max_join_long, max_join_short;
 	int min_join_flank_sc;
+	float min_join_flank_ratio;
 
 	int a, b, q, e, q2, e2; // matching score, mismatch, gap-open and gap-ext penalties
+	int sc_ambi; // score when one or both bases are "N"
 	int noncan;      // cost of non-canonical splicing sites
 	int zdrop, zdrop_inv;   // break alignment if alignment score drops too fast along the diagonal
 	int end_bonus;
@@ -126,6 +131,7 @@ typedef struct {
 	int pe_ori, pe_bonus;
 
 	float mid_occ_frac;  // only used by mm_mapopt_update(); see below
+	int32_t min_mid_occ;
 	int32_t mid_occ;     // ignore seeds with occurrences above this threshold
 	int32_t max_occ;
 	int mini_batch_size; // size of a batch of query bases to process in parallel

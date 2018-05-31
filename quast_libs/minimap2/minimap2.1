@@ -1,4 +1,4 @@
-.TH minimap2 1 "24 February 2018" "minimap2-2.9 (r720)" "Bioinformatics tools"
+.TH minimap2 1 "30 April 2018" "minimap2-2.10-dirty (r770)" "Bioinformatics tools"
 .SH NAME
 .PP
 minimap2 - mapping and alignment between collections of DNA sequences
@@ -123,10 +123,27 @@ provided as the target sequences, options
 will be effectively overridden by the options stored in the index file.
 .SS Mapping options
 .TP 10
-.BI -f \ FLOAT
-Ignore top
+.BI -f \ FLOAT | INT1 [, INT2 ]
+If fraction, ignore top
 .I FLOAT
-fraction of most frequent minimizers [0.0002]
+fraction of most frequent minimizers [0.0002]. If integer,
+ignore minimizers occuring more than
+.I INT1
+times.
+.I INT2
+is only effective in the
+.B --sr
+or
+.B -xsr
+mode, which sets the threshold for a second round of seeding.
+.TP
+.BI --min-occ-floor \ INT
+Force minimap2 to always use k-mers occurring
+.I INT
+times or less [0]. In effect, the max occurrence threshold is set to
+the
+.RI max{ INT ,
+.BR -f }.
 .TP
 .BI -g \ INT
 Stop chain enlongation if there are no minimizers within
@@ -305,6 +322,9 @@ no attempt to match GT-AG [n]
 .BI --end-bonus \ INT
 Score bonus when alignment extends to the end of the query sequence [0].
 .TP
+.BI --score-N \ INT
+Score of a mismatch involving ambiguous bases [1].
+.TP
 .BR --splice-flank = yes | no
 Assume the next base to a
 .B GT
@@ -353,6 +373,9 @@ SAM read group line in a format like
 .B @RG\\\\tID:foo\\\\tSM:bar
 [].
 .TP
+.B -y
+Copy input FASTA/Q comments to output.
+.TP
 .B -c
 Generate CIGAR. In PAF, the CIGAR is written to the `cg' custom tag.
 .TP
@@ -370,6 +393,12 @@ If no
 is given,
 .I short
 is assumed. [none]
+.TP
+.B --MD
+Output the MD tag (see the SAM spec).
+.TP
+.B --eqx
+Output =/X CIGAR operators for sequence match/mismatch.
 .TP
 .B -Y
 In SAM output, use soft clipping for supplementary alignments.
@@ -433,17 +462,24 @@ is determined by the sequencing error mode.
 .B asm5
 Long assembly to reference mapping
 .RB ( -k19
-.B -w19 -A1 -B19 -O39,81 -E3,1 -s200
-.BR -z200 ).
+.B -w19 -A1 -B19 -O39,81 -E3,1 -s200 -z200
+.BR --min-occ-floor=100 ).
 Typically, the alignment will not extend to regions with 5% or higher sequence
 divergence. Only use this preset if the average divergence is far below 5%.
 .TP
 .B asm10
 Long assembly to reference mapping
 .RB ( -k19
-.B -w19 -A1 -B9 -O16,41 -E2,1 -s200
-.BR -z200 ).
+.B -w19 -A1 -B9 -O16,41 -E2,1 -s200 -z200
+.BR --min-occ-floor=100 ).
 Up to 10% sequence divergence.
+.TP
+.B asm20
+Long assembly to reference mapping
+.RB ( -k19
+.B -w10 -A1 -B6 -O6,26 -E2,1 -s200 -z200
+.BR --min-occ-floor=100 ).
+Up to 20% sequence divergence.
 .TP
 .B ava-pb
 PacBio all-vs-all overlap mapping
@@ -454,7 +490,7 @@ PacBio all-vs-all overlap mapping
 .B ava-ont
 Oxford Nanopore all-vs-all overlap mapping
 .RB ( -k15
-.B -Xw5 -m100 -g10000 --max-chain-skip
+.B -Xw5 -m100 -g10000 -r2000 --max-chain-skip
 .BR 25 ).
 Similarly, the major difference from
 .B ava-pb
@@ -535,12 +571,14 @@ cm	i	Number of minimizers on the chain
 s1	i	Chaining score
 s2	i	Chaining score of the best secondary chain
 NM	i	Total number of mismatches and gaps in the alignment
+MD	Z	To generate the ref sequence in the alignment
 AS	i	DP alignment score
 ms	i	DP score of the max scoring segment in the alignment
 nn	i	Number of ambiguous bases in the alignment
 ts	A	Transcript strand (splice mode only)
 cg	Z	CIGAR string (only in PAF)
 cs	Z	Difference string
+dv	f	Approximate per-base sequence divergence
 .TE
 
 .PP

@@ -163,19 +163,20 @@ static mm128_t *collect_seed_hits_heap(void *km, const mm_mapopt_t *opt, int max
 		mm128_t *p;
 		uint64_t r = heap->x;
 		int32_t is_self, rpos = (uint32_t)r >> 1;
-		if (skip_seed(opt->flag, r, q, qname, qlen, mi, &is_self)) continue;
-		if ((r&1) == (q->q_pos&1)) { // forward strand
-			p = &a[n_for++];
-			p->x = (r&0xffffffff00000000ULL) | rpos;
-			p->y = (uint64_t)q->q_span << 32 | q->q_pos >> 1;
-		} else { // reverse strand
-			p = &a[(*n_a) - (++n_rev)];
-			p->x = 1ULL<<63 | (r&0xffffffff00000000ULL) | rpos;
-			p->y = (uint64_t)q->q_span << 32 | (qlen - ((q->q_pos>>1) + 1 - q->q_span) - 1);
+		if (!skip_seed(opt->flag, r, q, qname, qlen, mi, &is_self)) {
+			if ((r&1) == (q->q_pos&1)) { // forward strand
+				p = &a[n_for++];
+				p->x = (r&0xffffffff00000000ULL) | rpos;
+				p->y = (uint64_t)q->q_span << 32 | q->q_pos >> 1;
+			} else { // reverse strand
+				p = &a[(*n_a) - (++n_rev)];
+				p->x = 1ULL<<63 | (r&0xffffffff00000000ULL) | rpos;
+				p->y = (uint64_t)q->q_span << 32 | (qlen - ((q->q_pos>>1) + 1 - q->q_span) - 1);
+			}
+			p->y |= (uint64_t)q->seg_id << MM_SEED_SEG_SHIFT;
+			if (q->is_tandem) p->y |= MM_SEED_TANDEM;
+			if (is_self) p->y |= MM_SEED_SELF;
 		}
-		p->y |= (uint64_t)q->seg_id << MM_SEED_SEG_SHIFT;
-		if (q->is_tandem) p->y |= MM_SEED_TANDEM;
-		if (is_self) p->y |= MM_SEED_SELF;
 		// update the heap
 		if ((uint32_t)heap->y < q->n - 1) {
 			++heap[0].y;
@@ -442,11 +443,12 @@ static void *worker_pipeline(void *shared, int step, void *in)
     pipeline_t *p = (pipeline_t*)shared;
     if (step == 0) { // step 0: read sequences
 		int with_qual = (!!(p->opt->flag & MM_F_OUT_SAM) && !(p->opt->flag & MM_F_NO_QUAL));
+		int with_comment = !!(p->opt->flag & MM_F_COPY_COMMENT);
 		int frag_mode = (p->n_fp > 1 || !!(p->opt->flag & MM_F_FRAG_MODE));
         step_t *s;
         s = (step_t*)calloc(1, sizeof(step_t));
-		if (p->n_fp > 1) s->seq = mm_bseq_read_frag(p->n_fp, p->fp, p->mini_batch_size, with_qual, &s->n_seq);
-		else s->seq = mm_bseq_read2(p->fp[0], p->mini_batch_size, with_qual, frag_mode, &s->n_seq);
+		if (p->n_fp > 1) s->seq = mm_bseq_read_frag2(p->n_fp, p->fp, p->mini_batch_size, with_qual, with_comment, &s->n_seq);
+		else s->seq = mm_bseq_read3(p->fp[0], p->mini_batch_size, with_qual, with_comment, frag_mode, &s->n_seq);
 		if (s->seq) {
 			s->p = p;
 			for (i = 0; i < s->n_seq; ++i)
@@ -489,11 +491,11 @@ static void *worker_pipeline(void *shared, int step, void *in)
 						mm_write_sam2(&p->str, mi, t, i - seg_st, j, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag);
 					else
 						mm_write_paf(&p->str, mi, t, r, km, p->opt->flag);
-					puts(p->str.s);
+					mm_err_puts(p->str.s);
 				}
-				if (s->n_reg[i] == 0 && (p->opt->flag & MM_F_OUT_SAM)) {
+				if (s->n_reg[i] == 0 && (p->opt->flag & MM_F_OUT_SAM)) { // write an unmapped record
 					mm_write_sam2(&p->str, mi, t, i - seg_st, -1, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag);
-					puts(p->str.s);
+					mm_err_puts(p->str.s);
 				}
 			}
 			for (i = seg_st; i < seg_en; ++i) {

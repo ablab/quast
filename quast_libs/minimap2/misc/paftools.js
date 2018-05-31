@@ -1,6 +1,6 @@
 #!/usr/bin/env k8
 
-var paftools_version = 'r713';
+var paftools_version = 'r767';
 
 /*****************************
  ***** Library functions *****
@@ -130,6 +130,40 @@ Interval.find_ovlp = function(a, st, en)
 /**********************************
  * Reverse and reverse complement *
  **********************************/
+
+function fasta_read(fn)
+{
+	var h = {}, gt = '>'.charCodeAt(0);
+	var file = fn == '-'? new File() : new File(fn);
+	var buf = new Bytes(), seq = null, name = null, seqlen = [];
+	while (file.readline(buf) >= 0) {
+		if (buf[0] == gt) {
+			if (seq != null && name != null) {
+				seqlen.push([name, seq.length]);
+				h[name] = seq;
+				name = seq = null;
+			}
+			var m, line = buf.toString();
+			if ((m = /^>(\S+)/.exec(line)) != null) {
+				name = m[1];
+				seq = new Bytes();
+			}
+		} else seq.set(buf);
+	}
+	if (seq != null && name != null) {
+		seqlen.push([name, seq.length]);
+		h[name] = seq;
+	}
+	buf.destroy();
+	file.close();
+	return [h, seqlen];
+}
+
+function fasta_free(fa)
+{
+	for (var name in fa)
+		fa[name].destroy();
+}
 
 Bytes.prototype.reverse = function()
 {
@@ -305,14 +339,17 @@ function paf_liftover(args)
 // variant calling
 function paf_call(args)
 {
-	var re_cs = /([:=*+-])(\d+|[A-Za-z]+)/g;
+	var re_cs = /([:=*+-])(\d+|[A-Za-z]+)/g, re_tag = /\t(\S\S:[AZif]):(\S+)/g;
 	var c, min_cov_len = 10000, min_var_len = 50000, gap_thres = 50, min_mapq = 5;
-	while ((c = getopt(args, "l:L:g:q:B:")) != null) {
+	var fa_tmp = null, fa, fa_lens, is_vcf = false;
+	while ((c = getopt(args, "l:L:g:q:B:f:")) != null) {
 		if (c == 'l') min_cov_len = parseInt(getopt.arg);
 		else if (c == 'L') min_var_len = parseInt(getopt.arg);
 		else if (c == 'g') gap_thres = parseInt(getopt.arg);
 		else if (c == 'q') min_mapq = parseInt(getopt.arg);
+		else if (c == 'f') fa_tmp = fasta_read(getopt.arg, fa_lens);
 	}
+	if (fa_tmp != null) fa = fa_tmp[0], fa_lens = fa_tmp[1], is_vcf = true;
 
 	if (args.length == getopt.ind) {
 		print("Usage: sort -k6,6 -k8,8n <with-cs.paf> | paftools.js call [options] -");
@@ -321,12 +358,34 @@ function paf_call(args)
 		print("  -L INT    min alignment length to call variants ["+min_var_len+"]");
 		print("  -q INT    min mapping quality ["+min_mapq+"]");
 		print("  -g INT    short/long gap threshold (for statistics only) ["+gap_thres+"]");
+		print("  -f FILE   reference sequences (enabling VCF output) [null]");
 		exit(1);
 	}
 
 	var file = args[getopt.ind] == '-'? new File() : new File(args[getopt.ind]);
 	var buf = new Bytes();
 	var tot_len = 0, n_sub = [0, 0, 0], n_ins = [0, 0, 0, 0], n_del = [0, 0, 0, 0];
+
+	function print_vcf(o, fa)
+	{
+		var v = null;
+		if (o[3] != 1) return; // coverage is one; skip
+		if (o[5] == '-' && o[6] == '-') return;
+		if (o[5] != '-' && o[6] != '-') { // snp
+			v = [o[0], o[1] + 1, '.', o[5].toUpperCase(), o[6].toUpperCase()];
+		} else if (o[1] > 0) { // shouldn't happen in theory
+			if (fa[o[0]] == null) throw Error('sequence "' + o[0] + '" is absent from the reference FASTA');
+			if (o[1] >= fa[o[0]].length) throw Error('position ' + o[1] + ' exceeds the length of sequence "' + o[0] + '"');
+			var ref = String.fromCharCode(fa[o[0]][o[1]-1]).toUpperCase();
+			if (o[5] == '-') // insertion
+				v = [o[0], o[1], '.', ref, ref + o[6].toUpperCase()];
+			else // deletion
+				v = [o[0], o[1], '.', ref + o[5].toUpperCase(), ref];
+		}
+		v.push(o[4], '.', 'QNAME=' + o[7] + ';QSTART=' + (o[8]+1) + ';QSTRAND=' + (rev? '-' : '+'), 'GT', '1/1');
+		if (v == null) throw Error("unexpected variant: [" + o.join(",") + "]");
+		print(v.join("\t"));
+	}
 
 	function count_var(o)
 	{
@@ -346,46 +405,66 @@ function paf_call(args)
 			else ++n_del[3];
 		} else {
 			++n_sub[0];
-			var s = o[5] + o[6];
+			var s = (o[5] + o[6]).toLowerCase();
 			if (s == 'ag' || s == 'ga' || s == 'ct' || s == 'tc')
 				++n_sub[1];
 			else ++n_sub[2];
 		}
 	}
 
+	if (is_vcf) {
+		print('##fileformat=VCFv4.1');
+		for (var i = 0; i < fa_lens.length; ++i)
+			print('##contig=<ID=' + fa_lens[i][0] + ',length=' + fa_lens[i][1] + '>');
+		print('##INFO=<ID=QNAME,Number=1,Type=String,Description="Query name">');
+		print('##INFO=<ID=QSTART,Number=1,Type=Integer,Description="Query start">');
+		print('##INFO=<ID=QSTRAND,Number=1,Type=String,Description="Query strand">');
+		print('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">');
+		print('#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample');
+	}
+
 	var a = [], out = [];
 	var c1_ctg = null, c1_start = 0, c1_end = 0, c1_counted = false, c1_len = 0;
 	while (file.readline(buf) >= 0) {
 		var line = buf.toString();
-		if (!/\ts2:i:/.test(line)) continue; // skip secondary alignments
 		var m, t = line.split("\t", 12);
 		for (var i = 6; i <= 11; ++i)
 			t[i] = parseInt(t[i]);
 		if (t[10] < min_cov_len || t[11] < min_mapq) continue;
-		print(t[0], t[7], t[8], c1_start, c1_end);
+		//print(t[0], t[7], t[8], c1_start, c1_end);
 		for (var i = 1; i <= 3; ++i)
 			t[i] = parseInt(t[i]);
 		var ctg = t[5], x = t[7], end = t[8];
 		var query = t[0], rev = (t[4] == '-'), y = rev? t[3] : t[2];
+		// collect tags
+		var cs = null, tp = null, have_s1 = false, have_s2 = false;
+		while ((m = re_tag.exec(line)) != null) {
+			if (m[1] == 'cs:Z') cs = m[2];
+			else if (m[1] == 'tp:A') tp = m[2];
+			else if (m[1] == 's1:i') have_s1 = true;
+			else if (m[1] == 's2:i') have_s2 = true;
+		}
+		if (have_s1 && !have_s2) continue;
+		if (tp != null && (tp == 'S' || tp == 'i')) continue;
 		// compute regions covered by 1 contig
 		if (ctg != c1_ctg || x >= c1_end) {
 			if (c1_counted && c1_end > c1_start) {
 				c1_len += c1_end - c1_start;
-				print('R', c1_ctg, c1_start, c1_end);
+				if (!is_vcf) print('R', c1_ctg, c1_start, c1_end);
 			}
 			c1_ctg = ctg, c1_start = x, c1_end = end;
 			c1_counted = (t[10] >= min_var_len);
 		} else if (end > c1_end) { // overlap
 			if (c1_counted && x > c1_start) {
 				c1_len += x - c1_start;
-				print('R', c1_ctg, c1_start, x);
+				if (!is_vcf) print('R', c1_ctg, c1_start, x);
 			}
 			c1_start = c1_end, c1_end = end;
 			c1_counted = (t[10] >= min_var_len);
 		} else if (end > c1_start) { // contained
 			if (c1_counted && x > c1_start) {
 				c1_len += x - c1_start;
-				print('R', c1_ctg, c1_start, x);
+				if (!is_vcf) print('R', c1_ctg, c1_start, x);
 			}
 			c1_start = end;
 		} // else, the alignment precedes the cov1 region; do nothing
@@ -393,7 +472,8 @@ function paf_call(args)
 		while (out.length) {
 			if (out[0][0] != ctg || out[0][2] <= x) {
 				count_var(out[0]);
-				print('V', out[0].join("\t"));
+				if (is_vcf) print_vcf(out[0], fa);
+				else print('V', out[0].join("\t"));
 				out.shift();
 			} else break;
 		}
@@ -404,20 +484,19 @@ function paf_call(args)
 		// drop alignments that don't overlap with the current one
 		var k = 0;
 		for (var i = 0; i < a.length; ++i)
-			if (a[0][0] == ctg && a[0][2] > x)
+			if (a[i][0] == ctg && a[i][2] > x)
 				a[k++] = a[i];
 		a.length = k;
 		// core loop
 		if (t[10] >= min_var_len) {
-			if ((m = /\tcs:Z:(\S+)/.exec(line)) == null) continue; // no cs tag
-			var cs = m[1];
+			if (cs == null) continue; // no cs tag
 			var blen = 0, n_diff = 0;
 			tot_len += t[10];
 			while ((m = re_cs.exec(cs)) != null) {
 				var cov = 1;
 				if (m[1] == '*' || m[1] == '+' || m[1] == '-')
 					for (var i = 0; i < a.length; ++i)
-						if (a[0][2] > x) ++cov;
+						if (a[i][2] > x) ++cov;
 				var qs, qe;
 				if (m[1] == '=' || m[1] == ':') {
 					var l = m[1] == '='? m[2].length : parseInt(m[2]);
@@ -450,11 +529,12 @@ function paf_call(args)
 	}
 	if (c1_counted && c1_end > c1_start) {
 		c1_len += c1_end - c1_start;
-		print('R', c1_ctg, c1_start, c1_end);
+		if (!is_vcf) print('R', c1_ctg, c1_start, c1_end);
 	}
 	while (out.length) {
 		count_var(out[0]);
-		print('V', out[0].join("\t"));
+		if (is_vcf) print_vcf(out[0], fa);
+		else print('V', out[0].join("\t"));
 		out.shift();
 	}
 
@@ -472,6 +552,7 @@ function paf_call(args)
 
 	buf.destroy();
 	file.close();
+	if (fa != null) fasta_free(fa);
 }
 
 function paf_stat(args)
@@ -595,8 +676,10 @@ function paf_stat(args)
 			last_qlen = ori_qlen;
 		}
 	}
-	l_tot += last_qlen;
-	l_cov += cov_len(regs);
+	if (regs.length) {
+		l_tot += last_qlen;
+		l_cov += cov_len(regs);
+	}
 
 	file.close();
 	buf.destroy();
@@ -912,14 +995,15 @@ function paf_view(args)
 
 function paf_gff2bed(args)
 {
-	var c, fn_ucsc_fai = null, is_short = false;
-	while ((c = getopt(args, "u:s")) != null) {
+	var c, fn_ucsc_fai = null, is_short = false, keep_gff = false;
+	while ((c = getopt(args, "u:sg")) != null) {
 		if (c == 'u') fn_ucsc_fai = getopt.arg;
 		else if (c == 's') is_short = true;
+		else if (c == 'g') keep_gff = true;
 	}
 
 	if (getopt.ind == args.length) {
-		print("Usage: paftools.js gff2bed [-u ucsc-genome.fa.fai] <in.gff>");
+		print("Usage: paftools.js gff2bed [-g] [-u ucsc-genome.fa.fai] <in.gff>");
 		exit(1);
 	}
 
@@ -980,6 +1064,12 @@ function paf_gff2bed(args)
 	var exons = [], cds_st = 1<<30, cds_en = 0, last_id = null;
 	while (file.readline(buf) >= 0) {
 		var t = buf.toString().split("\t");
+		if (keep_gff) {
+			if (t[0].charAt(0) != '#' && ens2ucsc[t[0]] != null)
+				t[0] = ens2ucsc[t[0]];
+			print(t.join("\t"));
+			continue;
+		}
 		if (t[0].charAt(0) == '#') continue;
 		if (t[2] != "CDS" && t[2] != "exon") continue;
 		t[3] = parseInt(t[3]) - 1;
@@ -1028,15 +1118,19 @@ function paf_gff2bed(args)
 
 function paf_sam2paf(args)
 {
-	var c, pri_only = false;
+	var c, pri_only = false, use_eq = false;
 	while ((c = getopt(args, "p")) != null)
 		if (c == 'p') pri_only = true;
+	if (args.length == getopt.ind) {
+		print("Usage: paftools.js sam2paf [-p] <in.sam>");
+		exit(1);
+	}
 
-	var file = args.length == getopt.ind || args[getopt.ind] == "-"? new File() : new File(args[getopt.ind]);
+	var file = args[getopt.ind] == "-"? new File() : new File(args[getopt.ind]);
 	var buf = new Bytes();
-	var re = /(\d+)([MIDSHNX=])/g;
+	var re = /(\d+)([MIDSHNX=])/g, re_MD = /(\d+)|(\^[A-Za-z]+)|([A-Za-z])/g, re_tag = /\t(\S\S:[AZif]):(\S+)/g;
 
-	var len = {}, lineno = 0;
+	var ctg_len = {}, lineno = 0;
 	while (file.readline(buf) >= 0) {
 		var m, n_cigar = 0, line = buf.toString();
 		++lineno;
@@ -1044,37 +1138,52 @@ function paf_sam2paf(args)
 			if (/^@SQ/.test(line)) {
 				var name = (m = /\tSN:(\S+)/.exec(line)) != null? m[1] : null;
 				var l = (m = /\tLN:(\d+)/.exec(line)) != null? parseInt(m[1]) : null;
-				if (name != null && l != null) len[name] = l;
+				if (name != null && l != null) ctg_len[name] = l;
 			}
 			continue;
 		}
-		var t = line.split("\t");
+		var t = line.split("\t", 11);
 		var flag = parseInt(t[1]);
-		if (t[9] != '*' && t[10] != '*' && t[9].length != t[10].length) throw Error("ERROR at line " + lineno + ": inconsistent SEQ and QUAL lengths - " + t[9].length + " != " + t[10].length);
-		if (t[2] == '*' || (flag&4)) continue;
+		if (t[9] != '*' && t[10] != '*' && t[9].length != t[10].length)
+			throw Error("at line " + lineno + ": inconsistent SEQ and QUAL lengths - " + t[9].length + " != " + t[10].length);
+		if (t[2] == '*' || (flag&4) || t[5] == '*') continue;
 		if (pri_only && (flag&0x100)) continue;
-		var tlen = len[t[2]];
-		if (tlen == null) throw Error("ERROR at line " + lineno + ": can't find the length of contig " + t[2]);
-		var nn = (m = /\tnn:i:(\d+)/.exec(line)) != null? parseInt(m[1]) : 0;
-		var NM = (m = /\tNM:i:(\d+)/.exec(line)) != null? parseInt(m[1]) : null;
-		var have_NM = NM == null? false : true;
-		NM += nn;
-		var clip = [0, 0], I = [0, 0], D = [0, 0], M = 0, N = 0, ql = 0, tl = 0, mm = 0, ext_cigar = false;
-		while ((m = re.exec(t[5])) != null) {
-			var l = parseInt(m[1]);
-			if (m[2] == 'M') M += l, ql += l, tl += l, ext_cigar = false;
-			else if (m[2] == 'I') ++I[0], I[1] += l, ql += l;
-			else if (m[2] == 'D') ++D[0], D[1] += l, tl += l;
-			else if (m[2] == 'N') N += l, tl += l;
-			else if (m[2] == 'S') clip[M == 0? 0 : 1] = l, ql += l;
-			else if (m[2] == 'H') clip[M == 0? 0 : 1] = l;
-			else if (m[2] == '=') M += l, ql += l, tl += l, ext_cigar = true;
-			else if (m[2] == 'X') M += l, ql += l, tl += l, mm += l, ext_cigar = true;
-			++n_cigar;
+		var tlen = ctg_len[t[2]];
+		if (tlen == null) throw Error("at line " + lineno + ": can't find the length of contig " + t[2]);
+		// find tags
+		var nn = 0, NM = null, MD = null, md_list = [];
+		while ((m = re_tag.exec(line)) != null) {
+			if (m[1] == "NM:i") NM = parseInt(m[2]);
+			else if (m[1] == "nn:i") nn = parseInt(m[2]);
+			else if (m[1] == "MD:Z") MD = m[2];
 		}
+		if (t[9] == '*') MD = null;
+		// infer various lengths from CIGAR
+		var clip = [0, 0], soft_clip = 0, I = [0, 0], D = [0, 0], M = 0, N = 0, mm = 0, have_M = false, have_ext = false, cigar = [];
+		while ((m = re.exec(t[5])) != null) {
+			var l = parseInt(m[1]), op = m[2];
+			if (op == 'M') M += l, have_M = true;
+			else if (op == 'I') ++I[0], I[1] += l;
+			else if (op == 'D') ++D[0], D[1] += l;
+			else if (op == 'N') N += l;
+			else if (op == 'S') clip[n_cigar == 0? 0 : 1] = l, soft_clip += l;
+			else if (op == 'H') clip[n_cigar == 0? 0 : 1] = l;
+			else if (op == '=') M += l, have_ext = true, op = 'M';
+			else if (op == 'X') M += l, mm += l, have_ext = true, op = 'M';
+			++n_cigar;
+			if (MD != null && op != 'H') {
+				if (cigar.length > 0 && cigar[cigar.length-1][1] == op)
+					cigar[cigar.length-1][0] += l;
+				else cigar.push([l, op]);
+			}
+		}
+		var ql = M + I[1] + soft_clip;
+		var tl = M + D[1] + N;
+		var ts = parseInt(t[3]) - 1, te = ts + tl;
+		// checking coordinate and length consistencies
 		if (n_cigar > 65535)
 			warn("WARNING at line " + lineno + ": " + n_cigar + " CIGAR operations");
-		if (tl + parseInt(t[3]) - 1 > tlen) {
+		if (te > tlen) {
 			warn("WARNING at line " + lineno + ": alignment end position larger than ref length; skipped");
 			continue;
 		}
@@ -1082,24 +1191,78 @@ function paf_sam2paf(args)
 			warn("WARNING at line " + lineno + ": SEQ length inconsistent with CIGAR (" + t[9].length + " != " + ql + "); skipped");
 			continue;
 		}
-		if (!have_NM || ext_cigar) NM = I[1] + D[1] + mm;
-		if (NM < I[1] + D[1] + mm) {
-			warn("WARNING at line " + lineno + ": NM is less than the total number of gaps (" + NM + " < " + (I[1]+D[1]+mm) + ")");
-			NM = I[1] + D[1] + mm;
+		// parse MD
+		var cs = [];
+		if (MD != null) {
+			var k = 0, cx = 0, cy = 0, mx = 0, my = 0;
+			while ((m = re_MD.exec(MD)) != null) {
+				if (m[2] != null) { // deletion from the reference
+					var len = m[2].length - 1;
+					cs.push('-', m[2].substr(1));
+					mx += len, cx += len, ++k;
+				} else { // copy or mismatch
+					var ml = m[1] != null? parseInt(m[1]) : 1;
+					while (k < cigar.length && cigar[k][1] != 'D') {
+						var cl = cigar[k][0], op = cigar[k][1];
+						if (op == 'M') {
+							if (my + ml < cy + cl) {
+								if (ml > 0) {
+									if (m[3] != null) cs.push('*', m[3], t[9][my]);
+									else cs.push(':', ml);
+								}
+								mx += ml, my += ml, ml = 0;
+								break;
+							} else {
+								var dl = cy + cl - my;
+								cs.push(':', dl);
+								cx += cl, cy += cl, ++k;
+								mx += dl, my += dl, ml -= dl;
+							}
+						} else if (op == 'I') {
+							cs.push('+', t[9].substr(cy, cl));
+							cy += cl, my += cl, ++k;
+						} else if (op == 'S') {
+							cy += cl, my += cl, ++k;
+						} else throw Error("at line " + lineno + ": inconsistent MD tag");
+					}
+					if (ml != 0) throw Error("at line " + lineno + ": inconsistent MD tag");
+				}
+			}
+			if (cx != mx || cy != my) throw Error("at line " + lineno + ": inconsistent MD tag");
 		}
-		var extra = ["mm:i:"+(NM-I[1]-D[1]), "io:i:"+I[0], "in:i:"+I[1], "do:i:"+D[0], "dn:i:"+D[1]];
-		var match = M - (NM - I[1] - D[1]);
+		// compute matching length, block length and calibrate NM
+		if (have_ext && !have_M) { // extended CIGAR
+			if (NM != null && NM != I[1] + D[1] + mm)
+				warn("WARNING at line " + lineno + ": NM is different from sum of gaps and mismatches");
+			NM = I[1] + D[1] + mm;
+		} else if (NM != null) { // standard CIGAR; NM present
+			if (NM < I[1] + D[1]) {
+				warn("WARNING at line " + lineno + ": NM is less than the total number of gaps (" + NM + " < " + (I[1]+D[1]) + ")");
+				NM = I[1] + D[1];
+			}
+			mm = NM - (I[1] + D[1]);
+		} else { // no way to compute mm
+			warn("WARNING at line " + lineno + ": unable to find the number of mismatches; assuming zero");
+			mm = 0;
+		}
+		var mlen = M - mm;
 		var blen = M + I[1] + D[1];
+		// find query name, start and end
 		var qlen = M + I[1] + clip[0] + clip[1];
-		var qs, qe;
-		if (flag&16) qs = clip[1], qe = qlen - clip[0];
-		else qs = clip[0], qe = qlen - clip[1];
-		var ts = parseInt(t[3]) - 1, te = ts + M + D[1] + N;
-		var qname = t[0];
+		var qname = t[0], qs, qe;
 		if ((flag&1) && (flag&0x40)) qname += '/1';
 		if ((flag&1) && (flag&0x80)) qname += '/2';
-		var a = [qname, qlen, qs, qe, flag&16? '-' : '+', t[2], tlen, ts, te, match, blen, t[4]];
-		print(a.join("\t"), extra.join("\t"));
+		if (flag&16) qs = clip[1], qe = qlen - clip[0];
+		else qs = clip[0], qe = qlen - clip[1];
+		// optional tags
+		var type = flag&0x100? 'S' : 'P';
+		var tags = ["tp:A:" + type];
+		if (NM != null) tags.push("mm:i:"+mm);
+		tags.push("gn:i:"+(I[1]+D[1]), "go:i:"+(I[0]+D[0]), "cg:Z:" + t[5].replace(/\d+[SH]/g, ''));
+		if (cs.length > 0) tags.push("cs:Z:" + cs.join(""));
+		// print out
+		var a = [qname, qlen, qs, qe, flag&16? '-' : '+', t[2], tlen, ts, te, mlen, blen, t[4]];
+		print(a.join("\t"), tags.join("\t"));
 	}
 
 	buf.destroy();
@@ -1597,26 +1760,28 @@ function paf_pbsim2fq(args)
 
 function paf_junceval(args)
 {
-	var c, l_fuzzy = 0, print_ovlp = false, print_err_only = false, first_only = false;
-	while ((c = getopt(args, "l:ep")) != null) {
+	var c, l_fuzzy = 0, print_ovlp = false, print_err_only = false, first_only = false, chr_only = false;
+	while ((c = getopt(args, "l:epc")) != null) {
 		if (c == 'l') l_fuzzy = parseInt(getopt.arg);
 		else if (c == 'e') print_err_only = print_ovlp = true;
 		else if (c == 'p') print_ovlp = true;
+		else if (c == 'c') chr_only = true;
 	}
 
-	if (args.length - getopt.ind < 2) {
+	if (args.length - getopt.ind < 1) {
 		print("Usage: paftools.js junceval [options] <gene.gtf> <aln.sam>");
 		print("Options:");
 		print("  -l INT    tolerance of junction positions (0 for exact) [0]");
 		print("  -p        print overlapping introns");
 		print("  -e        print erroreous overlapping introns");
+		print("  -c        only consider alignments to /^(chr)?([0-9]+|X|Y)$/");
 		exit(1);
 	}
 
 	var file, buf = new Bytes();
 
 	var tr = {};
-	file = new File(args[getopt.ind]);
+	file = args[getopt.ind] == '-'? new File() : new File(args[getopt.ind]);
 	while (file.readline(buf) >= 0) {
 		var m, t = buf.toString().split("\t");
 		if (t[0].charAt(0) == '#') continue;
@@ -1661,13 +1826,14 @@ function paf_junceval(args)
 	var n_pri = 0, n_unmapped = 0, n_mapped = 0;
 	var n_sgl = 0, n_splice = 0, n_splice_hit = 0, n_splice_novel = 0;
 
-	file = new File(args[getopt.ind+1]);
+	file = getopt.ind+1 >= args.length || args[getopt.ind+1] == '-'? new File() : new File(args[getopt.ind+1]);
 	var last_qname = null;
 	var re_cigar = /(\d+)([MIDNSHX=])/g;
 	while (file.readline(buf) >= 0) {
 		var m, t = buf.toString().split("\t");
 
 		if (t[0].charAt(0) == '@') continue;
+		if (chr_only && !/^(chr)?([0-9]+|X|Y)$/.test(t[2])) continue;
 		var flag = parseInt(t[1]);
 		if (flag&0x100) continue;
 		if (first_only && last_qname == t[0]) continue;

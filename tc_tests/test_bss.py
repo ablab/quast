@@ -11,4 +11,4 @@ run_quast(name, contigs=['ecoli_ctg_repeats.fasta.gz'], params=' -R ecoli_ref_re
 
 assert_metric(name, '# misassemblies', ['2'], 'report.tsv')
 assert_metric(name, '# misassembled contigs', ['1'], 'report.tsv')
-assert_metric(name, '# local misassemblies', ['35'], 'report.tsv')
+assert_metric(name, '# local misassemblies', ['29'], 'report.tsv')

@@ -58,7 +58,7 @@ def run_minimap(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_t
     additional_options = ['-B5', '-O4,16', '--no-long-join', '-r', str(qconfig.MAX_INDEL_LENGTH),
                           '-N', num_alignments, '-s', str(qconfig.min_alignment), '-z', '200']
     cmdline = [minimap_fpath(), '-c', '-x', preset] + (additional_options if not qconfig.large_genome else []) + \
-              ['--mask-level', mask_level, '--min-occ', '200', '-g', '2500', '--cs', '-t', str(max_threads), ref_fpath, contigs_fpath]
+              ['--mask-level', mask_level, '--min-occ', '200', '-g', '2500', '--score-N', '2', '--cs', '-t', str(max_threads), ref_fpath, contigs_fpath]
     return_code = qutils.call_subprocess(cmdline, stdout=open(out_fpath, 'w'), stderr=open(log_err_fpath, 'a'),
                                          indent='  ' + qutils.index_to_str(index))
 

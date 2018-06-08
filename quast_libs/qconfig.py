@@ -74,6 +74,7 @@ glimmer = False
 is_combined_ref = False
 check_for_fragmented_ref = False
 unaligned_part_size = 500
+unaligned_mis_threshold = 0.5  # former 'umt' in analyze_contigs.py
 all_labels_from_dirs = False
 run_busco = False
 large_genome = False
@@ -456,6 +457,8 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("                                      less than scaffold-gap-size are counted as scaffold gap misassemblies [default: %s]\n" % scaffolds_gap_threshold)
         stream.write("    --unaligned-part-size  <int>      Lower threshold for detecting partially unaligned contigs. Such contig should have\n")
         stream.write("                                      at least one unaligned fragment >= the threshold [default: %s]\n" % unaligned_part_size)
+        stream.write("    --skip-unaligned-mis-contigs      Do not distinguish contigs with >= 50% unaligned bases as a separate group\n")
+        stream.write("                                      By default, QUAST does not count misassemblies in them\n")
         stream.write("    --fragmented                      Reference genome may be fragmented into small pieces (e.g. scaffolded reference) \n")
         stream.write("    --fragmented-max-indent  <int>    Mark translocation as fake if both alignments are located no further than N bases \n")
         stream.write("                                      from the ends of the reference fragments [default: %s]\n" % MAX_INDEL_LENGTH)

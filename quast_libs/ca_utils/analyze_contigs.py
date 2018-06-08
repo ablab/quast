@@ -95,7 +95,6 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     is_cyclic=None):
     maxun = 10
     epsilon = 0.99
-    umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
 
     unaligned = 0
     partially_unaligned = 0
@@ -295,7 +294,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     if is_partially_unaligned:
                         partially_unaligned += 1
                         partially_unaligned_bases += unaligned_bases - number_unaligned_ns
-                        if aligned_bases_in_contig < umt * acgt_ctg_len:
+                        if aligned_bases_in_contig < qconfig.unaligned_mis_threshold * acgt_ctg_len:
                             contig_type = 'correct_unaligned'
                         ca_output.stdout_f.write('\t\tThis contig is partially unaligned. '
                                                  '(Aligned %d out of %d non-N bases (%.2f%%))\n'
@@ -309,9 +308,9 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                             ca_output.stdout_f.write('\t\tUnaligned bases: 1 to %d (%d)\n' % (begin - 1, begin - 1))
                         if ctg_len - end:
                             ca_output.stdout_f.write('\t\tUnaligned bases: %d to %d (%d)\n' % (end + 1, ctg_len, ctg_len - end))
-                        if qconfig.is_combined_ref and aligned_bases_in_contig >= umt * ctg_len:
-                                check_for_potential_translocation(seq, ctg_len, real_aligns, region_misassemblies,
-                                                                  misassemblies_by_ref, ca_output.stdout_f)
+                        if qconfig.is_combined_ref:
+                            check_for_potential_translocation(seq, ctg_len, real_aligns, region_misassemblies,
+                                                              misassemblies_by_ref, ca_output.stdout_f)
                     ref_aligns.setdefault(the_only_align.ref, []).append(the_only_align)
                 else:
                     #Sort real alignments by position on the contig
@@ -333,14 +332,13 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     if is_partially_unaligned:
                         partially_unaligned += 1
                         partially_unaligned_bases += unaligned_bases - number_unaligned_ns
-                        if aligned_bases_in_contig >= umt * acgt_ctg_len:
-                            ca_output.stdout_f.write('\t\tThis contig is partially unaligned. '
-                                                     '(Aligned %d out of %d non-N bases (%.2f%%))\n'
-                                                     % (aligned_bases_in_contig, acgt_ctg_len,
-                                                        100.0 * aligned_bases_in_contig / acgt_ctg_len))
+                        ca_output.stdout_f.write('\t\tThis contig is partially unaligned. '
+                                                 '(Aligned %d out of %d non-N bases (%.2f%%))\n'
+                                                 % (aligned_bases_in_contig, acgt_ctg_len,
+                                                 100.0 * aligned_bases_in_contig / acgt_ctg_len))
                         save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
 
-                    if aligned_bases_in_contig < umt * acgt_ctg_len:
+                    if aligned_bases_in_contig < qconfig.unaligned_mis_threshold * acgt_ctg_len:
                         ca_output.stdout_f.write('\t\t\tWarning! This contig is more unaligned than misassembled. ' + \
                                                  'Contig length is %d (number of Ns: %d) and total length of all aligns is %d\n' %
                                                  (ctg_len, number_ns, aligned_bases_in_contig))

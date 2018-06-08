@@ -508,6 +508,11 @@ def parse_options(logger, quast_args):
              dest='unaligned_part_size',
              type=int)
          ),
+        (['--skip-unaligned-mis-contigs'], dict(
+            dest='unaligned_mis_threshold',
+            action="store_const",
+            const=0.0)
+         ),
         (['-x', '--extensive-mis-size'], dict(
              dest='extensive_misassembly_threshold',
              type='int',

@@ -440,8 +440,8 @@ def parse_options(logger, quast_args):
              callback_kwargs={'store_true_values': ['gene_finding', 'metagenemark']},
              default=False)
          ),
-        (['-s', '--scaffolds'], dict(
-             dest='scaffolds',
+        (['-s', '--split-scaffolds'], dict(
+             dest='split_scaffolds',
              action='store_true')
          ),
         (['-e', '--eukaryote'], dict(

@@ -220,13 +220,9 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
         # lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(contigs_fpath))
         list_of_length = []
         number_of_Ns = 0
-        is_potential_scaffold = False
         for (name, seq) in fastaparser.read_fasta(contigs_fpath):
             list_of_length.append(len(seq))
             number_of_Ns += seq.count('N')
-            if not qconfig.scaffolds and not is_potential_scaffold and qutils.is_scaffold(seq):
-                is_potential_scaffold = True
-                qconfig.potential_scaffolds_assemblies.append(assembly_label)
             if cov_pattern.findall(name):
                 cov = int(float(cov_pattern.findall(name)[0]))
                 if len(coverage_dict[contigs_fpath]) <= cov:

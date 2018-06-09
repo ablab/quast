@@ -80,7 +80,7 @@ def save_total_report(output_dirpath, min_contig, ref_fpath):
         'subreferences': ref_names,
         'subreports': subreports,
         'minContig': min_contig,
-        'assembliesWithNs': qconfig.potential_scaffolds_assemblies if qconfig.potential_scaffolds_assemblies else None
+        'assembliesWithNs': None
     })
 
 #def save_old_total_report(output_dir, min_contig):

@@ -305,7 +305,7 @@ Maximum number of threads. The default value is 25% of all available CPUs but no
 Advanced options:
 <div class='options'>
 <div class='option'>
-    <a name='scaffolds'></a><code><b>--scaffolds</b></code> (or <code>-s</code>)
+    <a name='scaffolds'></a><code><b>--split-scaffolds</b></code> (or <code>-s</code>)
 </div>
 The assemblies are scaffolds (rather than contigs). QUAST will add split versions
 of assemblies to the comparison (named &lt;assembly_name&gt;_broken).
@@ -1263,7 +1263,7 @@ multiple misassemblies within one contig?</a></li>
     <li><a href="#faq_q3">Q3. Is it possible to find which misassembly corresponds to each contig and which kind of a misassembly event it is?</a></li>
     <li><a href="#faq_q4">Q4. Could you explain the format of Real Alignments in contigs report files (see the answer for Q3)?</a></li>
     <li><a href="#faq_q5">Q5. Where does QUAST save information about SNPs?</a></li>
-    <li><a href="#faq_q6">Q6. What does "broken" version of an assembly refer to while assessing scaffolds' quality (<code>--scaffolds</code> option)?</a></li>
+    <li><a href="#faq_q6">Q6. What does "broken" version of an assembly refer to while assessing scaffolds' quality (<code>--split-scaffolds</code> option)?</a></li>
     <li><a href="#faq_q7">Q7. Can I add new assemblies to existing QUAST report without need to realign already processed assemblies?
     Or can I at least rerun existing QUAST report with slightly modified options set?</a></li>
     <li><a href="#faq_q8">Q8. Which types of structural variations (SV) are handled by QUAST?
@@ -1276,7 +1276,7 @@ multiple misassemblies within one contig?</a></li>
     <li><a href="#faq_q13">Q13. Where can I find details about unaligned fragments of my assembly?</a></li>
     <li><a href="#faq_q14">Q14. I have very large assemblies and reference genome but my computational resources are limited.
     Could you recommend an optimal set of QUAST options to use?</a></li>
-    <li><a href="#faq_q15">Q15. I evaluated my assembly using <code>--scaffolds</code> option but got counter-intuitive results.
+    <li><a href="#faq_q15">Q15. I evaluated my assembly using <code>--split-scaffolds</code> option but got counter-intuitive results.
     The <code>number of misassemblies</code> in "broken" version of the assembly is higher than in the original one while
     I expected vice versa or at max the similar numbers of misassemblies. Could you explain this?</a></li>
     <li><a href="#faq_q16">Q16. I evaluated multiple assemblies against the reference genome and opened Icarus Contig Alignment Viewer.
@@ -1440,17 +1440,17 @@ where the columns are: reference genome name, contig name, position on the refer
 <br>
 <a name="faq_q6"></a>
 <p><b><i>
-Q6. What does "broken" version of an assembly refer to while assessing scaffolds' quality (<a href='#scaffolds'><code>--scaffolds</code></a> option)?
+Q6. What does "broken" version of an assembly refer to while assessing scaffolds' quality (<a href='#scaffolds'><code>--split-scaffolds</code></a> option)?
 </b></i></p>
 <p>
 Actually, the difference between "broken" and original assembly (scaffolds) is very simple. QUAST splits input fasta by continuous fragments of N's of length &ge; 10 and call this a "_broken" assembly. By doing this we try to reconstruct "contigs" which were used for construction of the scaffolds. After that, user can compare results for real scaffolds and "reconstructed contigs" and find out whether scaffolding step was useful or not.
 <br>
 <br>
-If you have both contigs.fasta and scaffolds.fasta it is better to specify both files to QUAST and don't set <code>--scaffolds</code> option.
+If you have both contigs.fasta and scaffolds.fasta it is better to specify both files to QUAST and don't set <code>--split-scaffolds</code> option.
 The comparison of real contigs vs real scaffolds is more honest and informative than scaffolds vs scaffolds_broken.
 <br>
 <br>
-To sum up, you should use <code>--scaffolds</code> option if you don't have original file with contigs but want to compare your scaffolds with it.
+To sum up, you should use <code>--split-scaffolds</code> option if you don't have original file with contigs but want to compare your scaffolds with it.
 <br>
 </p>
 
@@ -1622,7 +1622,7 @@ Q14. I have very large assemblies and reference genome but my computational reso
 
 <a name="faq_q15"></a>
 <p><b><i>
-Q15. I evaluated my assembly using <a href='#scaffolds'><code>--scaffolds</code></a> option but got counter-intuitive results.
+Q15. I evaluated my assembly using <a href='#scaffolds'><code>--split-scaffolds</code></a> option but got counter-intuitive results.
     The <a href='#misassemblies'><code>number of misassemblies</code></a> in "broken" version of the assembly is higher than in the original one while
     I expected vice versa or at max the similar numbers of misassemblies. Could you explain this?
 </b></i></p>

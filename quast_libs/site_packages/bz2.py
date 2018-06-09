@@ -9,7 +9,11 @@ __all__ = ["BZ2File", "BZ2Compressor", "BZ2Decompressor",
 
 __author__ = "Nadeem Vawda <nadeem.vawda@gmail.com>"
 
-from builtins import open as _builtin_open
+try:
+    from builtins import open as _builtin_open
+except ImportError:
+    from __builtin__ import open as _builtin_open
+
 import io
 import warnings
 import quast_libs.site_packages._compression as _compression

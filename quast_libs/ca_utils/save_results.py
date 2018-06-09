@@ -36,7 +36,8 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
         log_out_f.write('\tPotentially Misassembled Contigs (i/s translocations): %d\n' % region_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
         log_out_f.write('\t\tPossible Misassemblies: %d\n' % region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
     if contigs_fpath not in qconfig.dict_of_broken_scaffolds:
-        log_out_f.write('\tScaffold gap misassemblies: %d\n' % region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
+        log_out_f.write('\tScaffold gap extensive misassemblies: %d\n' % region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
+        log_out_f.write('\tScaffold gap local misassemblies: %d\n' % region_misassemblies.count(Misassembly.LOCAL_SCAFFOLD_GAP))
     if qconfig.bed:
         log_out_f.write('\tFake misassemblies matched with structural variations: %d\n' % region_misassemblies.count(Misassembly.MATCHED_SV))
     if qconfig.large_genome:
@@ -155,6 +156,7 @@ def save_result(result, report, fname, ref_fpath, genome_size):
             subreport.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, ref_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
             if fname not in qconfig.dict_of_broken_scaffolds:
                 subreport.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, ref_misassemblies.count(Misassembly.SCAFFOLD_GAP))
+                subreport.add_field(reporting.Fields.MIS_LOCAL_SCAFFOLDS_GAP, ref_misassemblies.count(Misassembly.LOCAL_SCAFFOLD_GAP))
             if qconfig.check_for_fragmented_ref:
                 subreport.add_field(reporting.Fields.MIS_FRAGMENTED, ref_misassemblies.count(Misassembly.FRAGMENTED))
     elif intergenomic_misassemblies_by_asm:
@@ -166,6 +168,7 @@ def save_result(result, report, fname, ref_fpath, genome_size):
         report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, ref_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
     if fname not in qconfig.dict_of_broken_scaffolds:
         report.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
+        report.add_field(reporting.Fields.MIS_LOCAL_SCAFFOLDS_GAP, region_misassemblies.count(Misassembly.LOCAL_SCAFFOLD_GAP))
     if qconfig.check_for_fragmented_ref:
         report.add_field(reporting.Fields.MIS_FRAGMENTED, region_misassemblies.count(Misassembly.FRAGMENTED))
     # for unaligned report:

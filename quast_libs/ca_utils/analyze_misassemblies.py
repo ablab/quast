@@ -23,11 +23,12 @@ class Misassembly:
     TRANSLOCATION = 3
     INTERSPECTRANSLOCATION = 4  # for metaquast, if translocation occurs between chromosomes of different references
     SCAFFOLD_GAP = 5
-    FRAGMENTED = 6
-    POTENTIALLY_MIS_CONTIGS = 7
-    POSSIBLE_MISASSEMBLIES = 8
-    MATCHED_SV = 9
-    POTENTIAL_MGE = 10
+    LOCAL_SCAFFOLD_GAP = 6
+    FRAGMENTED = 7
+    POTENTIALLY_MIS_CONTIGS = 8
+    POSSIBLE_MISASSEMBLIES = 9
+    MATCHED_SV = 10
+    POTENTIAL_MGE = 11
 
 
 class StructuralVariations(object):
@@ -497,12 +498,19 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
             ca_output.stdout_f.write('\t\t\t  Not a misassembly (structural variation of the genome) between these two alignments\n')
             ca_output.icarus_out_f.write('fake: not a misassembly (structural variation of the genome)\n')
             region_misassemblies.append(Misassembly.MATCHED_SV)
-        elif aux_data["is_scaffold_gap"] and abs(inconsistency) > qconfig.extensive_misassembly_threshold:
+        elif aux_data["is_scaffold_gap"]:
+            if abs(inconsistency) > qconfig.extensive_misassembly_threshold:
+                scaff_gap_type = ' (extensive)'
+                region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
+                misassemblies_by_ref[prev_ref].append(Misassembly.SCAFFOLD_GAP)
+                ca_output.icarus_out_f.write('fake: scaffold gap size wrong estimation' + scaff_gap_type + '\n')
+            else:
+                scaff_gap_type = ' (local)'
+                region_misassemblies.append(Misassembly.LOCAL_SCAFFOLD_GAP)
+                misassemblies_by_ref[prev_ref].append(Misassembly.LOCAL_SCAFFOLD_GAP)
+                ca_output.icarus_out_f.write('fake: scaffold gap size wrong estimation' + scaff_gap_type + '\n')
             ca_output.stdout_f.write('\t\t\t  Incorrectly estimated size of scaffold gap between these two alignments: ')
-            ca_output.stdout_f.write('gap length difference = ' + str(inconsistency) + '\n')
-            region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
-            misassemblies_by_ref[prev_ref].append(Misassembly.SCAFFOLD_GAP)
-            ca_output.icarus_out_f.write('fake: scaffold gap size wrong estimation' + '\n')
+            ca_output.stdout_f.write('gap length difference = ' + str(inconsistency) + scaff_gap_type + '\n')
         elif is_extensive_misassembly and is_potential_mge and is_potential_mge[i]:
             ca_output.stdout_f.write(
                 '\t\t\t  Not a misassembly (possible mobile genetic element) between these two alignments\n')

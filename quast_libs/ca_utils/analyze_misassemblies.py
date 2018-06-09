@@ -29,6 +29,11 @@ class Misassembly:
     POSSIBLE_MISASSEMBLIES = 9
     MATCHED_SV = 10
     POTENTIAL_MGE = 11
+    # special group for separating contig/scaffold misassemblies
+    SCF_INVERSION = 12
+    SCF_RELOCATION = 13
+    SCF_TRANSLOCATION = 14
+    SCF_INTERSPECTRANSLOCATION = 15
 
 
 class StructuralVariations(object):
@@ -529,22 +534,24 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
             ca_output.stdout_f.write('\t\t\t  Extensive misassembly (')
             msg = ''
             if misassembly_type == 'interspecies translocation':
-                region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
+                misassembly_id = Misassembly.INTERSPECTRANSLOCATION
                 istranslocations_by_ref[prev_ref][next_ref] += 1
                 istranslocations_by_ref[next_ref][prev_ref] += 1
-                misassemblies_by_ref[prev_ref].append(Misassembly.INTERSPECTRANSLOCATION)
-                misassemblies_by_ref[next_ref].append(Misassembly.INTERSPECTRANSLOCATION)
             elif misassembly_type == 'translocation':
-                region_misassemblies.append(Misassembly.TRANSLOCATION)
-                misassemblies_by_ref[prev_ref].append(Misassembly.TRANSLOCATION)
+                misassembly_id = Misassembly.TRANSLOCATION
             elif misassembly_type == 'relocation':
-                region_misassemblies.append(Misassembly.RELOCATION)
-                misassemblies_by_ref[prev_ref].append(Misassembly.RELOCATION)
+                misassembly_id = Misassembly.RELOCATION
                 msg = ', inconsistency = ' + str(inconsistency) + \
                       (' [linear representation of circular genome]' if cyclic_moment else '')
             else: #if strand1 != strand2:
-                region_misassemblies.append(Misassembly.INVERSION)
-                misassemblies_by_ref[prev_ref].append(Misassembly.INVERSION)
+                misassembly_id = Misassembly.INVERSION
+            region_misassemblies.append(misassembly_id)
+            misassemblies_by_ref[prev_ref].append(misassembly_id)
+            if misassembly_id == Misassembly.INTERSPECTRANSLOCATION:  # special case
+                misassemblies_by_ref[next_ref].append(misassembly_id)
+            if is_gap_filled_ns(contig_seq, prev_align, next_align):
+                misassembly_type += ', scaffold gap is present'
+                region_misassemblies.append(misassembly_id + (Misassembly.SCF_INVERSION - Misassembly.INVERSION))
             ca_output.stdout_f.write(misassembly_type + msg)
             ca_output.misassembly_f.write(misassembly_type + msg)
             ca_output.icarus_out_f.write(misassembly_type + msg)

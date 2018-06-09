@@ -136,8 +136,23 @@ def save_result(result, report, fname, ref_fpath, genome_size):
     report.add_field(reporting.Fields.MIS_EXTENSIVE_CONTIGS, len(misassembled_contigs))
     report.add_field(reporting.Fields.MIS_EXTENSIVE_BASES, misassembled_bases)
     report.add_field(reporting.Fields.MIS_LOCAL, region_misassemblies.count(Misassembly.LOCAL))
+    # special case for separating contig and scaffold misassemblies
+    report.add_field(reporting.Fields.SCF_MIS_ALL_EXTENSIVE, region_misassemblies.count(Misassembly.SCF_RELOCATION) +
+                     region_misassemblies.count(Misassembly.SCF_INVERSION) + region_misassemblies.count(Misassembly.SCF_TRANSLOCATION) +
+                     region_misassemblies.count(Misassembly.SCF_INTERSPECTRANSLOCATION))
+    report.add_field(reporting.Fields.SCF_MIS_RELOCATION, region_misassemblies.count(Misassembly.SCF_RELOCATION))
+    report.add_field(reporting.Fields.SCF_MIS_TRANSLOCATION, region_misassemblies.count(Misassembly.SCF_TRANSLOCATION))
+    report.add_field(reporting.Fields.SCF_MIS_INVERTION, region_misassemblies.count(Misassembly.SCF_INVERSION))
+    report.add_field(reporting.Fields.CTG_MIS_ALL_EXTENSIVE, report.get_field(reporting.Fields.MIS_ALL_EXTENSIVE) - report.get_field(reporting.Fields.SCF_MIS_ALL_EXTENSIVE))
+    report.add_field(reporting.Fields.CTG_MIS_RELOCATION, region_misassemblies.count(Misassembly.RELOCATION) - region_misassemblies.count(Misassembly.SCF_RELOCATION))
+    report.add_field(reporting.Fields.CTG_MIS_TRANSLOCATION, region_misassemblies.count(Misassembly.TRANSLOCATION) - region_misassemblies.count(Misassembly.SCF_TRANSLOCATION))
+    report.add_field(reporting.Fields.CTG_MIS_INVERTION, region_misassemblies.count(Misassembly.INVERSION) - region_misassemblies.count(Misassembly.SCF_INVERSION))
+
     if qconfig.is_combined_ref:
         report.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
+        report.add_field(reporting.Fields.SCF_MIS_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.SCF_INTERSPECTRANSLOCATION))
+        report.add_field(reporting.Fields.CTG_MIS_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION) -
+                         region_misassemblies.count(Misassembly.SCF_INTERSPECTRANSLOCATION))
         report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
         report.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
         all_references = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))

@@ -27,6 +27,7 @@ class Fields:
 ####################################################################################
     ### for indent before submetrics
     TAB = '    '
+    HALF_TAB = '  '
 
     ### List of available fields for reports. Values (strings) should be unique! ###
 
@@ -91,6 +92,18 @@ class Fields:
     POTENTIAL_MGE = '# possible MGEs'
     ### structural variations
     STRUCT_VARIATIONS = '# structural variations'
+
+    # Special case: metrics for separating Contig/Scaffold misassemblies in detailed misassemblies report
+    CTG_MIS_ALL_EXTENSIVE = HALF_TAB + '# contig misassemblies'
+    CTG_MIS_RELOCATION = TAB + '# c. relocations'
+    CTG_MIS_TRANSLOCATION = TAB + '# c. translocations'
+    CTG_MIS_INVERTION = TAB + '# c. inversions'
+    CTG_MIS_ISTRANSLOCATIONS = TAB + '# c. interspecies translocations'
+    SCF_MIS_ALL_EXTENSIVE = HALF_TAB + '# scaffold misassemblies'
+    SCF_MIS_RELOCATION = TAB + '# s. relocations'
+    SCF_MIS_TRANSLOCATION = TAB + '# s. translocations'
+    SCF_MIS_INVERTION = TAB + '# s. inversions'
+    SCF_MIS_ISTRANSLOCATIONS = TAB + '# s. interspecies translocations'
 
     # Unaligned
     UNALIGNED = '# unaligned contigs'
@@ -208,15 +221,19 @@ class Fields:
                    REF_DEPTH, REF_COVERAGE__FOR_THRESHOLDS]
 
     # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
-    misassemblies_order = [NAME,
-                           LARGE_MIS_EXTENSIVE, LARGE_MIS_RELOCATION, LARGE_MIS_TRANSLOCATION, LARGE_MIS_INVERTION,
-                           LARGE_MIS_ISTRANSLOCATIONS,
-                           MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
-                           MIS_ISTRANSLOCATIONS, MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
-                           CONTIGS_WITH_ISTRANSLOCATIONS, POSSIBLE_MISASSEMBLIES,
-                           MIS_LOCAL, MIS_SCAFFOLDS_GAP, MIS_LOCAL_SCAFFOLDS_GAP,
-                           MIS_FRAGMENTED, STRUCT_VARIATIONS, POTENTIAL_MGE, UNALIGNED_MISASSEMBLED_CTGS,
-                           MISMATCHES, INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES]
+    classic_misassemblies_order = [MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION, MIS_ISTRANSLOCATIONS]
+    ctg_scf_misassemblies_order = [CTG_MIS_ALL_EXTENSIVE,
+                                   CTG_MIS_RELOCATION, CTG_MIS_TRANSLOCATION, CTG_MIS_INVERTION, CTG_MIS_ISTRANSLOCATIONS,
+                                   SCF_MIS_ALL_EXTENSIVE,
+                                   SCF_MIS_RELOCATION, SCF_MIS_TRANSLOCATION, SCF_MIS_INVERTION, SCF_MIS_ISTRANSLOCATIONS]
+    prefix_misassemblies_order = [NAME, MIS_ALL_EXTENSIVE]
+    suffix_misassemblies_order = [MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
+                                  CONTIGS_WITH_ISTRANSLOCATIONS, POSSIBLE_MISASSEMBLIES,
+                                  MIS_LOCAL, MIS_SCAFFOLDS_GAP, MIS_LOCAL_SCAFFOLDS_GAP,
+                                  MIS_FRAGMENTED, STRUCT_VARIATIONS, POTENTIAL_MGE, UNALIGNED_MISASSEMBLED_CTGS,
+                                  MISMATCHES, INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES]
+    misassemblies_order = prefix_misassemblies_order + classic_misassemblies_order + suffix_misassemblies_order
+    misassemblies_order_advanced = prefix_misassemblies_order + ctg_scf_misassemblies_order + suffix_misassemblies_order
 
     # content and order of metrics in DETAILED UNALIGNED REPORT (<quast_output_dir>/contigs_reports/unaligned_report.txt, .tex, .tsv)
     unaligned_order = [NAME, UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
@@ -615,6 +632,8 @@ def save_tex(fpath, all_rows, is_transposed=False):
         # pretty indent
         if row.startswith(Fields.TAB):
             row = "\hspace{5mm}" + row.lstrip()
+        if row.startswith(Fields.HALF_TAB):
+            row = "\hspace{2mm}" + row.lstrip()
         # pretty highlight
         row = row.replace('HIGHLIGHTEDSTART', '{\\bf ')
         row = row.replace('HIGHLIGHTEDEND', '}')
@@ -718,7 +737,7 @@ def save_total(output_dirpath, silent=True):
 
 
 def save_misassemblies(output_dirpath):
-    save(output_dirpath, "misassemblies_report", qconfig.transposed_report_prefix + "_misassemblies", Fields.misassemblies_order)
+    save(output_dirpath, "misassemblies_report", qconfig.transposed_report_prefix + "_misassemblies", Fields.misassemblies_order_advanced)
 
 
 def save_unaligned(output_dirpath):

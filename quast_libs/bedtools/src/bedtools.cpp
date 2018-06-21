@@ -34,8 +34,9 @@ using namespace std;
 // define our parameter checking macro
 #define PARAMETER_CHECK(param, paramLen, actualLen) (strncmp(argv[i], param, min(actualLen, paramLen))== 0) && (actualLen == paramLen)
 
-bool sub_main(const QuickString &subCmd);
-void showHelp(const QuickString &subCmd);
+bool sub_main(const string &subCmd);
+void showHelp(const string &subCmd);
+void showErrors(const string &errors);
 
 int annotate_main(int argc, char* argv[]);//
 int bamtobed_main(int argc, char* argv[]);//
@@ -65,13 +66,13 @@ int map_main(int argc, char* argv[]); //
 void merge_help();
 int multibamcov_main(int argc, char* argv[]);//
 int multiintersect_main(int argc, char* argv[]);//
-int nek_sandbox1_main(int argc, char* argv[]);//
 int nuc_main(int argc, char* argv[]);//
 int pairtobed_main(int argc, char* argv[]);//
 int pairtopair_main(int argc, char* argv[]);//
 int random_main(int argc, char* argv[]); //
 int reldist_main(int argc, char* argv[]); //
 void sample_help();
+int shift_main(int argc, char* argv[]); //
 int shuffle_main(int argc, char* argv[]); //
 int slop_main(int argc, char* argv[]); //
 int split_main(int argc, char* argv[]); //
@@ -86,18 +87,24 @@ int bedtools_help(void);
 int bedtools_faq(void);
 
 
+
 int main(int argc, char *argv[])
 {
     // make sure the user at least entered a sub_command
     if (argc < 2) return bedtools_help();
 
-    QuickString subCmd(argv[1]);
+    string subCmd(argv[1]);
     BedtoolsDriver btDriver;
     if (btDriver.supports(subCmd)) {
-		if (btDriver.subMain(argc, argv)) {
-			return 0;
-		} else if (!btDriver.hadError()) {
+
+		if (btDriver.subMain(argc, argv)) 
+        {
+            return 0;
+		} 
+        else if (btDriver.hadError()) 
+        {
 			showHelp(subCmd);
+            showErrors(btDriver.getErrors());
 			return 1;
 		}
 	}
@@ -106,6 +113,7 @@ int main(int argc, char *argv[])
     else if (subCmd == "window")      return window_main(argc-1, argv+1);
     else if (subCmd == "genomecov")   return genomecoverage_main(argc-1, argv+1);
     else if (subCmd == "cluster")     return cluster_main(argc-1, argv+1);
+	else if (subCmd == "shift")        return shift_main(argc-1, argv+1);
     else if (subCmd == "slop")        return slop_main(argc-1, argv+1);
     else if (subCmd == "split")       return split_main(argc-1, argv+1);
     else if (subCmd == "flank")       return flank_main(argc-1, argv+1);
@@ -147,7 +155,6 @@ int main(int argc, char *argv[])
     else if (subCmd == "links")       return links_main(argc-1, argv+1);
     else if (subCmd == "makewindows") return windowmaker_main(argc-1, argv+1);
     else if (subCmd == "expand")      return expand_main(argc-1, argv+1);
-    else if (subCmd == "neksb1")       return nek_sandbox1_main(argc-1, argv+1);
     else if (subCmd == "regresstest")  return regress_test_main(argc, argv); //this command does need all the orig args.
     // help
     else if (subCmd == "-h" || subCmd == "--help" ||
@@ -188,8 +195,13 @@ int main(int argc, char *argv[])
 
 int bedtools_help(void)
 {
-    cout  << PROGRAM_NAME  << ": flexible tools for genome arithmetic and DNA sequence analysis.\n";
-    cout << "usage:    bedtools <subcommand> [options]" << endl << endl;
+    cout  << PROGRAM_NAME  << " is a powerful toolset for genome arithmetic." << endl << endl;
+    cout << "Version:   " << VERSION << endl;
+    cout << "About:     developed in the quinlanlab.org and by many contributors worldwide." << endl;
+    cout << "Docs:      http://bedtools.readthedocs.io/" << endl;
+    cout << "Code:      https://github.com/arq5x/bedtools2" << endl;
+    cout << "Mail:      https://groups.google.com/forum/#!forum/bedtools-discuss" << endl << endl;
+    cout << "Usage:     bedtools <subcommand> [options]" << endl << endl;
 
     cout  << "The bedtools sub-commands include:" << endl;
     
@@ -204,6 +216,7 @@ int bedtools_help(void)
     cout  << "    merge         "  << "Combine overlapping/nearby intervals into a single interval.\n";
     cout  << "    cluster       "  << "Cluster (but don't merge) overlapping/nearby intervals.\n";
     cout  << "    complement    "  << "Extract intervals _not_ represented by an interval file.\n";
+    cout  << "    shift         "  << "Adjust the position of intervals.\n";
     cout  << "    subtract      "  << "Remove intervals based on overlaps b/w two files.\n";
     cout  << "    slop          "  << "Adjust the size of intervals.\n";
     cout  << "    flank         "  << "Create new intervals from the flanks of existing intervals.\n";
@@ -284,7 +297,7 @@ int bedtools_faq(void)
     return 0;
 }
 
-void showHelp(const QuickString &subCmd) {
+void showHelp(const string &subCmd) {
 	if (subCmd == "intersect") {
 		intersect_help();
 	} else if (subCmd == "map") {
@@ -310,6 +323,9 @@ void showHelp(const QuickString &subCmd) {
 	} else if (subCmd == "groupby") {
 		groupby_help();
 	}
+}
 
-
+void showErrors(const string &errors) 
+{
+    cerr << endl << endl << errors << endl;
 }

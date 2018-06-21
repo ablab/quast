@@ -8,25 +8,27 @@
 #ifndef COVERAGEFILE_H_
 #define COVERAGEFILE_H_
 
+#include <stdio.h> // for asprintf
 #include "intersectFile.h"
 #include "ContextCoverage.h"
 
 class CoverageFile : public IntersectFile {
 public:
 	CoverageFile(ContextCoverage *);
-	~CoverageFile();
+	virtual ~CoverageFile();
 	virtual void processHits(RecordOutputMgr *outputMgr, RecordKeyVector &hits);
 	virtual void cleanupHits(RecordKeyVector &hits);
 	virtual void  giveFinalReport(RecordOutputMgr *outputMgr);
 
 
 protected:
-	QuickString _finalOutput;
+	string _finalOutput;
 
 	size_t *_depthArray;
 	size_t _depthArrayCapacity;
 	size_t _queryLen;
 	size_t _totalQueryLen;
+	size_t _hitCount;
 	int _queryOffset;
 	static const int DEFAULT_DEPTH_CAPACITY = 1024;
 	char *_floatValBuf;
@@ -37,6 +39,7 @@ protected:
 	depthMapType _finalDepthMap;
 
 	virtual ContextCoverage *upCast(ContextBase *context) { return static_cast<ContextCoverage*>(context); }
+	
 	void makeDepthCount(RecordKeyVector &hits);
 
 	size_t countBasesAtDepth(size_t depth);
@@ -47,8 +50,7 @@ protected:
 	void doHist(RecordOutputMgr *outputMgr, RecordKeyVector &hits);
 	void doDefault(RecordOutputMgr *outputMgr, RecordKeyVector &hits);
 
-	void format(float val);
-
+	virtual void checkSplits(RecordKeyVector &hitSet);
 };
 
 

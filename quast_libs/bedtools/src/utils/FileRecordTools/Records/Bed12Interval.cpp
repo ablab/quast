@@ -58,68 +58,68 @@ void Bed12Interval::clear() {
 
 }
 
-void Bed12Interval::print(QuickString &outBuf) const
+void Bed12Interval::print(string &outBuf) const
 {
 	Bed6Interval::print(outBuf);
 
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_thickStartStr);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_thickEndStr);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_itemRGB);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_blockCountStr);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_blockSizes);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_blockStarts);
 }
 
-void Bed12Interval::print(QuickString &outBuf, int start, int end) const
+void Bed12Interval::print(string &outBuf, int start, int end) const
 {
 	Bed6Interval::print(outBuf, start, end);
 
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_thickStartStr);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_thickEndStr);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_itemRGB);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_blockCountStr);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_blockSizes);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_blockStarts);
 }
 
-void Bed12Interval::print(QuickString &outBuf, const QuickString & start, const QuickString & end) const
+void Bed12Interval::print(string &outBuf, const string & start, const string & end) const
 {
 	Bed6Interval::print(outBuf, start, end);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_thickStartStr);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_thickEndStr);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_itemRGB);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_blockCountStr);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_blockSizes);
-	outBuf.append('\t');
+	outBuf.append("\t");
 	outBuf.append(_blockStarts);
 }
 
 
-void Bed12Interval::printNull(QuickString &outBuf) const
+void Bed12Interval::printNull(string &outBuf) const
 {
 	Bed6Interval::printNull(outBuf);
 
 	outBuf.append("\t.\t.\t.\t.\t.\t.", 12);
 }
 
-const QuickString &Bed12Interval::getField(int fieldNum) const
+const string &Bed12Interval::getField(int fieldNum) const
 {
 	switch (fieldNum) {
 	case 7:
@@ -177,18 +177,8 @@ int Bed12Interval::getLength(bool obeySplits) const {
 	if (!obeySplits || _blockCount <=0) {
 		return _endPos - _startPos;
 	} else {
-		int length = 0;
-    	//parse the blockSizes string.
-		char numBuf[16];
-		const char *startPtr = _blockSizes.c_str();
-		const char *endPtr = startPtr;
-	    for (int i=0; i < _blockCount; i++) {
-	    	memset(numBuf, 0, 16);
-	    	endPtr = strchr(endPtr, ',');
-	    	memcpy(numBuf, startPtr, endPtr - startPtr);
-	    	length += str2chrPos(numBuf);
-	    	startPtr = ++endPtr;
-	    }
-	    return length;
+		vector<int> vBlockSizes;
+		Tokenize(_blockSizes, vBlockSizes, ',');
+	    return accumulate(vBlockSizes.begin(), vBlockSizes.end(), 0);
 	}
 }

@@ -53,7 +53,7 @@ bool ContextIntersect::parseCmdArgs(int argc, char **argv, int skipFirstArgs) {
         else if (strcmp(_argv[_i], "-wao") == 0) {
 			if (!handle_wao()) return false;
         }
-       else if (strcmp(_argv[_i], "-wb") == 0) {
+        else if (strcmp(_argv[_i], "-wb") == 0) {
 			if (!handle_wb()) return false;
         }
         else if (strcmp(_argv[_i], "-wo") == 0) {
@@ -127,14 +127,26 @@ bool ContextIntersect::isValidState()
 		return false;
 	}
 	if (_haveFractionB && _reciprocalFraction) {
-		_errorMsg = "\n***** ERROR: -r must be used with -f. *****";
+		_errorMsg = "\n***** ERROR: -r must be used solely with -f. *****";
 		return false;
 	}
+	if (_haveFractionA && _haveFractionB && _reciprocalFraction) {
+		_errorMsg = "\n***** ERROR: -r must be used solely with -f. *****";
+		return false;
+	}
+
+	// if -f and -r are given, then we need to set _overlapFractionB to be the same as _overlapFractionA
+	if (_haveFractionA && _reciprocalFraction) {
+		setOverlapFractionB(_overlapFractionA);
+	}
+
 	if (getUseDBnameTags() && _dbNameTags.size() != _dbFileIdxs.size()) {
 		_errorMsg = "\n***** ERROR: Number of database name tags given does not match number of databases. *****";
 		return false;
 
 	}
+
+
 	if (getWriteOverlap()) {
 
 		if (getWriteA()) {
@@ -163,6 +175,10 @@ bool ContextIntersect::isValidState()
 		_errorMsg = "\n***** ERROR: request -s for sameStrand, or -S for diffStrand, not both. *****";
 		return false;
 	}
+	if ((getSameStrand() || getDiffStrand()) && !strandedToolSupported()) {
+		//error msg set within strandedToolSupported method.
+		return false;
+	}
 
 	if (getQueryFileType() == FileRecordTypeChecker::BAM_FILE_TYPE && getPrintHeader()) {
 		cerr << endl << "*****" << endl << "*****WARNING: -header option is not valid for BAM input." << endl << "*****" << endl;
@@ -171,6 +187,13 @@ bool ContextIntersect::isValidState()
 	if (getAnyHit() || getNoHit() || getWriteCount()) {
 		setPrintable(false);
 	}
+
+	if (getNoHit() || getWriteCount() || getWriteOverlap() 
+		|| getWriteAllOverlap() || getLeftJoin())
+	{
+		setRunToQueryEnd(true);
+	}
+
 	if (_files.size()  < 2 ) {
 		return false;
 	}
@@ -189,16 +212,7 @@ bool ContextIntersect::determineOutputType() {
 			_maxNumDatabaseFields = numFields;
 		}
 	}
-
-	//If the query is BAM, and bed output wasn't specified, then the output is BAM.
-	if (getQueryFileType() == FileRecordTypeChecker::BAM_FILE_TYPE && !getExplicitBedOutput()) {
-		setOutputFileType(FileRecordTypeChecker::BAM_FILE_TYPE);
-		_outputTypeDetermined = true;
-		return true;
-
-	}
 	return ContextBase::determineOutputType();
-
 }
 
 bool ContextIntersect::handle_a()

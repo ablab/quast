@@ -44,16 +44,16 @@ public:
 	FileRecordMgr *getFile(int fileIdx) { return _files[fileIdx]; }
 	void setProgram(PROGRAM_TYPE program) { _program = program; }
 
-	void addInputFile(const QuickString &inputFile) { _fileNames.push_back(inputFile); }
+	void addInputFile(const string &inputFile) { _fileNames.push_back(inputFile); }
 
 	int getNumInputFiles() const { return _fileNames.size(); }
-	const QuickString &getInputFileName(int fileNum) const { return _fileNames[fileNum]; }
+	const string &getInputFileName(int fileNum) const { return _fileNames[fileNum]; }
 	ContextFileType getInputFileType(int fileNum) const { return _files[fileNum]->getFileType(); }
 	ContextRecordType getInputRecordType(int fileNum) const { return _files[fileNum]->getRecordType(); }
 
 	virtual bool determineOutputType();
 
-	const QuickString &getHeader(int fileIdx) { return _files[fileIdx]->getHeader(); }
+	const string &getHeader(int fileIdx) { return _files[fileIdx]->getHeader(); }
 	const BamTools::RefVector &getBamReferences(int fileIdx)  { return _files[fileIdx]->getBamReferences(); }
 	int getBamHeaderAndRefIdx(); //return idx of 1st query that is BAM. If none, first DB that is BAM.
 
@@ -61,7 +61,7 @@ public:
 	void setUseMergedIntervals(bool val) { _useMergedIntervals = val; }
 	FileRecordMergeMgr::WANTED_STRAND_TYPE getDesiredStrand() const { return _desiredStrand; }
 
-	void openGenomeFile(const QuickString &genomeFilename);
+	void openGenomeFile(const string &genomeFilename);
 	void openGenomeFile(const BamTools::RefVector &refVector);
 	bool hasGenomeFile() const { return _genomeFile != NULL; }
 	NewGenomeFile *getGenomeFile() const { return _genomeFile; }
@@ -70,7 +70,7 @@ public:
 	ContextFileType getOutputFileType() const { return _outputFileType; }
 
 	virtual bool testCmdArgs(int argc, char **argv);
-	virtual bool errorEncountered() const { return !_errorMsg.empty(); }
+	virtual bool errorEncountered();
 
 	 //isValidState checks that parameters to context are in an acceptable state.
 	// If not, the error msg string will be set with a reason why it failed.
@@ -78,8 +78,8 @@ public:
 	bool getShowHelp() const { return _showHelp; }
 	void setShowHelp(bool val) { _showHelp = val; }
 
-	const QuickString &getErrorMsg() const { return _errorMsg; }
-	void setErrorMessage(const QuickString &errorMsg) { _errorMsg = errorMsg; }
+	const string &getErrorMsg() const { return _errorMsg; }
+	void setErrorMessage(const string &errorMsg) { _errorMsg = errorMsg; }
 
 	//split handling.
 	bool getObeySplits() const {return _obeySplits; }
@@ -144,7 +144,7 @@ public:
     // are available.
     void setColumnOpsMethods(bool val);
     virtual bool hasColumnOpsMethods() const { return _hasColumnOpsMethods; }
-    const QuickString &getColumnOpsVal(RecordKeyVector &keyList) const;
+    const string &getColumnOpsVal(RecordKeyVector &keyList) const;
     //methods applicable only to column operations.
     int getReportPrecision() const { return _reportPrecision; }
 
@@ -152,23 +152,26 @@ public:
     void testNameConventions(const Record *);
     BlockMgr *getSplitBlockInfo() { return _splitBlockInfo; }
 
+    string getErrorMessages() const { return _errorMsg; }
+
 protected:
 	PROGRAM_TYPE _program;
 
-	vector<QuickString> _fileNames;
+	vector<string> _fileNames;
 	vector<FileRecordMgr *> _files;
 	bool _allFilesOpened;
-	map<QuickString, PROGRAM_TYPE> _programNames;
+	map<string, PROGRAM_TYPE> _programNames;
+	string _origProgramName;
 
 	NewGenomeFile *_genomeFile;
 
 	ContextFileType _outputFileType;
 	bool _outputTypeDetermined;
 
-	map<int, QuickString> _headers;
+	map<int, string> _headers;
 	map<int, BamTools::RefVector> _references;
 
-	QuickString _errorMsg;
+	string _errorMsg;
 	vector<bool> _argsProcessed; //used for processing cmdLine args.
 	int _skipFirstArgs;
 	bool _showHelp;
@@ -200,9 +203,10 @@ protected:
     bool _printHeader;
     bool _printable;
     bool _explicitBedOutput;
+    bool _runToQueryEnd;
     int _queryFileIdx;
     vector<int> _dbFileIdxs;
-    vector<QuickString> _dbNameTags;
+    vector<string> _dbNameTags;
     map<int, int> _fileIdsToDbIdxs;
     int _bamHeaderAndRefIdx;
     int _maxNumDatabaseFields;
@@ -219,7 +223,7 @@ protected:
 	//Members for column operations
 	bool _hasColumnOpsMethods;
 	KeyListOps *_keyListOps;
-	QuickString _nullStr; //placeholder return value when col ops aren't valid.
+	string _nullStr; //placeholder return value when col ops aren't valid.
 
 	//Members for merged records
 	FileRecordMergeMgr::WANTED_STRAND_TYPE _desiredStrand;
@@ -234,7 +238,7 @@ protected:
 	virtual bool parseCmdArgs(int argc, char **argv, int skipFirstArgs);
 	bool cmdArgsValid();
 	virtual bool openFiles();
-	virtual FileRecordMgr *getNewFRM(const QuickString &filename, int fileIdx);
+	virtual FileRecordMgr *getNewFRM(const string &filename, int fileIdx);
 
 	//set cmd line params and counter, i, as members so code
 	//is more readable (as opposed to passing all 3 everywhere).
@@ -283,7 +287,7 @@ protected:
 	virtual bool handle_sortout();
 	virtual bool handle_nonamecheck();
 	bool handle_prec();
-	bool parseIoBufSize(QuickString bufStr);
+	bool parseIoBufSize(string bufStr);
 
     testType fileHasChrInChromNames(int fileIdx);
     testType fileHasLeadingZeroInChromNames(int fileIdx);
@@ -291,17 +295,18 @@ protected:
     void setNoEnforceCoordSort(bool val) { _noEnforceCoordSort = val; }
     //Warning messages.
    bool _nameConventionWarningTripped;
-   QuickString _nameConventionWarningMsg;
-   void nameConventionWarning(const Record *record, const QuickString &filename, const QuickString &message);
+   string _nameConventionWarningMsg;
+   void nameConventionWarning(const Record *record, const string &filename, const string &message);
 
     //give warning but continue.
-    void warn(const Record *, const QuickString str1, const QuickString str2 = "", const QuickString str3 = "");
+    void warn(const Record *, const string str1, const string str2 = "", const string str3 = "");
     // Give error and exit.
-    void die(const Record *, const QuickString str1, const QuickString str2 = "", const QuickString str3 = "");
+    void die(const Record *, const string str1, const string str2 = "", const string str3 = "");
 
     //private error handler
-    void setErrorMsg(QuickString &msg, bool onlyWarn, const Record * record, QuickString str1, const QuickString str2, const QuickString str3);
+    void setErrorMsg(string &msg, bool onlyWarn, const Record * record, string str1, const string str2, const string str3);
 
+    bool strandedToolSupported();
 
 };
 

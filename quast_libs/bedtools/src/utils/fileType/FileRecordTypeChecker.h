@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <vector>
 #include <map>
+#include <algorithm>
 #include "PushBackStreamBuf.h"
 #include "Tokenizer.h"
 
@@ -34,7 +35,7 @@ public:
 		BED6_RECORD_TYPE, BED12_RECORD_TYPE, BED_PLUS_RECORD_TYPE, BED6_PLUS_RECORD_TYPE, BAM_RECORD_TYPE, VCF_RECORD_TYPE, GFF_RECORD_TYPE,
 		GFF_PLUS_RECORD_TYPE, NO_POS_PLUS_RECORD_TYPE} RECORD_TYPE;
 
-	void setFilename(const QuickString & filename) { _filename = filename; }
+	void setFilename(const string & filename) { _filename = filename; }
 	bool scanBuffer(const char *buf, size_t len, bool eofHit, bool isCompressed = false);
 	bool needsMoreData() const { return _insufficientData; }
 
@@ -61,6 +62,7 @@ public:
 	bool isGzipped() const { return _isGzipped; }
 
 	void setBam(); //call only if you're SURE the file is BAM!
+	void setIsGroupBy(bool val) { _isGroupBy = val; } // When using groupBy,
 
 
 	bool isText() const { return _isText; }
@@ -88,7 +90,7 @@ private:
 	FILE_TYPE _fileType;
 	RECORD_TYPE _recordType;
 
-	QuickString _filename; //useful for reporting errors with file.
+	string _filename; //useful for reporting errors with file.
 	Tokenizer _tokenizer;
 
 	int _firstValidDataLineIdx;
@@ -109,6 +111,7 @@ private:
 	bool _insufficientData; //set to true if scan buffer had only header lines.
 	bool _fourthFieldNumeric; //this is just to distinguish between Bed4 and BedGraph files.
 	bool _givenEmptyBuffer;
+	bool _isGroupBy;
 
 	map<RECORD_TYPE, string> _recordTypeNames;
 	map<FILE_TYPE, string> _fileTypeNames;

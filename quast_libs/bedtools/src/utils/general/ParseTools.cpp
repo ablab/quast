@@ -6,18 +6,36 @@
 #include <cstdlib>
 #include <sstream>
 
+
 //This functions recognizes only numbers with digits, plus sign, minus sign, decimal point, e, or E. Hexadecimal and pointers not currently supported.
-bool isNumeric(const QuickString &str) {
+bool isNumeric(const string &str) {
+	bool hasDigits = false;
 	for (int i=0; i < (int)str.size(); i++) {
 		char currChar = str[i];
 		if (!(isdigit(currChar) || currChar == '-' || currChar == '.' || currChar == '+' || currChar == 'e' || currChar == 'E')) {
 			return false;
 		}
+		hasDigits |= isdigit(currChar);
 	}
-	return true;
+	return hasDigits;
 }
 
-int str2chrPos(const QuickString &str) {
+//As above, but does not allow decimal points
+bool isInteger(const string &str) {
+	bool hasDigits = false;
+	for (int i=0; i < (int)str.size(); i++) {
+		char currChar = str[i];
+		if (!(isdigit(currChar) || currChar == '-' || currChar == '+' || currChar == 'e' || currChar == 'E')) {
+			return false;
+		}
+		hasDigits |= isdigit(currChar);
+	}
+	return hasDigits;
+}
+
+
+
+int str2chrPos(const string &str) {
 	return str2chrPos(str.c_str(), str.size());
 }
 
@@ -28,9 +46,8 @@ int str2chrPos(const char *str, size_t ulen) {
 	}
 
 	//first test for exponents / scientific notation
-	bool hasExponent = false;
 	for (size_t i=0; i < ulen; i++) {
-		if (str[i] == 'e' || str[i] == 'E') {
+		if (str[i] == 'e' || str[i] == 'E' || str[i] == '.') {
 			std::istringstream ss(str);
 			double retVal;
 			ss >> retVal;
@@ -44,13 +61,19 @@ int str2chrPos(const char *str, size_t ulen) {
 		exit(1);
 	}
 
-	register int sum=0;
+	int sum=0;
 	int startPos =0;
 	bool isNegative = false;
 
 	//check for negative numbers
 	if (str[0] == '-') {
 		isNegative = true;
+		startPos = 1;
+	}
+
+	//check for explicitly positive numbers
+	if (str[0] == '+') {
+		isNegative = false;
 		startPos = 1;
 	}
 
@@ -116,7 +139,7 @@ string vectorIntToStr(const vector<int> &vec) {
 	return str;
 }
 
-bool isHeaderLine(const QuickString &line) {
+bool isHeaderLine(const string &line) {
 	if (line[0] == '>') {
 		return true;
 	}
@@ -126,14 +149,25 @@ bool isHeaderLine(const QuickString &line) {
 	if (line[0] == '#') {
 		return true;
 	}
-	//GFF file headers can also start with the words "browser" or "track", followed by a whitespace character.
-	if (memcmp(line.c_str(), "browser", 7) == 0 && isspace(line[7])) {
+	
+	string tmp = line;
+	transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
+	//allow chr chrom to start a header line
+	if (memcmp(tmp.c_str(), "chrom", 5) == 0 && isspace(tmp[5]) && ! isdigit(tmp[6])) {
 		return true;
 	}
-	if (memcmp(line.c_str(), "track", 5) == 0 && isspace(line[5])) {
+	//allow chr chrom to start a header line
+	if (memcmp(tmp.c_str(), "chr", 3) == 0 && isspace(tmp[3]) && ! isdigit(tmp[4])) {
 		return true;
 	}
-	if (memcmp(line.c_str(), "visibility", 10) == 0) {
+	//UCSC file headers can also start with the words "browser" or "track", followed by a whitespace character.
+	if (memcmp(tmp.c_str(), "browser", 7) == 0) {
+		return true;
+	}
+	if (memcmp(tmp.c_str(), "track", 5) == 0) {
+		return true;
+	}
+	if (memcmp(tmp.c_str(), "visibility", 10) == 0) {
 		return true;
 	}
 	return false;

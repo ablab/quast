@@ -30,10 +30,11 @@ class Bed2Fa {
 public:
 
     // constructor
-    Bed2Fa(bool useName, const string &dbFile, 
-           const string &bedFile, const string &fastaOutFile, 
+    Bed2Fa(const string &dbFile, 
+           const string &bedFile, const string &fastaOutFile,
            bool useFasta, bool useStrand, 
-           bool useBlocks, bool useFullHeader);
+           bool useBlocks, bool useFullHeader,
+           bool useBedOut, bool useName, bool useNamePlus);
 
     // destructor
     ~Bed2Fa(void);
@@ -44,7 +45,6 @@ public:
 
 private:
 
-    bool _useName;
     string _dbFile;
     string _bedFile;
     string _fastaOutFile;
@@ -53,6 +53,9 @@ private:
     bool _useBlocks;    // should the extracted sequence obey BED blocks
                         // (for example, exons?)
     bool _useFullHeader;
+    bool _useBedOut;    // priginal BED records followed by FASTA on same line
+    bool _useName;
+    bool _useNamePlus;
 
     // instance of a bed file class.
     BedFile  *_bed;

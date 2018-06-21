@@ -1,4 +1,3 @@
-
 #include "Record.h"
 #include <cstdio>
 
@@ -10,11 +9,14 @@ Record::Record()
   _strandVal(UNKNOWN),
   _zeroLength(false),
   _isUnmapped(false),
-  _isMateUnmapped(false)
-{
-}
+  _isMateUnmapped(false),
+  _isValidHit(true),
+  _frm(NULL)
+{}
 
-Record::~Record() {
+Record::~Record()
+{
+	//_frm->deleteRecord(this);
 }
 
 const Record &Record::operator=(const Record &other)
@@ -45,6 +47,7 @@ void Record::clear() {
 	_zeroLength = false;
 	_isUnmapped = false;
 	_isMateUnmapped = false;
+	_isValidHit = false;
 }
 
 bool Record::operator < (const Record &other) const
@@ -169,7 +172,6 @@ bool Record::sameChromIntersects(const Record *record,
 	if (diffStrand && !isDiffStrand) {
 		return false; //want different, but they're not different.
 	}
-
 	int otherStart = record->getStartPos();
 	int otherEnd = record->getEndPos();
 
@@ -182,7 +184,6 @@ bool Record::sameChromIntersects(const Record *record,
 	if (minEnd < maxStart) {
 		return false;
 	}
-
 
 	if ((overlapFractionA == 0.0) && (overlapFractionB == 0.0))
     {
@@ -246,13 +247,13 @@ void Record::undoZeroLength()
 
 ostream &operator << (ostream &out, const Record &record)
 {
-	QuickString outBuf;
+	string outBuf;
 	record.print(outBuf);
 	out << outBuf;
 	return out;
 }
 
-const QuickString &Record::getField(int fieldNum) const
+const string &Record::getField(int fieldNum) const
 {
     cerr << endl << "*****" << endl
          << "*****ERROR: requested column " << fieldNum <<
@@ -281,7 +282,7 @@ bool Record::hasLeadingZeroInChromName(bool chrKnown) const {
 }
 
 void Record::print(FILE *fp, bool newline) const {
-	QuickString buf;
+	string buf;
 	print(buf);
 	fprintf(fp, "%s", buf.c_str());
 	if(newline) fprintf(fp, "\n");
@@ -290,4 +291,14 @@ void Record::print(FILE *fp, bool newline) const {
 int Record::getLength(bool obeySplits) const {
 	//only bed12 and BAM need to check splits
 	return _endPos - _startPos;
+}
+
+void Record::setFileRecordManager(FileRecordMgr *frm)
+{
+	_frm = frm;
+}
+
+FileRecordMgr * Record::getFileRecordManager()
+{
+	return _frm;
 }

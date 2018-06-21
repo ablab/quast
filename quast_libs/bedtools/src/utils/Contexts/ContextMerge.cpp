@@ -69,8 +69,12 @@ bool ContextMerge::isValidState()
 	}
 
 	//default to stdin
-	if (getNumInputFiles() == 0) {
-		addInputFile("-");
+	if (getNumInputFiles() == 0) 
+	{
+		if (!isatty(STDIN_FILENO))
+		{
+			addInputFile("-");
+		}
 	}
 	if (!ContextBase::isValidState()) {
 		return false;
@@ -80,16 +84,7 @@ bool ContextMerge::isValidState()
 	// Tests for stranded merge
 	//
 	if (_desiredStrand != FileRecordMergeMgr::ANY_STRAND) { // requested stranded merge
-		// make sure file has strand.
-		if (!getFile(0)->recordsHaveStrand()) {
-			_errorMsg = "\n***** ERROR: stranded merge requested, but input file records do not have strand. *****";
-			return false;
-		}
-		//make sure file is not VCF.
-		if (getFile(0)->getFileType() == FileRecordTypeChecker::VCF_FILE_TYPE) {
-			_errorMsg = "\n***** ERROR: stranded merge not supported for VCF files. *****";
-			return false;
-		}
+		return strandedToolSupported();
 	}
 
 	return true;

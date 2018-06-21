@@ -25,6 +25,8 @@ FileRecordTypeChecker::FileRecordTypeChecker()
 	_insufficientData = false;
 	_fourthFieldNumeric = false;
 	_givenEmptyBuffer = false;
+	_isGroupBy = false;
+	// TO DO: Bed4, Bed5, and BedGraph are missing from all of these.
 
 	_hasName[UNKNOWN_RECORD_TYPE] = false;
 	_hasName[EMPTY_RECORD_TYPE] = false;
@@ -58,7 +60,7 @@ FileRecordTypeChecker::FileRecordTypeChecker()
 	_hasStrand[BED3_RECORD_TYPE] = false;
 	_hasStrand[BED6_RECORD_TYPE] = true;
 	_hasStrand[BED12_RECORD_TYPE] = true;
-	_hasStrand[BED_PLUS_RECORD_TYPE] = false;
+	_hasStrand[BED_PLUS_RECORD_TYPE] = true; //actually, unknown. Give benefit of doubt.
 	_hasStrand[BED6_PLUS_RECORD_TYPE] = true;
 	_hasStrand[BAM_RECORD_TYPE] = true;
 	_hasStrand[VCF_RECORD_TYPE] = true;
@@ -172,21 +174,30 @@ bool FileRecordTypeChecker::handleTextFormat(const char *buffer, size_t len)
 	if (isVCFformat(buffer)) {
 		return isTextDelimtedFormat(buffer, len);
 	} else if (isTextDelimtedFormat(buffer, len)) {
-
 		//At this point, _isText and _isDelimited are set. _numFields and _delimChar are
 		//set.
 		_fileType = SINGLE_LINE_DELIM_TEXT_FILE_TYPE;
+		if (_isGroupBy) {
+			_recordType = NO_POS_PLUS_RECORD_TYPE;
+			return true;
+		}
 
 		//Tokenize the first line of valid data into fields.
 		//Need to make a copy so next call to tokenizer doesn't overwrite the line.
 
-		QuickString line(_tokenizer.getElem(_firstValidDataLineIdx));
+		string line(_tokenizer.getElem(_firstValidDataLineIdx));
+
+		// ditch \r for Windows if necessary.
+		if (line.size() && line[line.size()-1] == '\r') {
+			line.resize(line.size()-1);
+		}
 
 		_tokenizer.setKeepFinalIncompleteElem(Tokenizer::USE_NOW);
 		_tokenizer.setNumExpectedItems(_numFields);
-
-		if (_tokenizer.tokenize(line, _delimChar) != _numFields) {
+		_tokenizer.tokenize(line, _delimChar);
+		if (_tokenizer.getNumFields(line, _delimChar) != _numFields) {
 			cerr << "Error: Type checker found wrong number of fields while tokenizing data line." << endl;
+			cerr << "Perhaps you have extra TAB at the end of your line? Check with \"cat -t\""<< endl;
 			exit(1);
 		}
 
@@ -201,6 +212,7 @@ bool FileRecordTypeChecker::handleTextFormat(const char *buffer, size_t len)
 				} else {
 					_fourthFieldNumeric = false;
 					_recordType = BED4_RECORD_TYPE;
+					_hasStrand[BED4_RECORD_TYPE] = isStrandField(3);
 				}
 			} else if (_numFields == 5 && passesBed5()) {
 				_recordType = BED5_RECORD_TYPE;
@@ -229,7 +241,7 @@ bool FileRecordTypeChecker::handleTextFormat(const char *buffer, size_t len)
 		}
 		//Here the Record must not have positions, so it is the NoPosPlus Type.
 		_recordType = NO_POS_PLUS_RECORD_TYPE;
-		return true;
+		return false;
 	}
 	return false;
 }
@@ -256,7 +268,7 @@ bool FileRecordTypeChecker::isBedFormat() {
 		return false;
 	}
 	//the 2nd and 3rd fields must be numeric.
-	if (!isNumeric(_tokenizer.getElem(1)) || !isNumeric(_tokenizer.getElem(2))) {
+	if (!isInteger(_tokenizer.getElem(1)) || !isInteger(_tokenizer.getElem(2))) {
 		return false;
 	}
 
@@ -291,7 +303,7 @@ bool FileRecordTypeChecker::isGFFformat()
 
 bool FileRecordTypeChecker::isTextDelimtedFormat(const char *buffer, size_t len)
 {
-	//Break single string buffer into vector of QuickStrings. Delimiter is newline.
+	//Break single string buffer into vector of strings. Delimiter is newline.
 	_tokenizer.setKeepFinalIncompleteElem(Tokenizer::IGNORE);
 	int numLines = _tokenizer.tokenize(buffer, '\n', _eofHit, _isCompressed);
 
@@ -316,17 +328,18 @@ bool FileRecordTypeChecker::isTextDelimtedFormat(const char *buffer, size_t len)
 	int emptyLines = 0;
 	for (int i=0; i < numLines; i++ ) {
 
+
 		if (validLinesFound >=4) {
 			break; //really only need to look at like 4 lines of data, max.
 		}
-		const QuickString &line = _tokenizer.getElem(i);
-		int len =line.size();
+
+		const string line = _tokenizer.getElem(i);
+
 		//skip over any empty line
-		if (len == 0) {
+		if (line.size() == 0) {
 			emptyLines++;
 			continue;
 		}
-
 		//
 		//skip over any header line
 		//
@@ -347,8 +360,6 @@ bool FileRecordTypeChecker::isTextDelimtedFormat(const char *buffer, size_t len)
 			continue;
 		}
 
-
-
 		//a line must have some alphanumeric characters in order to be valid.
 		bool hasAlphaNum = false;
 		for (int j=0; j < len; j++) {
@@ -362,25 +373,20 @@ bool FileRecordTypeChecker::isTextDelimtedFormat(const char *buffer, size_t len)
 		}
 
 		validLinesFound++;
+
 		if (_firstValidDataLineIdx == -1) {
 			_firstValidDataLineIdx = i;
 		}
 
-		int lineTabCount = 0, lineCommaCount=0, lineSemicolonCount =0;
-		for (int j=0; j < len; j++) {
-			char currChar = line[j];
-			if (currChar == '\t') {
-				lineTabCount++;
-			} else if (currChar == ',') {
-				lineCommaCount++;
-			} else if (currChar == ';') {
-				lineSemicolonCount++;
-			}
-		}
-		tabCounts.push_back(lineTabCount);
-		commaCounts.push_back(lineCommaCount);
-		semicolonCounts.push_back(lineSemicolonCount);
+		int tab_count = std::count(line.begin(), line.end(), '\t');
+		int comma_count = std::count(line.begin(), line.end(), ',');
+		int semicolon_count = std::count(line.begin(), line.end(), ';');
+
+		tabCounts.push_back(tab_count);
+		commaCounts.push_back(comma_count);
+		semicolonCounts.push_back(semicolon_count);
 	}
+
 
 	if (headerCount + emptyLines == numLines) {
 		_insufficientData = true;
@@ -391,8 +397,13 @@ bool FileRecordTypeChecker::isTextDelimtedFormat(const char *buffer, size_t len)
 	_insufficientData = false;
 
 	if (delimiterTesting(tabCounts, '\t')) {
+
 		return true;
 	}
+	else if (validLinesFound) {
+		return true;
+	}
+
 	if (delimiterTesting(commaCounts, ',')) {
 		return true;
 	}
@@ -418,13 +429,16 @@ bool FileRecordTypeChecker::delimiterTesting(vector<int> &counts, char suspectCh
 			//Hurray!! We have successfully found a delimited file.
 			_isDelimited = true;
 			_delimChar = suspectChar;
-			_numFields = numDelims +1;
+			_numFields = numDelims + 1;
 			return true;
 		} else {
 			return false;
 		}
 	}
-	return false;
+	else { // there is just a single column with no delimiter.
+		_numFields = 1;
+		return false;
+	}
 }
 
 
@@ -451,6 +465,6 @@ bool FileRecordTypeChecker::passesBed12() {
 }
 
 bool FileRecordTypeChecker::isStrandField(int field) {
-	const QuickString &strandChar = _tokenizer.getElem(field);
+	const string &strandChar = _tokenizer.getElem(field);
 	return (strandChar == "+" || strandChar == "-" || strandChar == ".");
 }

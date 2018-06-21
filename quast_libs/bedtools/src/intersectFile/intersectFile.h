@@ -26,11 +26,11 @@ public:
     IntersectFile(ContextIntersect *context);
     virtual ~IntersectFile();
 	virtual bool init();
-	virtual bool findNext(RecordKeyVector &hits);
-	virtual void processHits(RecordOutputMgr *outputMgr, RecordKeyVector &hits);
-	virtual void cleanupHits(RecordKeyVector &hits);
+	virtual bool findNext(RecordKeyVector &);
+	virtual void processHits(RecordOutputMgr *, RecordKeyVector &);
+	virtual void cleanupHits(RecordKeyVector &);
 	virtual bool finalizeCalculations();
-	virtual void  giveFinalReport(RecordOutputMgr *outputMgr) {}
+	virtual void  giveFinalReport(RecordOutputMgr *) {}
 
 
 protected:
@@ -40,7 +40,7 @@ protected:
 
 	virtual bool nextSortedFind(RecordKeyVector &hits);
 	virtual bool nextUnsortedFind(RecordKeyVector &hits);
-	void checkSplits(RecordKeyVector &hits);
+	virtual void checkSplits(RecordKeyVector &hits);
 	virtual void makeSweep();
 	virtual ContextIntersect *upCast(ContextBase *context) { return static_cast<ContextIntersect *>(context); }
 

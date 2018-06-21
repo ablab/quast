@@ -36,7 +36,7 @@ bool ContextGroupBy::parseCmdArgs(int argc, char **argv, int skipFirstArgs)
 		if (isUsed(_i - _skipFirstArgs)) {
 			continue;
 		}
-		else if (strcmp(_argv[_i], "-g") == 0) {
+		else if ((strcmp(_argv[_i], "-g") == 0) || (strcmp(_argv[_i], "-grp") == 0)) {
 			if (!handle_g()) return false;
 		}
 		else if (strcmp(_argv[_i], "-inheader") == 0) {
@@ -122,16 +122,18 @@ bool ContextGroupBy::handle_ignorecase() {
 	return true;
 }
 
-const QuickString &ContextGroupBy::getDefaultHeader() {
+const string &ContextGroupBy::getDefaultHeader() {
 	//groupBy does not support multiple databases.
 	FileRecordMgr *frm = _files[0];
 	int numFields = frm->getNumFields();
 	_defaultHeader.clear();
+	ostringstream s;
 	for (int i=1; i <= numFields; i++) {
-		_defaultHeader.append("col_");
-		_defaultHeader.append(i);
-		_defaultHeader.append('\t');
+		s << "col_";
+		s << i;
+		s << "\t";
 	}
+	_defaultHeader.append(s.str());
 	//change last tab into newline
 	_defaultHeader[_defaultHeader.size()-1] = '\n';
 	return _defaultHeader;

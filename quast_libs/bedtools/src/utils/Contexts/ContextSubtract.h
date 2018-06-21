@@ -18,13 +18,13 @@ public:
 	virtual bool parseCmdArgs(int argc, char **argv, int skipFirstArgs);
     virtual bool hasIntersectMethods() const { return true; }
     virtual bool isValidState();
+    void setSubtractFraction(float fraction) { _fractionalSubtract = fraction; }
     float getSubtractFraction() const { return _fractionalSubtract; }
     bool getRemoveAll() const { return _removeAll; }
     bool getRemoveSum() const { return _removeSum; }
 
 
 private:
-    bool handle_f();
     bool handle_A();
     bool handle_N();
 

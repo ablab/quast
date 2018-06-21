@@ -5,14 +5,15 @@ class BedtoolsDriver {
 public:
 	BedtoolsDriver();
 	bool subMain(int argc, char **argv);
-	bool supports(const QuickString &tool);
+	bool supports(const string &tool);
 	ContextBase *getContext();
 	ToolBase *getTool(ContextBase *context);
 	bool hadError() const { return _hadError; }
+	string getErrors() const { return _errors; }
 protected:
-	QuickString _subCmd;
-	typedef set<QuickString> supportType;
+	string _subCmd;
+	typedef set<string> supportType;
 	supportType _supported;
 	bool _hadError;
-
+	string _errors;
 };

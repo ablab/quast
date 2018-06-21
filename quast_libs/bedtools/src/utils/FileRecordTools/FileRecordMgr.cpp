@@ -4,7 +4,7 @@
 #include "Record.h"
 #include "NewGenomeFile.h"
 
-FileRecordMgr::FileRecordMgr(const QuickString &filename)
+FileRecordMgr::FileRecordMgr(const string &filename)
 : _fileIdx(-1),
   _filename(filename),
   _bufStreamMgr(NULL),
@@ -26,20 +26,15 @@ FileRecordMgr::FileRecordMgr(const QuickString &filename)
   _hasGenomeFile(false),
   _genomeFile(NULL),
   _ioBufSize(0),
-  _noEnforceCoordSort(false)
+  _noEnforceCoordSort(false),
+  _isGroupBy(false)
  {
 }
 
-FileRecordMgr::~FileRecordMgr(){
-
-	delete _bufStreamMgr;
-	_bufStreamMgr = NULL;
-
-	close(); //just make sure file was closed.
-	delete _fileReader;
-	_fileReader = NULL;
-
-	delete _recordMgr;
+FileRecordMgr::~FileRecordMgr()
+{
+	close(); 
+	//delete _recordMgr;
 	_recordMgr = NULL;
 }
 
@@ -48,15 +43,32 @@ bool FileRecordMgr::open(bool inheader){
 	_bufStreamMgr->getTypeChecker().setInHeader(inheader);
 
 	if (_ioBufSize > 0) _bufStreamMgr->setIoBufSize(_ioBufSize);
+	
+	if (_isGroupBy) {
+		_bufStreamMgr->getTypeChecker().setIsGroupBy(true);
+	}
+	
 	if (!_bufStreamMgr->init()) {
 		cerr << "Error: unable to open file or unable to determine types for file " << _filename << endl;
+		cerr << endl;
+		cerr << "- Please ensure that your file is TAB delimited (e.g., cat -t FILE)." << endl;
+		cerr << "- Also ensure that your file has integer chromosome coordinates in the " << endl
+		     << "  expected columns (e.g., cols 2 and 3 for BED)." << endl;
 		delete _bufStreamMgr;
 		_bufStreamMgr = NULL;
 		exit(1);
 	}
-
 	_fileType = _bufStreamMgr->getTypeChecker().getFileType();
 	_recordType = _bufStreamMgr->getTypeChecker().getRecordType();
+
+	//HACK: If groupBy and not Bam, over-ride file type.
+	if (_isGroupBy && _fileType != FileRecordTypeChecker::BAM_FILE_TYPE) 
+	{
+		_bufStreamMgr->getTypeChecker().setFileType(FileRecordTypeChecker::SINGLE_LINE_DELIM_TEXT_FILE_TYPE);
+		_bufStreamMgr->getTypeChecker().setRecordType(FileRecordTypeChecker::NO_POS_PLUS_RECORD_TYPE);
+		_fileType = FileRecordTypeChecker::SINGLE_LINE_DELIM_TEXT_FILE_TYPE;
+		_recordType = FileRecordTypeChecker::NO_POS_PLUS_RECORD_TYPE;
+	}
 	if (_fileType == FileRecordTypeChecker::UNKNOWN_FILE_TYPE || _recordType == FileRecordTypeChecker::UNKNOWN_RECORD_TYPE) {
 		cerr << "Error: Unable to determine type for file " << _filename << endl;
 		delete _bufStreamMgr;
@@ -128,11 +140,12 @@ Record *FileRecordMgr::getNextRecord(RecordKeyVector *keyList)
 	if (keyList != NULL) {
 		keyList->setKey(record);
 	}
+	record->setFileRecordManager(this);
 	return record;
 }
 
 void FileRecordMgr::assignChromId(Record *record) {
-	const QuickString &currChrom = record->getChrName();
+	const string &currChrom = record->getChrName();
 	if (currChrom != _prevChrom  && _hasGenomeFile) {
 		_prevChromId = _genomeFile->getChromId(currChrom);
 		record->setChromId(_prevChromId);
@@ -151,7 +164,7 @@ void FileRecordMgr::testInputSortOrder(Record *record)
 	}
 
 
-	const QuickString &currChrom = record->getChrName();
+	const string &currChrom = record->getChrName();
 	int currStart = record->getStartPos();
 	if (record->isZeroLength()) {
 		currStart++;

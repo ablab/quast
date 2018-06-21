@@ -5,6 +5,7 @@ UTILITIES_DIR = ../../utils/
 # define our includes
 # -------------------
 INCLUDES =  -I$(UTILITIES_DIR)/general/ \
+			-I$(UTILITIES_DIR)/lineFileUtilities/ \
 			-I$(UTILITIES_DIR)/fileType/ \
 			-I$(UTILITIES_DIR)/FileRecordTools/ \
            -I$(UTILITIES_DIR)/FileRecordTools/FileReaders/ \
@@ -25,7 +26,7 @@ SOURCES= ContextBase.cpp ContextBase.h ContextIntersect.cpp ContextIntersect.h C
 	ContextGroupBy.cpp ContextGroupBy.cpp
 OBJECTS= ContextBase.o ContextIntersect.o ContextFisher.o ContextMap.o ContextSample.o ContextSpacing.o ContextMerge.o ContextJaccard.o ContextClosest.o \
 	ContextSubtract.o ContextCoverage.o ContextComplement.o ContextGroupBy.o
-_EXT_OBJECTS=ParseTools.o QuickString.o
+_EXT_OBJECTS=ParseTools.o string.o
 EXT_OBJECTS=$(patsubst %,$(OBJ_DIR)/%,$(_EXT_OBJECTS))
 BUILT_OBJECTS= $(patsubst %,$(OBJ_DIR)/%,$(OBJECTS))
 

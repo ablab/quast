@@ -51,12 +51,14 @@ bool IntersectFile::init() {
 
 bool IntersectFile::findNext(RecordKeyVector &hits)
 {
-	bool retVal = false;
+	 bool retVal = false;
 	 if (upCast(_context)->getSortedInput()) {
 		retVal = nextSortedFind(hits);
-	 } else {
+	 } 
+	 else {
 		retVal = nextUnsortedFind(hits);
 	 }
+
 	 if (retVal) {
 		 checkSplits(hits);
 	 }
@@ -65,6 +67,7 @@ bool IntersectFile::findNext(RecordKeyVector &hits)
 
 void IntersectFile::processHits(RecordOutputMgr *outputMgr, RecordKeyVector &hits)
 {
+	RecordKeyVector::iterator_type hitListIter = hits.begin();
 	outputMgr->printRecord(hits);
 }
 
@@ -76,8 +79,12 @@ void IntersectFile::cleanupHits(RecordKeyVector &hits)
 
 bool IntersectFile::finalizeCalculations()
 {
-    if (upCast(_context)->getSortedInput() && !upCast(_context)->hasGenomeFile()) {
-    	_sweep->closeOut(true);
+    if (upCast(_context)->getSortedInput() && !upCast(_context)->hasGenomeFile()) 
+    {
+        if (_context->getNameCheckDisabled())
+            _sweep->closeOut(false);
+        else
+            _sweep->closeOut(true);
     }
     return true;
 }

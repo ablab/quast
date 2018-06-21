@@ -45,7 +45,7 @@ ContextBase::ContextBase()
   _reportDBfileNames(false),
   _printHeader(false),
   _printable(true),
-   _explicitBedOutput(false),
+  _explicitBedOutput(false),
   _queryFileIdx(-1),
   _bamHeaderAndRefIdx(-1),
   _maxNumDatabaseFields(0),
@@ -95,14 +95,12 @@ ContextBase::~ContextBase()
 {
 	delete _genomeFile;
 	_genomeFile = NULL;
-
 	delete _splitBlockInfo;
 	_splitBlockInfo = NULL;
 
 	if (_nameConventionWarningTripped) {
 		cerr << _nameConventionWarningMsg << endl;
 	}
-
 
 	//close all files and delete FRM objects.
 	for (int i=0; i < (int)_files.size(); i++) {
@@ -114,6 +112,15 @@ ContextBase::~ContextBase()
 		delete _keyListOps;
 		_keyListOps = NULL;
 	}
+}
+
+bool ContextBase::errorEncountered() {
+	// just a subcommand was given with no options.
+	if (_argc == 1) 
+	{
+		return true;
+	} 
+	return !_errorMsg.empty() || getShowHelp();
 }
 
 bool ContextBase::determineOutputType() {
@@ -129,7 +136,8 @@ bool ContextBase::determineOutputType() {
 	}
 
 	//Otherwise, if the input is BAM, then the output is BAM
-	if (getFile(0)->getFileType() == FileRecordTypeChecker::BAM_FILE_TYPE) {
+	int fileIdx = hasIntersectMethods() ? _queryFileIdx : 0;
+	if (_files[fileIdx]->getFileType() == FileRecordTypeChecker::BAM_FILE_TYPE) {
 		setOutputFileType(FileRecordTypeChecker::BAM_FILE_TYPE);
 		return true;
 	}
@@ -142,7 +150,7 @@ bool ContextBase::determineOutputType() {
 
 }
 
-void ContextBase::openGenomeFile(const QuickString &genomeFilename)
+void ContextBase::openGenomeFile(const string &genomeFilename)
 {
 	_genomeFile = new NewGenomeFile(genomeFilename.c_str());
 }
@@ -156,13 +164,11 @@ bool ContextBase::testCmdArgs(int argc, char **argv) {
 	_argc = argc;
 	_argv = argv;
 	_skipFirstArgs = 1;
-	setProgram(_programNames[argv[0]]);
+	_origProgramName = argv[0];
+	setProgram(_programNames[_origProgramName]);
 	_argsProcessed.resize(_argc - _skipFirstArgs, false);
 
 	if (!parseCmdArgs(argc, argv, 1) || getShowHelp() || !isValidState()) {
-		if (!_errorMsg.empty()) {
-			cerr <<_errorMsg << endl;
-		}
 		return false;
 	}
 	return true;
@@ -218,10 +224,10 @@ bool ContextBase::parseCmdArgs(int argc, char **argv, int skipFirstArgs) {
         else if (strcmp(_argv[_i], "-seed") == 0) {
 			if (!handle_seed()) return false;
         }
-        else if (strcmp(_argv[_i], "-o") == 0) {
+        else if ((strcmp(_argv[_i], "-o") == 0) || (strcmp(_argv[_i], "-ops") == 0)) {
 			if (!handle_o()) return false;
         }
-        else if (strcmp(_argv[_i], "-c") == 0) {
+        else if ((strcmp(_argv[_i], "-c") == 0) || (strcmp(_argv[_i], "-opCols") == 0)) {
 			if (!handle_c()) return false;
         }
         else if (strcmp(_argv[_i], "-null") == 0) {
@@ -252,10 +258,15 @@ bool ContextBase::isValidState()
 	if (!determineOutputType()) {
 		return false;
 	}
-	if (_program != GROUP_BY && _files[0]->getRecordType() == FileRecordTypeChecker::NO_POS_PLUS_RECORD_TYPE) {
+	if (_program != GROUP_BY && 
+		_files[0]->getRecordType() == FileRecordTypeChecker::NO_POS_PLUS_RECORD_TYPE) 
+	{
 		_errorMsg = "ERROR: file ";
 		_errorMsg.append(_files[0]->getFileName());
-		_errorMsg.append(" has non positional records, which are only valid for the groupBy tool.");
+		_errorMsg.append(" has non positional records, which are only valid for \n");
+		_errorMsg.append(" the groupBy tool. Perhaps you are using a header");
+		_errorMsg.append(" line(s) that starts with \n");
+		_errorMsg.append(" something other than \"#\", \"chrom\", or \"chr\" (any case)?");
 		return false;
 	}
 	if (getObeySplits()) {
@@ -331,11 +342,12 @@ bool ContextBase::openFiles() {
 		frm->setFullBamFlags(_useFullBamTags);
 		frm->setIsSorted(_sortedInput);
 		frm->setIoBufSize(_ioBufSize);
+		frm->setIsGroupBy(_program == GROUP_BY);
 		if (!frm->open(_inheader)) {
 			return false;
 		}
 		if (_noEnforceCoordSort) {
-			frm->setNoEnforceCoodSort(true);
+			frm->setNoEnforceCoordSort(true);
 		}
 		_files[i] = frm;
 	}
@@ -610,14 +622,14 @@ void ContextBase::setColumnOpsMethods(bool val)
 	_hasColumnOpsMethods = val;
 }
 
-const QuickString &ContextBase::getColumnOpsVal(RecordKeyVector &keyList) const {
+const string &ContextBase::getColumnOpsVal(RecordKeyVector &keyList) const {
 	if (!hasColumnOpsMethods()) {
 		return _nullStr;
 	}
 	return _keyListOps->getOpVals(keyList);
 }
 
-FileRecordMgr *ContextBase::getNewFRM(const QuickString &filename, int fileIdx) {
+FileRecordMgr *ContextBase::getNewFRM(const string &filename, int fileIdx) {
 
 	if (_useMergedIntervals) {
 		FileRecordMergeMgr *frm = new FileRecordMergeMgr(filename);
@@ -632,7 +644,7 @@ FileRecordMgr *ContextBase::getNewFRM(const QuickString &filename, int fileIdx) 
 	}
 }
 
-bool ContextBase::parseIoBufSize(QuickString bufStr)
+bool ContextBase::parseIoBufSize(string bufStr)
 {
 	char lastChar = bufStr[bufStr.size()-1];
 	int multiplier = 1;
@@ -732,20 +744,20 @@ ContextBase::testType ContextBase::fileHasLeadingZeroInChromNames(int fileIdx) {
 
 
 
-void ContextBase::warn(const Record *record, const QuickString str1, const QuickString str2, const QuickString str3) {
-	QuickString msg;
+void ContextBase::warn(const Record *record, const string str1, const string str2, const string str3) {
+	string msg;
 	setErrorMsg(msg, true, record, str1, str2, str3);
 	cerr << msg << endl;
 }
 
-void ContextBase::die(const Record *record, const QuickString str1, const QuickString str2, const QuickString str3) {
-	QuickString msg;
+void ContextBase::die(const Record *record, const string str1, const string str2, const string str3) {
+	string msg;
 	setErrorMsg(msg, false, record, str1, str2, str3);
 	cerr << msg << endl;
 	exit(1);
 }
 
-void ContextBase::setErrorMsg(QuickString &msg, bool onlyWarn, const Record * record, QuickString str1, const QuickString str2, const QuickString str3) {
+void ContextBase::setErrorMsg(string &msg, bool onlyWarn, const Record * record, string str1, const string str2, const string str3) {
 	if (onlyWarn) {
 		msg = "\n***** WARNING: ";
 	} else {
@@ -760,7 +772,7 @@ void ContextBase::setErrorMsg(QuickString &msg, bool onlyWarn, const Record * re
 	}
 }
 
-void ContextBase::nameConventionWarning(const Record *record, const QuickString &filename, const QuickString &message)
+void ContextBase::nameConventionWarning(const Record *record, const string &filename, const string &message)
 {
 	 _nameConventionWarningMsg = "***** WARNING: File ";
 	 _nameConventionWarningMsg.append(filename);
@@ -771,3 +783,31 @@ void ContextBase::nameConventionWarning(const Record *record, const QuickString 
 
 	 cerr << _nameConventionWarningMsg << endl;
 }
+
+bool ContextBase::strandedToolSupported() {
+	//Test that all files have strands. Should be called if any tool
+	// invoked with sameStrand / diffStrand option.
+	for (int i=0; i < getNumInputFiles(); i++) {
+
+		// make sure file has strand.
+		if (!getFile(i)->recordsHaveStrand()) {
+			_errorMsg = "\n***** ERROR: stranded ";
+			_errorMsg += _origProgramName;
+			_errorMsg += " requested, but input file ";
+			_errorMsg  += getInputFileName(i);
+			_errorMsg  += " does not have strands. *****";
+			return false;
+		}
+		//make sure file is not VCF.
+		if (getFile(i)->getFileType() == FileRecordTypeChecker::VCF_FILE_TYPE) {
+			_errorMsg = "\n***** ERROR: stranded ";
+			_errorMsg += _origProgramName;
+			_errorMsg += " not supported for VCF file ";
+			_errorMsg += getInputFileName(i);
+			_errorMsg += ". *****";
+			return false;
+		}
+	}
+	return true;
+}
+

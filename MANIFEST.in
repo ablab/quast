@@ -16,7 +16,6 @@ exclude quast.egg-info
 exclude setup.cfg
 
 global-exclude *.pyc
-global-exclude make.*
 
 recursive-exclude quast_libs/blast *
 recursive-exclude quast_libs/manta/build *

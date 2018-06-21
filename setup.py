@@ -199,6 +199,7 @@ minimap_files = find_package_files('minimap2')
 bwa_files = [
     join('bwa', fp) for fp in os.listdir(join(quast_package, 'bwa'))
     if isfile(join(quast_package, 'bwa', fp)) and fp.startswith('bwa')]
+bedtools_files = [join('bedtools', 'bin', '*')]
 full_install_tools = (
     find_package_files('gridss') +
     find_package_files('blast') +
@@ -238,13 +239,13 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
             find_package_files('genemark-es/lib') +
             find_package_files('glimmer') +
             bwa_files +
-            ['bedtools/bin/*'] +
+            bedtools_files +
             sambamba_files +
            (full_install_tools if install_full else [])
     },
     include_package_data=True,
     zip_safe=False,
-    scripts=['quast.py', 'metaquast.py', 'icarus.py'],
+    scripts=['quast.py', 'metaquast.py', 'icarus.py', 'quast-lg.py'],
     install_requires=[
         'joblib',
         'simplejson',

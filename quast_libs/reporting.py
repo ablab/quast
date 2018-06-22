@@ -89,7 +89,7 @@ class Fields:
     MIS_FRAGMENTED = '# misassemblies caused by fragmented reference'
     CONTIGS_WITH_ISTRANSLOCATIONS = '# possibly misassembled contigs'
     POSSIBLE_MISASSEMBLIES = TAB + '# possible misassemblies'
-    POTENTIAL_MGE = '# possible MGEs'
+    POTENTIAL_MGE = '# possible TEs'  # former MGEs -- mobile genetic elements
     ### structural variations
     STRUCT_VARIATIONS = '# structural variations'
 

@@ -41,7 +41,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     if qconfig.bed:
         log_out_f.write('\tFake misassemblies matched with structural variations: %d\n' % region_misassemblies.count(Misassembly.MATCHED_SV))
     if qconfig.large_genome:
-        log_out_f.write('\tMisassemblies caused by mobile genetic elements: %d\n' % region_misassemblies.count(Misassembly.POTENTIAL_MGE))
+        log_out_f.write('\tMisassemblies caused by transposable elements (TEs): %d\n' % region_misassemblies.count(Misassembly.POTENTIAL_MGE))
 
     if qconfig.check_for_fragmented_ref:
         log_out_f.write('\tMisassemblies caused by fragmented reference: %d\n' % region_misassemblies.count(Misassembly.FRAGMENTED))

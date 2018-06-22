@@ -3,10 +3,11 @@
 5.0.0
       1. QUAST-LG mode is added ("--large") for evaluating large genomes!
          Significant speed up on large genomes achieved by the switch to fast Minimap2
-         aligner and huge refactoring of the post processing bottlenecks in QUAST code.
-         The more adequate output is due to improved handling of transposable elements (TEs)
-         causing many false positive misassemblies in regular QUAST runs and use of proper
-         thresholds on minimal alignment, contig length, and extensive misassembly sizes.
+         aligner and huge refactoring of the post processing bottlenecks in the QUAST code.
+         The more adequate output is due to (1) improved handling of transposable elements
+         (TEs) causing many false positive misassemblies in regular QUAST runs and (2) use
+         of proper thresholds on minimal alignment, contig length, and extensive misassembly
+         sizes.
 
       2. New module: upper bound assembly ("--upper-bound-assembly").
          We determine which part of the reference genome could be potentially reconstructed

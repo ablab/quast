@@ -108,8 +108,9 @@ def downsample_kmers(tmp_dirpath, ref_fpath, kmc_db_fpath, kmer_len, log_fpath, 
     prev_kmer_idx = 0
     for chrom, seq in read_fasta(ref_fpath):
         kmc_fasta_fpath = join(tmp_dirpath, 'kmers_' + chrom + '.fasta')
+        num_kmers_in_seq = len(seq) - kmer_len + 1
         with open(kmc_fasta_fpath, 'w') as out_f:
-            for i in range(len(seq) - kmer_len + 1):
+            for i in range(num_kmers_in_seq):
                 out_f.write('>' + str(i) + '\n')
                 out_f.write(seq[i: i + kmer_len] + '\n')
         filtered_fpath = join(tmp_dirpath, 'kmers_' + chrom + '.filtered.fasta')
@@ -126,7 +127,7 @@ def downsample_kmers(tmp_dirpath, ref_fpath, kmc_db_fpath, kmer_len, log_fpath, 
                         out_f.write('>' + str(prev_kmer_idx + kmer_i) + '\n')
                         out_f.write(seq + '\n')
                         ref_kmers[prev_kmer_idx + kmer_i] = (chrom, kmer_i)
-        prev_kmer_idx += i
+        prev_kmer_idx += num_kmers_in_seq
         if qconfig.space_efficient:
             os.remove(kmc_fasta_fpath)
     return ref_kmers, downsampled_txt_fpath
@@ -219,7 +220,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         logger.warning('  Sorry, can\'t run KMC, skipping...')
         return None
 
-    logger.info('Running KMC on reference...')
+    logger.info('  Running KMC on reference...')
     if not isdir(output_dir):
         os.makedirs(output_dir)
     log_fpath = join(output_dir, 'kmc.log')
@@ -236,9 +237,12 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         logger.warning('KMC failed, check ' + log_fpath + ' and ' + err_fpath + '. Skipping...')
         return
 
-    logger.info('Analyzing assemblies completeness...')
+    logger.info('  Analyzing assemblies completeness...')
     kmc_out_fpaths = []
-    for contigs_fpath in contigs_fpaths:
+    for id, contigs_fpath in enumerate(contigs_fpaths):
+        assembly_label = qutils.label_from_fpath(contigs_fpath)
+        logger.info('    ' + qutils.index_to_str(id) + assembly_label)
+
         report = reporting.get(contigs_fpath)
         kmc_out_fpath = count_kmers(tmp_dirpath, contigs_fpath, kmer_len, log_fpath, err_fpath)
         intersect_out_fpath = intersect_kmers(tmp_dirpath, [ref_kmc_out_fpath, kmc_out_fpath], log_fpath, err_fpath)
@@ -247,10 +251,14 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         report.add_field(reporting.Fields.KMER_COMPLETENESS, '%.2f' % completeness)
         kmc_out_fpaths.append(intersect_out_fpath)
 
-    logger.info('Analyzing assemblies correctness...')
+    logger.info('  Analyzing assemblies correctness...')
     ref_contigs = [name for name, _ in read_fasta(ref_fpath)]
+    logger.info('    Downsampling k-mers...')
     ref_kmers, downsampled_kmers_fpath = downsample_kmers(tmp_dirpath, ref_fpath, ref_kmc_out_fpath, kmer_len, log_fpath, err_fpath)
-    for contigs_fpath, kmc_db_fpath in zip(contigs_fpaths, kmc_out_fpaths):
+    for id, (contigs_fpath, kmc_db_fpath) in enumerate(zip(contigs_fpaths, kmc_out_fpaths)):
+        assembly_label = qutils.label_from_fpath(contigs_fpath)
+        logger.info('    ' + qutils.index_to_str(id) + assembly_label)
+
         report = reporting.get(contigs_fpath)
         corr_len = None
         mis_len = None

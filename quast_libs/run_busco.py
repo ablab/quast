@@ -22,9 +22,9 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 augustus_version = '3.2.3'
 augustus_url = 'http://bioinf.uni-greifswald.de/augustus/binaries/old/augustus-' + augustus_version + '.tar.gz'
-bacteria_db_url = 'http://busco.ezlab.org/v2/datasets/bacteria_odb9.tar.gz'
-fungi_db_url = 'http://busco.ezlab.org/v2/datasets/fungi_odb9.tar.gz'
-eukaryota_db_url = 'http://busco.ezlab.org/v2/datasets/eukaryota_odb9.tar.gz'
+bacteria_db_url = 'https://busco.ezlab.org/v2/datasets/bacteria_odb9.tar.gz'
+fungi_db_url = 'https://busco.ezlab.org/v2/datasets/fungi_odb9.tar.gz'
+eukaryota_db_url = 'https://busco.ezlab.org/v2/datasets/eukaryota_odb9.tar.gz'
 blast_filenames = ['tblastn', 'makeblastdb']
 default_config_fname = 'config.ini.default'
 config_fname = 'config.ini'
@@ -52,11 +52,11 @@ def download_db(logger, is_prokaryote, is_fungus=False, only_clean=False):
 
     if not os.path.exists(db_dirpath):
         downloaded_fpath = join(dirpath, clade + '.tar.gz')
-        logger.main_info('  Downloading ' + clade + ' database...')
+        logger.main_info('  Downloading BUSCO database...')
         download_unpack_compressed_tar(clade + ' database', url, downloaded_fpath, db_dirpath, logger)
 
         if not os.path.exists(db_dirpath):
-            logger.warning('Failed to download ' + clade + ' database from ' + url + 'and unpack it into ' + dirpath)
+            logger.warning('Failed to download ' + clade + ' database from ' + url + ' and unpack it into ' + dirpath)
             return None
     return db_dirpath
 
@@ -75,7 +75,7 @@ def download_tool(tool, tool_version, required_files, logger, url, only_clean=Fa
     if not all(os.path.exists(join(tool_dirpath, fpath)) for fpath in required_files) and not \
             check_prev_compilation_failed(tool, failed_compilation_flag):
         downloaded_fpath = join(tool_dirpath, tool + '.tar.gz')
-        logger.main_info('  Downloading ' + tool + '...')
+        logger.main_info('  Downloading third-party tools...')
         download_unpack_compressed_tar(tool, url, downloaded_fpath, tool_dirpath, logger)
 
         if not all(os.path.exists(join(tool_dirpath, fpath)) for fpath in required_files):
@@ -159,7 +159,7 @@ def do(contigs_fpaths, output_dir, logger):
         return
 
     config_fpath = make_config(output_dir, tmp_dir, busco_threads, clade_dirpath, augustus_dirpath)
-    logger.info('Logging to ' + output_dir + '...')
+    logger.info('Logs and results will be saved under ' + output_dir + '...')
 
     os.environ['BUSCO_CONFIG_FILE'] = config_fpath
     os.environ['AUGUSTUS_CONFIG_PATH'] = join(augustus_dirpath, 'config')
@@ -188,5 +188,5 @@ def do(contigs_fpaths, output_dir, logger):
                 report.add_field(reporting.Fields.BUSCO_PART, ('%.2f' % (float(part_buscos) * 100.0 / total_buscos)))
         else:
             logger.error(
-                'Failed running BUSCO for ' + contigs_fpath + '. See ' + log_fpath + ' for information.')
+                'Failed running BUSCO for ' + contigs_fpath + '. See the log for detailed information.')
     logger.info('Done.')

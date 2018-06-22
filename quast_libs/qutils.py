@@ -994,8 +994,10 @@ def download_file(url, fpath, fname, move_file=True):
         try:
             urllib.URLopener().retrieve(url, fpath + '.download', show_progress)
         except Exception:
+            _, exc_value, _ = sys.exc_info()
             logger.error(
-                'Failed downloading %s! Please install it and ensure it is in your PATH, then restart your command.' % fname)
+                'Failed downloading %s (url: %s), QUAST functionality will be limited! '
+                'Exception caught: %s' % (fname, url, exc_value))
             return None
         if move_file:
             shutil.move(fpath + '.download', fpath)
@@ -1007,13 +1009,7 @@ def download_blast_binary(blast_filename, logger=logger):
     if not os.path.isdir(blast_dirpath):
         os.makedirs(blast_dirpath)
 
-    blast_binary_fpath = download_external_tool(blast_filename, blast_dirpath, 'blast', platform_specific=True)
-    if not blast_binary_fpath:
-        logger.error(
-            'Failed downloading %s! The search for reference genomes cannot be performed. '
-            'Please install it and ensure it is in your PATH, then restart your command.' % blast_filename)
-        return None
-    return blast_binary_fpath
+    return download_external_tool(blast_filename, blast_dirpath, 'blast', platform_specific=True, is_executable=True)
 
 
 def download_external_tool(fname, dirpath, tool, platform_specific=False, is_executable=False):
@@ -1033,8 +1029,11 @@ def download_external_tool(fname, dirpath, tool, platform_specific=False, is_exe
         shutil.copy(external_fpath, downloaded_fpath)
     else:
         downloaded_fpath = download_file(url, downloaded_fpath, tool)
-    if is_executable and downloaded_fpath:
-        os.chmod(downloaded_fpath, os.stat(downloaded_fpath).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    if is_executable:
+        if downloaded_fpath:
+            os.chmod(downloaded_fpath, os.stat(downloaded_fpath).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        else:
+            logger.error('Please try to install the tool manually, add it to your PATH environment variable, and restart QUAST.')
     return downloaded_fpath
 
 

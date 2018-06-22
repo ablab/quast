@@ -712,13 +712,22 @@ def get_path_to_program(program, dirpath=None):
     return None
 
 
-def check_java_version(version):
+def check_java_version(min_version):
+    def __get_java_major_version(ver):  # from both 1.X.Y and X.Y formats
+        if ver.startswith('1.'):
+            return float(ver[2:])
+        import math
+        return math.floor(float(ver))
+
     try:
         p = subprocess.Popen(['java', '-version'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, stderr = p.communicate()
-        version_pattern = re.compile('version "(\d\.\d+)')
-        return float(version_pattern.findall(str(stdout))[0]) >= version
-    except:
+        version_pattern = re.compile('version "(\d+\.\d+)')
+        if len(version_pattern.findall(str(stdout))) < 1:
+            return False
+        version = __get_java_major_version(version_pattern.findall(str(stdout))[0])
+        return version >= min_version
+    except ValueError:
         return False
 
 

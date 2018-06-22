@@ -165,7 +165,7 @@ def search_sv_with_gridss(main_ref_fpath, bam_fpath, meta_ref_fpaths, output_dir
         return final_bed_fpath
 
     if not get_path_to_program('java') or not check_java_version(1.8):
-        logger.warning('Java 1.8 or later is required to run GRIDSS. Please install it and rerun QUAST.')
+        logger.warning('Java 1.8 (Java version 8) or later is required to run GRIDSS. Please install it and rerun QUAST.')
         return None
     if not get_path_to_program('Rscript'):
         logger.warning('R is required to run GRIDSS. Please install it and rerun QUAST.')

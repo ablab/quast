@@ -354,13 +354,15 @@ def get_unique_covered_regions(ref_fpath, tmp_dir, log_fpath, binary_fpath, inse
     if isdir(red_genome_dir):
         shutil.rmtree(red_genome_dir)
     os.makedirs(red_genome_dir)
-    ref_symlink = os.path.join(red_genome_dir, basename(ref_fpath))
+
+    ref_name = qutils.name_from_fpath(ref_fpath)
+    ref_symlink = os.path.join(red_genome_dir, ref_name + '.fa')  ## Red recognizes only *.fa files
     if os.path.islink(ref_symlink):
         os.remove(ref_symlink)
     os.symlink(ref_fpath, ref_symlink)
 
     logger.info('  ' + 'Running repeat masking tool...')
-    repeats_fpath = os.path.join(tmp_dir, qutils.name_from_fpath(ref_fpath) + '.rpt')
+    repeats_fpath = os.path.join(tmp_dir, ref_name + '.rpt')
     if is_non_empty_file(repeats_fpath):
         return_code = 0
         logger.info('  ' + 'Using existing file ' + repeats_fpath + '...')

@@ -734,13 +734,14 @@ THE SOFTWARE.
         y_cov_main_S = y_cov_mini_S;
 
         y_gc_scale = d3.scale.linear().domain([100, .1]).range([0, coverageHeight]);
+        y_gc_ticks = [20, 40, 60, 80, 100];
         y_gc_axis = d3.svg.axis()
             .orient('right')
-            .tickFormat(function(tickValue) {
-                return tickValue + '%';
+            .tickFormat(function(val, i) {
+                return i < y_gc_ticks.length - 1 ? val + '%' : "GC";
             })
             .tickSize(2, 0)
-            .ticks(numYTicks);
+            .tickValues(y_gc_ticks);
         y_gc_axis.scale(y_gc_scale);
         mini_cov = chart.append('g')
             .attr('class', 'coverage')
@@ -752,6 +753,13 @@ THE SOFTWARE.
             .attr('class', 'y gc_plot')
             .style("fill", "#3d6f15")
             .attr('transform', 'translate(' + width + ', 0)');
+        mini_cov.append("text")
+            .attr("y", "-0.75em")
+            .attr("x", "-1.1em")
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .attr("fill", "steelblue")
+            .text("Cov");
         mini_cov.select('.y.gc_plot').call(y_gc_axis);
 
         // draw main coverage

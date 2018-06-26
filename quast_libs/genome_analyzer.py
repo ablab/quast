@@ -127,14 +127,8 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
             if gene_searching_enabled:
                 aligned_blocks_by_contig_name[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1,
                                                                                contig=contig_name, start_in_contig=s2, end_in_contig=e2))
-            if s2 == 0 and e2 == 0:  # special case: circular genome, contig starts on the end of a chromosome and ends in the beginning
-                for i in range(s1, len(genome_mapping[chr_name])):
-                    genome_mapping[chr_name][i] = 1
-                for i in range(1, e1 + 1):
-                    genome_mapping[chr_name][i] = 1
-            else:  #if s1 <= e1:
-                for i in range(s1, e1 + 1):
-                    genome_mapping[chr_name][i] = 1
+            for i in range(s1, e1 + 1):
+                genome_mapping[chr_name][i] = 1
 
     for chr_name in genome_mapping.keys():
         for i in ns_by_chromosomes[chr_name]:
@@ -196,44 +190,27 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
                 for cur_block in aligned_blocks_by_contig_name[name]:
                     if cur_block.seqname != region.seqname:
                         continue
-
-                    # computing circular genomes
-                    if cur_block.start > cur_block.end:
-                        blocks = [AlignedBlock(seqname=cur_block.seqname, start=cur_block.start, end=region.end + 1,
-                                               contig=cur_block.contig_name, start_in_contig=cur_block.start_in_contig),
-                                  AlignedBlock(seqname=cur_block.seqname, start=1, end=cur_block.end,
-                                               contig=cur_block.contig_name, end_in_contig=cur_block.end_in_contig)]
-                        if cur_block.start_in_contig < cur_block.end_in_contig:
-                            blocks[0].end_in_contig = blocks[0].start_in_contig + (blocks[0].end - blocks[0].start)
-                            blocks[1].start_in_contig = blocks[0].end_in_contig + 1
+                    if region.end <= cur_block.start or cur_block.end <= region.start:
+                        continue
+                    elif cur_block.start <= region.start and region.end <= cur_block.end:
+                        if found_list[i] == 2:  # already found as partial gene
+                            total_partial -= 1
+                        found_list[i] = 1
+                        total_full += 1
+                        contig_info = cur_block.format_gene_info(region)
+                        found_file.write('%s\t\t%d\t%d\tcomplete\t%s\n' % (region.id, region.start, region.end, contig_info))
+                        if container.kind == 'operon':
+                            operons_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
                         else:
-                            blocks[0].end_in_contig = blocks[0].start_in_contig - (blocks[1].end - blocks[1].start)
-                            blocks[1].start_in_contig = blocks[0].end_in_contig - 1
-                    else:
-                        blocks = [cur_block]
+                            features_in_contigs[contig_id] += 1
 
-                    for block in blocks:
-                        if region.end <= block.start or block.end <= region.start:
-                            continue
-                        elif block.start <= region.start and region.end <= block.end:
-                            if found_list[i] == 2:  # already found as partial gene
-                                total_partial -= 1
-                            found_list[i] = 1
-                            total_full += 1
-                            contig_info = block.format_gene_info(region)
-                            found_file.write('%s\t\t%d\t%d\tcomplete\t%s\n' % (region.id, region.start, region.end, contig_info))
-                            if container.kind == 'operon':
-                                operons_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
-                            else:
-                                features_in_contigs[contig_id] += 1
-
-                            cur_feature_is_found = True
-                            break
-                        elif min(region.end, block.end) - max(region.start, block.start) >= qconfig.min_gene_overlap:
-                            if found_list[i] == 0:
-                                found_list[i] = 2
-                                total_partial += 1
-                            gene_blocks.append(block)
+                        cur_feature_is_found = True
+                        break
+                    elif min(region.end, cur_block.end) - max(region.start, cur_block.start) >= qconfig.min_gene_overlap:
+                        if found_list[i] == 0:
+                            found_list[i] = 2
+                            total_partial += 1
+                        gene_blocks.append(cur_block)
                     if cur_feature_is_found:
                         break
                 if cur_feature_is_found:

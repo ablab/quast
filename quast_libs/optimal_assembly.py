@@ -397,9 +397,34 @@ def get_unique_covered_regions(ref_fpath, tmp_dir, log_fpath, binary_fpath, inse
     return None, None
 
 
+def check_prepared_optimal_assembly(insert_size, result_fpath, ref_prepared_optimal_assembly):
+    if os.path.isfile(result_fpath) or os.path.isfile(ref_prepared_optimal_assembly):
+        already_done_fpath = result_fpath if os.path.isfile(result_fpath) else ref_prepared_optimal_assembly
+        logger.notice('  Will reuse already generated Upper Bound Assembly with insert size %d (%s)' %
+                      (insert_size, already_done_fpath))
+        return already_done_fpath
+
+
 def do(ref_fpath, original_ref_fpath, output_dirpath):
     logger.print_timestamp()
     logger.main_info("Generating Upper Bound Assembly...")
+
+    if not reads_analyzer.compile_reads_analyzer_tools(logger):
+        logger.warning('  Sorry, can\'t create Upper Bound Assembly '
+                       '(failed to compile necessary third-party read processing tools [bwa, bedtools, minimap2]), skipping...')
+        return None
+
+    if qconfig.platform_name == 'linux_32':
+        logger.warning('  Sorry, can\'t create Upper Bound Assembly on this platform '
+                       '(only linux64 and macOS are supported), skipping...')
+        return None
+
+    red_dirpath = get_dir_for_download('red', 'Red', ['Red'], logger)
+    binary_fpath = download_external_tool('Red', red_dirpath, 'red', platform_specific=True, is_executable=True)
+    if not binary_fpath or not os.path.isfile(binary_fpath):
+        logger.warning('  Sorry, can\'t create Upper Bound Assembly '
+                       '(failed to install/download third-party repeat finding tool [Red]), skipping...')
+        return None
 
     insert_size = qconfig.optimal_assembly_insert_size
     if insert_size == 'auto' or not insert_size:
@@ -416,36 +441,31 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
 
     original_ref_basename, fasta_ext = splitext_for_fasta_file(os.path.basename(original_ref_fpath))
     prepared_optimal_assembly_basename = '%s.%s.is%d.fasta' % (original_ref_basename, qconfig.optimal_assembly_basename, insert_size)
+    if long_reads:
+        prepared_optimal_assembly_basename = add_suffix(prepared_optimal_assembly_basename, long_reads_polished_suffix)
+    elif qconfig.mate_pairs:
+        prepared_optimal_assembly_basename = add_suffix(prepared_optimal_assembly_basename, mp_polished_suffix)
     ref_prepared_optimal_assembly = os.path.join(os.path.dirname(original_ref_fpath), prepared_optimal_assembly_basename)
-
-    if os.path.isfile(result_fpath) or os.path.isfile(ref_prepared_optimal_assembly):
-        already_done_fpath = result_fpath if os.path.isfile(result_fpath) else ref_prepared_optimal_assembly
-        logger.notice('  Will reuse already generated Upper Bound Assembly with insert size %d (%s)' %
-                      (insert_size, already_done_fpath))
+    already_done_fpath = check_prepared_optimal_assembly(insert_size, result_fpath, ref_prepared_optimal_assembly)
+    if already_done_fpath:
         return already_done_fpath
 
     uncovered_fpath = None
     reads_analyzer_dir = join(dirname(output_dirpath), qconfig.reads_stats_dirname)
-    if not reads_analyzer.compile_reads_analyzer_tools(logger):
-        logger.warning('  Sorry, can\'t create Upper Bound Assembly '
-                       '(failed to compile necessary third-party read processing tools [bwa, bedtools, minimap2]), skipping...')
-        return None
     if qconfig.reads_fpaths or qconfig.reference_sam or qconfig.reference_bam:
         sam_fpath, bam_fpath, uncovered_fpath = reads_analyzer.align_reference(ref_fpath, reads_analyzer_dir,
                                                                                using_reads='all',
                                                                                calculate_coverage=True)
 
-    if qconfig.platform_name == 'linux_32':
-        logger.warning('  Sorry, can\'t create Upper Bound Assembly on this platform '
-                       '(only linux64 and macOS are supported), skipping...')
-        return None
-
-    red_dirpath = get_dir_for_download('red', 'Red', ['Red'], logger)
-    binary_fpath = download_external_tool('Red', red_dirpath, 'red', platform_specific=True, is_executable=True)
-    if not binary_fpath or not os.path.isfile(binary_fpath):
-        logger.warning('  Sorry, can\'t create Upper Bound Assembly '
-                       '(failed to install/download third-party repeat finding tool [Red]), skipping...')
-        return None
+    if qconfig.optimal_assembly_insert_size and qconfig.optimal_assembly_insert_size != insert_size:
+        calculated_insert_size = qconfig.optimal_assembly_insert_size
+        result_fpath = result_fpath.replace('is%d' % insert_size, 'is%d' % calculated_insert_size)
+        prepared_optimal_assembly_basename = prepared_optimal_assembly_basename.replace('is%d' % insert_size, 'is%d' % calculated_insert_size)
+        insert_size = calculated_insert_size
+        ref_prepared_optimal_assembly = os.path.join(os.path.dirname(original_ref_fpath), prepared_optimal_assembly_basename)
+        already_done_fpath = check_prepared_optimal_assembly(insert_size, result_fpath, ref_prepared_optimal_assembly)
+        if already_done_fpath:
+            return already_done_fpath
 
     log_fpath = os.path.join(output_dirpath, 'upper_bound_assembly.log')
     tmp_dir = os.path.join(output_dirpath, 'tmp')
@@ -483,6 +503,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
     fastaparser.write_fasta(result_fpath, result_fasta)
     logger.info('  ' + 'Theoretical Upper Bound Assembly saved to ' + result_fpath)
     logger.notice('You can copy it to ' + ref_prepared_optimal_assembly +
+                  ', specify insert size using the option --est-insert-size ' + insert_size +
                   ' and QUAST will reuse it in further runs against the same reference (' + original_ref_fpath + ')')
 
     if not qconfig.debug:

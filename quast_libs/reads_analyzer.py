@@ -636,7 +636,7 @@ def run_aligner(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, e
     if insert_sizes:
         qconfig.optimal_assembly_insert_size = max(insert_sizes)
         ref_name = qutils.name_from_fpath(ref_fpath)
-        insert_size_fpath = join(output_dir, '..', ref_name + '.is.txt')
+        insert_size_fpath = join(output_dir, ref_name + '.is.txt')
         with open(insert_size_fpath, 'w') as out:
             out.write(str(qconfig.optimal_assembly_insert_size))
 

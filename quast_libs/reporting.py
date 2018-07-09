@@ -151,7 +151,7 @@ class Fields:
     LGA75 = 'LGA75'
 
     # Unique k-mer statistics
-    KMER_COMPLETENESS = 'K-mer-based completeness'
+    KMER_COMPLETENESS = 'K-mer-based compl. (%)'
     KMER_CORR_LENGTH = 'K-mer-based cor. length (%)'
     KMER_MIS_LENGTH = 'K-mer-based mis. length (%)'
     KMER_UNDEF_LENGTH = 'K-mer-based undef. length (%)'

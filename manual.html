@@ -587,7 +587,7 @@ zillions of contigs, thus not applicable. Circos plot needs detailed information
 </div>
 <br>
 
-Reads options:
+<a name='reads_opt'></a>Reads options:
 <p>Note: among other applications, reads are used for SV detection (<b>experimental</b>,
     please use it carefully until we finalize the feature; you can skip SV processing with <a href='#no_sv'><code>--no-sv</code></a>).
     The reads are aligned to reference genome using BWA, then GRIDSS SV calling tool is run on BWA output.
@@ -596,7 +596,7 @@ Found SVs are used for classifying QUAST misassemblies into true ones and fake o
 <div class='options'>
 
 <div class='option'>
-<a name='reads_opt'></a><code><b>--reads1</b> &lt;path&gt;</code> (or <code>-1 &lt;path&gt;</code>)
+<code><b>--reads1</b> &lt;path&gt;</code> (or <code>-1 &lt;path&gt;</code>)
 </div>
 File with forward reads in FASTQ format (files compressed with gzip are allowed).
 
@@ -909,7 +909,7 @@ Force <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a>='one' for th
     </tr>
     <tr>
         <td style="padding-right: 20px;">contigs_reports/</td>
-        <td></td>
+        <td>(only if a reference genome is provided)</td>
     </tr>
     <tr>
         <td style="padding-right: 20px; padding-left: 20px;">misassemblies_report</td>
@@ -917,7 +917,23 @@ Force <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a>='one' for th
     </tr>
     <tr>
         <td style="padding-right: 20px; padding-left: 20px;">unaligned_report</td>
-        <td>detailed report on unaligned and partially unaligned contigs. See <a href="#sec3.1.3">section 3.1.3</a> for details.</td>
+        <td>detailed report on unaligned and partially unaligned contigs. See <a href="#sec3.1.3">section 3.1.3</a> for details,</td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px;">k_mer_stats/</td>
+        <td>(only if <a href='#k_mer_stats'><code>--k-mer-stats</code><a> option is specified)</td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px; padding-left: 20px;">kmers_report</td>
+        <td>detailed report on k-mer-based metrics,</td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px;">reads_stats/</td>
+        <td>(only if <a href='#reads_opt'>reads</a> are provided)</td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px; padding-left: 20px;">reads_report</td>
+        <td>detailed report on mapped reads statistics.</td>
     </tr>
 </table>
 
@@ -1001,9 +1017,12 @@ Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
 changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.
 </p>
 
-<p><a name='scaffold_misassembly'></a><span class='metric-name'># scaffold gap size misassemblies</span> is the number of positions in the scaffolds (breakpoints)
-    where the flanking sequences are combined in scaffold on the wrong distance.
-    Max allowed distance inconsistency is controlled by <a href='#scaffold_gap_size'><code>--scaffold-gap-max-size</code></a> option (default is 10<span class="rhs">&nbsp;</span>kbp).</p>
+<p><a name='scaffold_misassembly'></a><span class='metric-name'># scaffold gap ext. mis.</span> is the number of positions in the scaffolds (breakpoints)
+    where the flanking sequences are combined in the scaffold on the wrong distance (sufficient for reporting extensive misassembly)
+    Max allowed distance inconsistency is controlled by <a href='#scaffold_gap_size'><code>--scaffold-gap-max-size</code></a> option (default is 10<span class="rhs">&nbsp;</span>kbp). Note: these misassemblies are NOT included in the <code># misassemblies</code>.</p>
+
+<p><a name='scaffold_misassembly'></a><span class='metric-name'># scaffold gap loc. mis.</span> is the number of positions in the scaffolds (breakpoints)
+    where the flanking sequences are combined in the scaffold on the wrong distance (causing a local misassembly). Note: these misassemblies are NOT included in the <code># local misassemblies</code>.</p>
 
 <p><a name='sv'></a><span class='metric-name'># structural variants</span> is the number of misassemblies matched with structural variations of genome
     (if reads or BEDPE file with SV are provided, see <a href='#reads_opt'><code>--reads1/reads2</code></a> and <a href='#sv_bedpe'><code>--sv-bedpe</code></a>).
@@ -1055,6 +1074,9 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
 
 <p><span class='metric-name'># operons</span> is defined similarly to <span class='metric-ref'># genes</span>, but an operon positions file required instead.</p>
 
+<p><span class='metric-name'>Complete/Partial BUSCO (%)</span> is the percent of BUSCO genes found in the assembly completely (or partially).
+    See the description of <a href='#busco'><code>--conserved-genes-finding</code></a> option for details. </p>
+
 <p><a name='predicted_genes'></a><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
     found by GeneMarkS, GeneMark-ES, MetaGeneMark, or GlimmerHMM. See the description of <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
 
@@ -1070,6 +1092,35 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
     the corresponding metrics without "A", but in this case aligned blocks instead of contigs are considered.<br>
     Aligned blocks are obtained by breaking contigs at misassembly events and removing all unaligned bases.</p>
 
+<p><span class='metric-name'>K-mer-based compl. (%)</span> is the percent of the reference unique k-mers found in the assembly.
+    See the description of <a href='#k_mer_stats'><code>--k-mer-stats</code></a> option and
+    <a href="http://dx.doi.org/10.1093/bioinformatics/bty266">Mikheenko et al., 2018</a> for more details. </p>
+
+<p><span class='metric-name'>K-mer-based cor. length (%)</span> is the percent of the total length of all contigs
+    considered correct according to the unique k-mers analysis. A contig is considered correct if it has at least
+    one k-mer marker (two or more consequitive unique k-mers shared between the reference and the assembly
+    and having similar relative distances) and does not include a k-mer-based misjoin (see below).
+    See the description of <a href='#k_mer_stats'><code>--k-mer-stats</code></a> option and
+    <a href="http://dx.doi.org/10.1093/bioinformatics/bty266">Mikheenko et al., 2018</a> for more details. </p>
+
+<p><span class='metric-name'>K-mer-based mis. length (%)</span> is the percent of the total length of all contigs
+    containing at least one k-mer-based misjoin (see below).
+    See the description of <a href='#k_mer_stats'><code>--k-mer-stats</code></a> option and
+    <a href="http://dx.doi.org/10.1093/bioinformatics/bty266">Mikheenko et al., 2018</a> for more details. </p>
+
+<p><span class='metric-name'>K-mer-based undef. length (%)</span> is the percent of the total length of all contigs
+    without k-mer markers (two or more consequitive unique k-mers shared between the reference and the assembly
+    and having similar relative distances).
+    See the description of <a href='#k_mer_stats'><code>--k-mer-stats</code></a> option and
+    <a href="http://dx.doi.org/10.1093/bioinformatics/bty266">Mikheenko et al., 2018</a> for more details. </p>
+
+<p><span class='metric-name'># k-mer-based misjoins</span> is the total number of k-mer-based misjoins in the assembly.
+    A contig contains a k-mer misjoin if it has two k-mer markers related to different reference chromosomes
+    (<code>k-mer-based translocations</code>) or having inconsistency of the contig and reference relative distances on more
+    than 100 kbp (<code>k-mer-based relocations</code>). We define a k-mer marker as a list of two or more consequitive
+    unique k-mers shared between the reference and the assembly and having similar relative distances.
+    See the description of <a href='#k_mer_stats'><code>--k-mer-stats</code></a> option and
+    <a href="http://dx.doi.org/10.1093/bioinformatics/bty266">Mikheenko et al., 2018</a> for more details. </p>
 
 <a name="sec3.1.2"></a>
 <h4>3.1.2 Misassemblies report</h4>

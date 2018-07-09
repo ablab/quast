@@ -45,10 +45,13 @@ Alternatively, you may use old-style installation scripts (`./install.sh` or ./i
     report.pdf      PDF version, includes all tables and plots for some statistics
     report.html     everything in an interactive HTML file
     icarus.html     Icarus main menu with links to interactive viewers
-    contigs_reports/
+    contigs_reports/        [only if a reference genome is provided]
       misassemblies_report  detailed report on misassemblies
       unaligned_report      detailed report on unaligned and partially unaligned contigs
-
+    k_mer_stats/            [only if --k-mer-stats is specified]
+      kmers_report          detailed report on k-mer-based metrics
+    reads_stats/            [only if reads are provided]
+      reads_report          detailed report on mapped reads statistics
 
 Metrics based only on contigs:
 
@@ -72,7 +75,6 @@ This occurs due to multiple reasons, including overestimating repeat multiplicit
 Such blocks are obtained after removing unaligned regions, and then splitting contigs at misassembly breakpoints. 
 Thus, NGA50 is the length of a block, such that all the blocks of at least the same length together cover at least 50% of the reference.  
 
-<br>
 For the full documentation, see the [manual.html](http://quast.sf.net/manual.html).
 
 You can also check out the web interface: [http://quast.bioinf.spbau.ru](http://quast.bioinf.spbau.ru)
@@ -82,7 +84,7 @@ Please refer to the LICENSE.txt file for copyrights and citing instructions.
 
 #### System requirements
 
-Linux and Mac OS X are supported.
+Linux (64-bit and 32-bit with slightly limited functionality) and macOS (OS X) are supported.
 
 For the main pipeline:
 - Python2 (2.5 or higher) or Python3 (3.3 or higher)

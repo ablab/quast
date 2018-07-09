@@ -13,7 +13,7 @@
          We determine which part of the reference genome could be potentially reconstructed
          using a given set of reads. The algorithm takes into account zero covered regions
          and genomic repeats (identified with Red repeat finder). The constructed assembly
-         is added to the evaluation tp demonstrate the theoretical limits on the assembly
+         is added to the evaluation to demonstrate the theoretical limits on the assembly
          completeness and correctness quality metrics for the given genome and set of reads.
 
       3. New module: k-mer-based statistics ("--k-mer-stats").
@@ -39,7 +39,7 @@
            * GC% track is added to read coverage pane;
            * button for highlighting all assembly misassemblies is added;
            * local misassemblies are unchecked (hidden) by default.
-       — added static Circos plot of alignments ("--circus");
+       — added static Circos plot of alignments ("--circos");
        — natural sorting of chromosome names in the main menu (chr1, chr2, ..., chr10
          instead of chr1, chr10, chr2, ...).
 

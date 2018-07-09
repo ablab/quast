@@ -100,7 +100,7 @@
     for guidelines on how to complete the licensing process.
     <br>
     <br>
-    Version 5.0.0 of QUAST was released under GPL v2 on XX March 2018. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
+    Version 5.0.0 of QUAST was released under GPL v2 on 9 July 2018. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -223,7 +223,11 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
     <b>Sequences</b><br>
     The tool accepts assemblies and reference genomes in FASTA format. Files may be compressed with zip, gzip, or&nbsp;bzip2.<br>
     A reference genome with multiple chromosomes can be provided as a single FASTA file with separate sequence for each chromosome inside.<br>
-    <span style='line-height: 50%;'>&nbsp;</span><br>  
+    <span style='line-height: 50%;'>&nbsp;</span><br>
+    <b>Reads</b><br>
+    QUAST accepts various types of reads in FASTQ format (may be compressed) or in the aligned form in SAM/BAM formats.
+    The supported read types include Illumina paired-end and mate-pair reads, PacBio SMRT, and Oxford Nanopore long reads.<br>
+    <span style='line-height: 50%;'>&nbsp;</span><br>
     <b>Genes and operons</b><br>
     One can also specify files with gene and operon positions in the reference genome. QUAST will count fully and partially aligned regions,
     and output <a href='#genes'>total values</a> as well as <a href='#gene_plot'>cumulative plots</a>.<br>
@@ -284,23 +288,17 @@ If you use GFF format and would like to count only a specific feature from it (e
 If you do not have the annotated positions, you can make QUAST predict genes with <code><a href='#gene_finding'>--gene-finding</a></code>.<br>
 
 <div class='option'>
-<code><b>-O</b> &lt;path&gt;</code> (or <code>--operons &lt;path&gt;</code>)
-</div>
-File with operon positions in the reference genome. See details about the file format in <a href="#sec2.2">section 2.2</a>.
-
-<div class='option'>
 <a name='min_contig'></a>
 <code><b>--min-contig</b></code> (or <code>-m</code>) <code>&lt;int&gt;</code>
 </div>
 Lower threshold for a contig length (in bp). Shorter contigs won't be taken into account
 (except for specific metrics, see <a href="#sec3">section 3</a>). The default value is 500.
-</div>
 
 <div class='option'>
 <a name='threads_opt'></a><code><b>--threads</b></code> (or <code>-t</code>) <code>&lt;int&gt;</code>
 </div>
 Maximum number of threads. The default value is 25% of all available CPUs but not less than 1. If QUAST fails to determine the number of CPUs, maximum threads number is set to 4.
-
+</div>
 <br>
 Advanced options:
 <div class='options'>
@@ -377,7 +375,7 @@ Affects speed and accuracy. In particular, imposes <code>--eukaryote --min-conti
 <div class='option'>
     <a name='k_mer_size'></a><code><b>--k-mer-size</b></code> <code>&lt;int&gt;</code>
 </div>
-    Size of <code>k</code> used in <code>--k-mer-stats</code> options. The default value is 101. Use smaller values for genomes
+    Size of <code>k</code> used in <code>--k-mer-stats</code> options. The default value is 101 bp. Use smaller values for genomes
     with high levels of heterozygosity. However, note that very small k-mer sizes may give irrelevant results for repeat-rich genomes.
 
 <div class='option'>
@@ -439,6 +437,12 @@ Enables search for Universal Single-Copy Orthologs using BUSCO (only on Linux). 
 By default, we assume that the genome is prokaryotic, and BUSCO uses the bacterial database of orthologs.
 If the genome is eukaryotic (fungal), use <a href='#eukaryote'><code>--eukaryote</code></a> (<a href='#fungus'><code>--fungus</code></a>)
     option to force BUSCO to work with the eukaryotic (fungal) database.
+
+<div class='option'>
+<code><b>-O</b> &lt;path&gt;</code> (or <code>--operons &lt;path&gt;</code>)
+</div>
+File with operon positions in the reference genome. See details about the file format in <a href="#sec2.2">section 2.2</a>.
+
 
 <div class='option'>
     <a name='est_ref_size'></a><code><b>--est-ref-size</b> &lt;int&gt;</code>
@@ -518,6 +522,13 @@ Lower threshold for detecting partially unaligned contigs, see <a href="#sec3.1.
 The default value is 500 bp.
 
 <div class='option'>
+    <a name='skip_unaligned_mis_contigs'></a><code><b>--skip-unaligned-mis-contigs</b></code>
+</div>
+Do not distinguish contigs with more than 50% unaligned bases as a separate group of contigs.
+By default, QUAST does not count misassemblies in them.
+    See <a href='#unaligned_mis_contigs'><code># unaligned mis. contigs</code></a> metric for more details.
+
+<div class='option'>
     <a name='fragmented'></a><code><b>--fragmented</b></code>
 </div>
 Reference genome is fragmented (e.g. a scaffold reference). QUAST will try to detect misassemblies caused by the fragmentation and
@@ -573,14 +584,15 @@ This may significantly reduce disk space usage on large assemblies (more than 10
 Note: Icarus viewers also will not be built because they became enormously large and slow in case of
 zillions of contigs, thus not applicable. Circos plot needs detailed information about all alignments, so it also will not be created.
 
-<div class='option'>
-<code><b>--silent</b></code>
 </div>
-Do not print detailed information about each step in standard output. This option does not affect <code>quast.log</code> file.
-</div>
-
 <br>
-Structural variant (SV) calling and processing (<b>experimental</b>, please use it carefully until we finalize the feature):
+
+Reads options:
+<p>Note: among other applications, reads are used for SV detection (<b>experimental</b>,
+    please use it carefully until we finalize the feature; you can skip SV processing with <a href='#no_sv'><code>--no-sv</code></a>).
+    The reads are aligned to reference genome using BWA, then GRIDSS SV calling tool is run on BWA output.
+Found SVs are used for classifying QUAST misassemblies into true ones and fake ones (caused by structural differences between reference sequence and
+    sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code>#&nbsp;misassemblies</code></a> and reported as <a href="#sv"><code>#&nbsp;structural variants</code></a>.
 <div class='options'>
 
 <div class='option'>
@@ -593,33 +605,87 @@ File with forward reads in FASTQ format (files compressed with gzip are allowed)
 </div>
 File with reverse reads in FASTQ format (files compressed with gzip are allowed).
 
+<div class='option'>
+<code><b>--12</b> &lt;path&gt;</code>
+</div>
+File with interlaced forward and reverse paired-end reads. (in FASTQ format, may be gzipped).
+
+<div class='option'>
+<code><b>--pe1</b> &lt;path&gt;</code>
+</div>
+File with forward paired-end reads in FASTQ format (files compressed with gzip are allowed).
+
+<div class='option'>
+<code><b>--pe2</b> &lt;path&gt;</code> (or <code>-2 &lt;path&gt;</code>)
+</div>
+File with reverse paired-end reads in FASTQ format (files compressed with gzip are allowed).
+
+<div class='option'>
+<code><b>--pe12</b> &lt;path&gt;</code>
+</div>
+File with interlaced forward and reverse paired-end reads in FASTQ format (files compressed with gzip are allowed).
+
+<div class='option'>
+<code><b>--mp1</b> &lt;path&gt;</code>
+</div>
+File with forward mate-pair reads in FASTQ format (files compressed with gzip are allowed).
+
+<div class='option'>
+<code><b>--mp2</b> &lt;path&gt;</code> (or <code>-2 &lt;path&gt;</code>)
+</div>
+File with reverse mate-pair reads in FASTQ format (files compressed with gzip are allowed).
+
+<div class='option'>
+<code><b>--mp12</b> &lt;path&gt;</code>
+</div>
+File with interlaced forward and reverse mate-pair reads in FASTQ format (files compressed with gzip are allowed).
+
+<div class='option'>
+<code><b>--single</b> &lt;path&gt;</code>
+</div>
+File with unpaired reads in FASTQ format (files compressed with gzip are allowed).
+
+<div class='option'>
+<code><b>--pacbio</b> &lt;path&gt;</code>
+</div>
+File with PacBio SMRT reads in FASTQ format (files compressed with gzip are allowed).
+
+<div class='option'>
+<code><b>--nanopore</b> &lt;path&gt;</code>
+</div>
+File with Oxford Nanopore reads in FASTQ format (files compressed with gzip are allowed).
+
 <p>
-    <b>Important notes:</b><br>
+    <b>Important notes for paired reads files (e.g., specified with <code>-1/-2</code>):</b><br>
     <ul>
-        <li>You should specify exactly ONE file with forward reads and ONE file with the reverse ones. If you have multiple forward or reverse files,
-            please concatenate them.</li>
         <li>Number of reads in both files should be exactly the same.</li>
         <li>Forward and reverse reads of the same pair should have exactly the same names except trailing /1 and /2 respectively.</li>
     </ul>
 </p>
 
-<p>Reads are used for SV detection: Reads are aligned to reference genome using BWA, then GRIDSS SV calling tool is run on BWA output.
-Found SVs are used for classifying QUAST misassemblies into true ones and fake ones (caused by structural differences between reference sequence and
-    sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code>#&nbsp;misassemblies</code></a> and reported as <a href="#sv"><code>#&nbsp;structural variants</code></a>.
-
 <div class='option'>
-<code><b>--bam</b> &lt;path&gt;</code>
+<code><b>--ref-bam</b> &lt;path&gt;</code>
 </div>
-File with alignments of both forward and reverse reads to reference genome (in BAM format).
+File with alignments of both forward and reverse reads against the reference genome (in BAM format).
 
 
 <div class='option'>
-<code><b>--sam</b> &lt;path&gt;</code>
+<code><b>--ref-sam</b> &lt;path&gt;</code>
 </div>
-File with alignments of both forward and reverse reads to reference genome (in SAM format).
+File with alignments of both forward and reverse reads against the reference genome (in SAM format).
 
 <div class='option'>
-<a name='sv_bedpe'></a><code><b>--sv-bedpe</b></code>
+<code><b>--bam</b> &lt;path1,path2,...&gt;</code>
+</div>
+Comma-separated list of BAM alignment files obtained by aligning reads against the assemblies (use the same order as for files with assemblies; do not use spaces)
+
+<div class='option'>
+<code><b>--sam</b> &lt;path1,path2,...&gt;</code>
+</div>
+Comma-separated list of SAM alignment files obtained by aligning reads against the assemblies (use the same order as for files with assemblies; do not use spaces)
+
+<div class='option'>
+<a name='sv_bedpe'></a><code><b>--sv-bedpe</b> &lt;path&gt;</code>
 </div>
 Use specified file in <a href="http://bedtools.readthedocs.org/en/latest/content/general-usage.html#bedpe-format">BEDPE format</a> as a list of structural variations (SV). This option disables SV detection based on reads.
     Examples of BEDPE files for various types of SV are in FAQ section, <a href="#faq_q8">question Q8</a>.
@@ -669,7 +735,7 @@ Do not report SNPs statistics. This may significantly reduce memory consumption 
 Do not compute GC% and do not produce GC-distribution plots (both in HTML report and in PDF).
 
 <div class='option'>
-<code><b>--no-sv</b></code>
+    <a name='no_sv'></a><code><b>--no-sv</b></code>
 </div>
 Do not run structural variant calling and processing (make sense only if reads are specified).
 
@@ -680,6 +746,13 @@ Do not compress large output files (files containing SNP information and predict
     This may speed up computation, but more disk space is required.
 
 <div class='option'>
+<code><b>--no-read-stats</b></code>
+</div>
+Do not align reads against assemblies and do not report the corresponding metrics.
+    Reads still will be aligned against the reference genome and used for coverage analysis,
+    upper bound assembly simulation, and structural variation detection.
+
+<div class='option'>
     <a name='fast'></a><code><b>--fast</b></code>
 </div>
 A shortcut for using all of speedup options except --no-check.
@@ -688,6 +761,11 @@ A shortcut for using all of speedup options except --no-check.
 <br>
 Other:
 <div class='options'>
+<div class='option'>
+<code><b>--silent</b></code>
+</div>
+Do not print detailed information about each step in standard output. This option does not affect <code>quast.log</code> file.
+
 <div class='option'>
     <code><b>--test</b></code>
 </div>
@@ -1225,6 +1303,15 @@ Icarus: visualizer for <i>de novo</i> assembly evaluation, <br>
 <i>Bioinformatics</i> (2016) 32 (21): 3321-3323. doi: <a href="http://dx.doi.org/10.1093/bioinformatics/btw379">10.1093/bioinformatics/btw379</a><br>
 First published online: July 4, 2016
 </div>
+<br>
+If you use QUAST-LG in your research, please include <i>Mikheenko et al., 2018</i> into your reference list:<br>
+<div style='margin-top: 5px; padding-left: 30px; padding-top: 5px; padding-bottom: 5px; background-color: #EEE'>
+Alla Mikheenko, Andrey Prjibelski, Vladislav Saveliev, Dmitry Antipov, Alexey Gurevich, <br>
+Versatile genome assembly evaluation with QUAST-LG, <br>
+<i>Bioinformatics</i> (2018) 34 (13): i142-i150. doi: <a href="http://dx.doi.org/10.1093/bioinformatics/bty266">10.1093/bioinformatics/bty266</a><br>
+First published online: June 27, 2018
+</div>
+
 
 <a name="sec6"></a><p>
 <h2>6. Feedback and bug reports</h2>

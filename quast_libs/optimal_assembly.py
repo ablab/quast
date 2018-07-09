@@ -401,10 +401,6 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
     logger.print_timestamp()
     logger.main_info("Generating Upper Bound Assembly...")
 
-    uncovered_fpath = None
-    reads_analyzer_dir = join(dirname(output_dirpath), qconfig.reads_stats_dirname)
-    if qconfig.reads_fpaths or qconfig.reference_sam or qconfig.reference_bam:
-        sam_fpath, bam_fpath, uncovered_fpath = reads_analyzer.align_reference(ref_fpath, reads_analyzer_dir, using_reads='all', calculate_coverage=True)
     insert_size = qconfig.optimal_assembly_insert_size
     if insert_size == 'auto' or not insert_size:
         insert_size = qconfig.optimal_assembly_default_IS
@@ -428,14 +424,27 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
                       (insert_size, already_done_fpath))
         return already_done_fpath
 
+    uncovered_fpath = None
+    reads_analyzer_dir = join(dirname(output_dirpath), qconfig.reads_stats_dirname)
+    if not reads_analyzer.compile_reads_analyzer_tools(logger):
+        logger.warning('  Sorry, can\'t create Upper Bound Assembly '
+                       '(failed to compile necessary third-party read processing tools [bwa, bedtools, minimap2]), skipping...')
+        return None
+    if qconfig.reads_fpaths or qconfig.reference_sam or qconfig.reference_bam:
+        sam_fpath, bam_fpath, uncovered_fpath = reads_analyzer.align_reference(ref_fpath, reads_analyzer_dir,
+                                                                               using_reads='all',
+                                                                               calculate_coverage=True)
+
     if qconfig.platform_name == 'linux_32':
-        logger.warning('  Sorry, can\'t create Upper Bound Assembly on this platform, skipping...')
+        logger.warning('  Sorry, can\'t create Upper Bound Assembly on this platform '
+                       '(only linux64 and macOS are supported), skipping...')
         return None
 
     red_dirpath = get_dir_for_download('red', 'Red', ['Red'], logger)
     binary_fpath = download_external_tool('Red', red_dirpath, 'red', platform_specific=True, is_executable=True)
     if not binary_fpath or not os.path.isfile(binary_fpath):
-        logger.warning('  Sorry, can\'t create Upper Bound Assembly, skipping...')
+        logger.warning('  Sorry, can\'t create Upper Bound Assembly '
+                       '(failed to install/download third-party repeat finding tool [Red]), skipping...')
         return None
 
     log_fpath = os.path.join(output_dirpath, 'upper_bound_assembly.log')

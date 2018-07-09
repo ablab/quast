@@ -503,7 +503,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
     fastaparser.write_fasta(result_fpath, result_fasta)
     logger.info('  ' + 'Theoretical Upper Bound Assembly saved to ' + result_fpath)
     logger.notice('You can copy it to ' + ref_prepared_optimal_assembly +
-                  ', specify insert size using the option --est-insert-size ' + insert_size +
+                  ', specify insert size using the option --est-insert-size ' + str(insert_size) +
                   ' and QUAST will reuse it in further runs against the same reference (' + original_ref_fpath + ')')
 
     if not qconfig.debug:

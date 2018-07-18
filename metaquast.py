@@ -199,6 +199,7 @@ def main(args):
         # No references, running regular quast with MetaGenemark gene finder
         logger.main_info()
         logger.notice('No references are provided, starting regular QUAST with MetaGeneMark gene finder')
+        assemblies = [Assembly(fpath, qutils.label_from_fpath(fpath)) for fpath in contigs_fpaths]
         _start_quast_main(quast_py_args, assemblies=assemblies, output_dirpath=output_dirpath, run_regular_quast=True)
         exit(0)
 

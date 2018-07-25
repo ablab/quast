@@ -67,16 +67,25 @@ Icarus: visualizer for de novo assembly evaluation,
 Bioinformatics (2016) 32 (21): 3321-3323. doi: 10.1093/bioinformatics/btw379
 First published online: July 4, 2016
 
+If you use QUAST-LG in your research, please include Mikheenko et al., 2018 into
+your reference list:
+
+Alla Mikheenko, Andrey Prjibelski, Vladislav Saveliev, Dmitry Antipov, Alexey Gurevich,
+Versatile genome assembly evaluation with QUAST-LG,
+Bioinformatics (2018) 34 (13): i142-i150. doi: 10.1093/bioinformatics/bty266
+First published online: June 27, 2018
+
 
 Third-party tools incorporated into QUAST:
 
 1. QUAST uses Minimap2 for aligning long reads and contigs to reference genomes.
 
 For more details about Minimap2 please refer to
-https://github.com/lh3/minimap2 and to the following preprint:
+https://github.com/lh3/minimap2 and to the following paper:
 
 Li H. (2017) Minimap2: fast pairwise alignment for long nucleotide sequences.
-https://arxiv.org/abs/1708.01492
+Bioinformatics (2018). doi: 10.1093/bioinformatics/bty191
+First published online: May 10, 2018
 
 2. GeneMarkS as well as MetaGeneMark and GeneMark-ES gene prediction software
 was provided by Mark Borodovsky and Georgia Institute of Technology. 
@@ -122,7 +131,7 @@ Barthelson R, McFarlin AJ, Rounsley SD, Young S (2011) Plantagora: Modeling
 Whole Genome Sequencing and Assembly of Plant Genomes. PLoS ONE 6(12): e28436. 
 doi:10.1371/journal.pone.0028436
 
-4. QUAST Gene Finding module uses GlimmerHMM for predicting genes in eukaryoutes.
+4. QUAST Gene Finding module uses GlimmerHMM for predicting genes in eukaryotes.
 For more details about GlimmerHMM please refer to
 http://cbcb.umd.edu/software/glimmerhmm/ website and to the following paper:
 
@@ -167,20 +176,24 @@ For more details about BWA please refer to
 https://github.com/lh3/bwa website and to the following preprint:
 
 Li H. (2013) Aligning sequence reads, clone sequences and assembly contigs with BWA-MEM.
+https://arxiv.org/abs/1303.3997
 
 For more details about Sambamba please refer to
 https://github.com/lomereiter/sambamba website and to the following paper:
 
 A. Tarasov, A. J. Vilella, E. Cuppen, I. J. Nijman, and P. Prins.
-Sambamba: fast processing of NGS alignment formats. Bioinformatics, 2015.
+Sambamba: fast processing of NGS alignment formats.
+Bioinformatics. 2015 Jun 15;31(12):2032-4. doi: 10.1093/bioinformatics/btv098.
+Epub 2015 Feb 19.
 
 8. QUAST Structural Variation Finding module uses GRIDSS.
 For more details about GRIDSS please refer to
-https://github.com/PapenfussLab/gridss website and to the following preprint:
+https://github.com/PapenfussLab/gridss website and to the following paper:
 
-D. L. Cameron, J. Schroeder, J. S. Penington, H. Do, R. Molania, A. Dobrovic, T. P. Speed and A. T. Papenfuss.
-GRIDSS: sensitive and specific genomic rearrangement detection using positional de Bruijn graph assembly.
-http://www.biorxiv.org/content/early/2017/02/21/110387
+D. L. Cameron, J. Schroeder, J. S. Penington, H. Do, R. Molania, A. Dobrovic,
+T. P. Speed and A. T. Papenfuss. GRIDSS: sensitive and specific genomic rearrangement
+detection using positional de Bruijn graph assembly.
+Genome Res. 2017 Dec;27(12):2050-2060. doi: 10.1101/gr.222109.117. Epub 2017 Nov 2.
 
 9. Icarus uses Bedtools for calculating read coverage.
 For more details about Bedtools please refer to
@@ -189,30 +202,31 @@ http://bedtools.readthedocs.io/ website and to the following paper:
 Quinlan, AR, Hall, IM (2010). BEDTools: a flexible suite of utilities for comparing 
 genomic features. Bioinformatics, 26, 6:841-2.
 
-10. QUAST uses KMC for unique k-mers counting.
+10. QUAST-LG uses KMC for unique k-mers counting.
 For more details about KMC please refer to
 http://sun.aei.polsl.pl/kmc website and to the following paper:
 
-Kokot, M., Długosz, M., Deorowicz, S., KMC 3: counting and manipulating k-mer statistics.
-Bioinformatics (2017). doi: 10.1093/bioinformatics/btx304()
+Kokot, M., Dlugosz, M., Deorowicz, S., KMC 3: counting and manipulating k-mer statistics.
+Bioinformatics. 2017 Sep 1;33(17):2759-2761. doi: 10.1093/bioinformatics/btx304.
 
 11. QUAST uses Barrnap for ribosomal RNA genes prediction.
 For more details about Barrnap please refer to
 https://github.com/tseemann/barrnap website.
 
-12. QUAST uses Circos for visualizing all assembly data in a circular layout (Circos needs to be installed).
+12. QUAST uses Circos for visualizing all assembly data in a circular layout
+(Circos needs to be installed and added to the PATH environment variable).
 For more details about Circos please refer to
 http://www.circos.ca website and to the following paper:
 
 Krzywinski, M. et al., Circos: an Information Aesthetic for Comparative Genomics.
 Genome Res (2009) 19:1639-1645
 
-13. QUAST uses Red for detecting repeats.
+13. QUAST-LG uses Red for detecting repeats (for upper bound assembly construction).
 For more details about Red please refer to
 http://toolsmith.ens.utulsa.edu website and to the following paper:
 
-Hani Z. Girgis. Red: an intelligent, rapid, accurate tool for detecting repeats de-novo on the genomic scale.
-BMC Bioinformatics (2015) 16:227
+Hani Z. Girgis. Red: an intelligent, rapid, accurate tool for detecting repeats
+de-novo on the genomic scale. BMC Bioinformatics (2015) 16:227
 
 -------------------------------------------------------------------------------
 

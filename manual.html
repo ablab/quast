@@ -272,7 +272,7 @@ Thus, you can efficiently reuse already computed results when running QUAST with
 Reference genome file. Optional. Many metrics can't be evaluated without a reference. If this is omitted, QUAST will only report the metrics that can be evaluated without a reference.
 
 <div class='option'>
-<code><b>-g</b> &lt;path&gt;</code> (or <code>--features &lt;path&gt;</code>)
+<code><b>--features</b></code> (or <code>-g</code>) <code>&lt;path&gt;</code>
 </div>
 File with genomic feature positions in the reference genome. See details about the file format in <a href="#sec2.2">section 2.2</a>.<br>
 If you use GFF format and would like to count only a specific feature from it (e.g., only "CDS" or only "gene") you can
@@ -440,7 +440,7 @@ If the genome is eukaryotic (fungal), use <a href='#eukaryote'><code>--eukaryote
     option to force BUSCO to work with the eukaryotic (fungal) database.
 
 <div class='option'>
-<code><b>-O</b> &lt;path&gt;</code> (or <code>--operons &lt;path&gt;</code>)
+<code><b>--operons</b> &lt;path&gt;</code>
 </div>
 File with operon positions in the reference genome. See details about the file format in <a href="#sec2.2">section 2.2</a>.
 
@@ -547,10 +547,18 @@ Note: requires <a href='#fragmented'><code>--fragmented</code></a> option.
 <div class='option'>
     <a name='fragmented_indent'></a><code><b>--upper-bound-assembly</b></code>
 </div>
-    Simulate upper bound assembly based on the reference genome and a given set reads.
+    Simulate upper bound assembly based on the reference genome and a given set reads
+    (mate-pairs or long reads, such as Pacbio SMRT/Oxford Nanopore, are REQUIRED).
     This assembly is added to the comparison and could be useful for estimating the upper bounds of completeness and contiguity
     that theoretically can be reached by assembly software from this particular set of reads.
-    The concept is based on the fact that the reference genome cannot be completely reconstructed from raw reads due to long genomic repeats and low covered regions.
+    The concept is based on the fact that the reference genome cannot be completely reconstructed
+    from raw reads due to long genomic repeats and low covered regions.
+    See <a href="http://dx.doi.org/10.1093/bioinformatics/bty266">Mikheenko et al., 2018</a> for more details.
+    Note: this option requires reads; if reads are provided, QUAST performs various types of time-consuming analysis
+    (structural variations detection and read-based metrics computation);
+    if you are not interested in this additional analysis and want to get only the upper bound assembly,
+    you may consider adding <a href='#no_sv'><code>--no-sv</code></a> and <a href='#no_read_stats'><code>--no-read-stats</code></a>
+    to your command line.
 
 <div class='option'>
     <a name='fragmented_indent'></a><code><b>--upper-bound-min-con</b></code> <code>&lt;int&gt;</code>
@@ -597,32 +605,17 @@ Found SVs are used for classifying QUAST misassemblies into true ones and fake o
 <div class='options'>
 
 <div class='option'>
-<code><b>--reads1</b> &lt;path&gt;</code> (or <code>-1 &lt;path&gt;</code>)
-</div>
-File with forward reads in FASTQ format (files compressed with gzip are allowed).
-
-<div class='option'>
-<code><b>--reads2</b> &lt;path&gt;</code> (or <code>-2 &lt;path&gt;</code>)
-</div>
-File with reverse reads in FASTQ format (files compressed with gzip are allowed).
-
-<div class='option'>
-<code><b>--12</b> &lt;path&gt;</code>
-</div>
-File with interlaced forward and reverse paired-end reads. (in FASTQ format, may be gzipped).
-
-<div class='option'>
-<code><b>--pe1</b> &lt;path&gt;</code>
+    <code><b>--pe1</b></code> (or <code>-1</code>) <code>&lt;path&gt;</code>
 </div>
 File with forward paired-end reads in FASTQ format (files compressed with gzip are allowed).
 
 <div class='option'>
-<code><b>--pe2</b> &lt;path&gt;</code> (or <code>-2 &lt;path&gt;</code>)
+    <code><b>--pe2</b></code> (or <code>-2</code>) <code>&lt;path&gt;</code>
 </div>
 File with reverse paired-end reads in FASTQ format (files compressed with gzip are allowed).
 
 <div class='option'>
-<code><b>--pe12</b> &lt;path&gt;</code>
+<code><b>--pe12</b> (or <code>--12</code>) &lt;path&gt;</code>
 </div>
 File with interlaced forward and reverse paired-end reads in FASTQ format (files compressed with gzip are allowed).
 
@@ -632,7 +625,7 @@ File with interlaced forward and reverse paired-end reads in FASTQ format (files
 File with forward mate-pair reads in FASTQ format (files compressed with gzip are allowed).
 
 <div class='option'>
-<code><b>--mp2</b> &lt;path&gt;</code> (or <code>-2 &lt;path&gt;</code>)
+<code><b>--mp2</b> &lt;path&gt;</code>
 </div>
 File with reverse mate-pair reads in FASTQ format (files compressed with gzip are allowed).
 
@@ -747,7 +740,7 @@ Do not compress large output files (files containing SNP information and predict
     This may speed up computation, but more disk space is required.
 
 <div class='option'>
-<code><b>--no-read-stats</b></code>
+    <a name='no_read_stats'></a><code><b>--no-read-stats</b></code>
 </div>
 Do not align reads against assemblies and do not report the corresponding metrics.
     Reads still will be aligned against the reference genome and used for coverage analysis,
@@ -779,14 +772,14 @@ Run the tool on a data from the <code>test_data</code> folder using the reads fo
     The tool will compile or download the required programs (BEDtools, BWA, and GRIDSS Structural Variant Caller).
 
 <div class='option'>
-    <code><b>-h</b></code> (or <code>--help</code>)
+    <code><b>--help</b></code> (or <code>-h</code>)
 </div>
-Print help.
+Print help and exit.
 
 <div class='option'>
-    <code><b>-v</b></code> (or <code>--version</code>)<br>
+    <code><b>--version</b></code> (or <code>-v</code>)<br>
 </div>
-Print version.
+Print version and exit.
 </div>
 
 <a name="sec2.4"></a>

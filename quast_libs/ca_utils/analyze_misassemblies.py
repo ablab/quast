@@ -518,8 +518,8 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
             ca_output.stdout_f.write('gap length difference = ' + str(inconsistency) + scaff_gap_type + '\n')
         elif is_extensive_misassembly and is_potential_mge and is_potential_mge[i]:
             ca_output.stdout_f.write(
-                '\t\t\t  Not a misassembly (possible mobile genetic element) between these two alignments\n')
-            ca_output.icarus_out_f.write('fake: not a misassembly (possible mobile genetic element)\n')
+                '\t\t\t  Not a misassembly (possible transposable element) between these two alignments\n')
+            ca_output.icarus_out_f.write('fake: not a misassembly (possible transposable element)\n')
             region_misassemblies.append(Misassembly.POTENTIAL_MGE)
         elif is_extensive_misassembly:
             is_misassembled = True

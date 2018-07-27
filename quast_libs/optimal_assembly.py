@@ -459,8 +459,8 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
 
     if qconfig.optimal_assembly_insert_size and qconfig.optimal_assembly_insert_size != insert_size:
         calculated_insert_size = qconfig.optimal_assembly_insert_size
-        result_fpath = result_fpath.replace('is%d' % insert_size, 'is%d' % calculated_insert_size)
-        prepared_optimal_assembly_basename = prepared_optimal_assembly_basename.replace('is%d' % insert_size, 'is%d' % calculated_insert_size)
+        result_fpath = result_fpath.replace('is' + str(insert_size), 'is' + str(calculated_insert_size))
+        prepared_optimal_assembly_basename = prepared_optimal_assembly_basename.replace('is' + str(insert_size), 'is' + str(calculated_insert_size))
         insert_size = calculated_insert_size
         ref_prepared_optimal_assembly = os.path.join(os.path.dirname(original_ref_fpath), prepared_optimal_assembly_basename)
         already_done_fpath = check_prepared_optimal_assembly(insert_size, result_fpath, ref_prepared_optimal_assembly)

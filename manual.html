@@ -159,7 +159,12 @@
     <li>Java 1.8 or later for GRIDSS (SV detection)</li>
     <li>R for GRIDSS (SV detection)</li>
 </ul>
-All those tools are usually pre installed on Linux.<br>
+All default requirements are usually pre installed on Linux. The only missing one could be <code>zlib-dev</code>.
+See <a href="https://zlib.net/">their web-site</a> for installation details for various platforms.
+In particular, it is pre installed on macOS and it can be simply installed on Ubuntu as:<br>
+<pre class="code">
+  sudo apt-get install zlib1g-dev
+</pre>
 MacOS, however, initially misses <code>make</code>, <code>gcc</code> and <code>ar</code>, so you will have to install
 <a href='https://developer.apple.com/xcode/'>Xcode</a> to make them available.
 <br>

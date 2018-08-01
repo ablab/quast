@@ -444,7 +444,7 @@ def create_legend(assemblies, min_gc, max_gc, features_containers, coverage_fpat
         if features_containers:
             out_f.write('3) User-provided genes. A darker color indicates higher density of genes.\n')
         if coverage_fpath:
-            out_f.write('%d) The inner circle represents read coverage histogram.\n' % 4 if features_containers else 3)
+            out_f.write('%d) The inner circle represents read coverage histogram.\n' % (4 if features_containers else 3))
     return legend_fpath
 
 

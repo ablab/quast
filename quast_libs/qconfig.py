@@ -132,6 +132,9 @@ trivial_deletions_fname = 'trivial_deletions.bed'
 sv_bed_fname = 'structural_variations.bed'
 used_colors = None
 used_ls = None
+MAX_PE_IS = 1000  # for separating mate-pairs from paired-ends; the former should be excluded from physical coverage calculation
+cov_fpath = None
+phys_cov_fpath = None
 
 # dirnames
 busco_dirname = 'busco_stats'
@@ -157,8 +160,6 @@ max_contigs_num_for_size_viewer = 1000
 min_contig_for_size_viewer = 10000
 contig_len_delta = 0.05
 min_similar_contig_size = 10000
-cov_fpath = None
-phys_cov_fpath = None
 
 # other settings (mostly constants). Can't be changed by command-line options
 

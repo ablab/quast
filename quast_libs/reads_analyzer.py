@@ -778,14 +778,16 @@ def get_physical_coverage(output_dirpath, ref_name, bam_fpath, log_path, err_fpa
     raw_cov_fpath = add_suffix(cov_fpath, 'raw')
     if not is_non_empty_file(raw_cov_fpath):
         logger.info('  Calculating physical coverage...')
-        ## keep properly mapped, unique, and non-duplicate read pairs only
-        bam_filtered_fpath = join(output_dirpath, ref_name + '.filtered.bam')
+        ## keep properly mapped, unique, non-duplicate paired-end reads only
+        bam_filtered_fpath = join(output_dirpath, ref_name + '.physical.bam')
         sambamba_view(bam_fpath, bam_filtered_fpath, qconfig.max_threads, err_fpath, logger,
-                      filter_rule='proper_pair and not supplementary and not duplicate')
+                      filter_rule='proper_pair and not supplementary and not duplicate '
+                                  'and template_length > %d and template_length < %d' %
+                                  (-qconfig.MAX_PE_IS, qconfig.MAX_PE_IS))
         ## sort by read names
-        bam_filtered_sorted_fpath = join(output_dirpath, ref_name + '.filtered.sorted.bam')
+        bam_filtered_sorted_fpath = join(output_dirpath, ref_name + '.physical.sorted.bam')
         sort_bam(bam_filtered_fpath, bam_filtered_sorted_fpath, err_fpath, logger, sort_rule='-n')
-        bed_fpath = bam_to_bed(output_dirpath, ref_name, bam_filtered_sorted_fpath, err_fpath, logger, bedpe=True)
+        bed_fpath = bam_to_bed(output_dirpath, ref_name + '.physical', bam_filtered_sorted_fpath, err_fpath, logger, bedpe=True)
         calculate_genome_cov(bed_fpath, raw_cov_fpath, chr_len_fpath, err_fpath, logger)
     return raw_cov_fpath
 
@@ -838,7 +840,8 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
                         cur_depth = sum(chr_depth[name][index: index + COVERAGE_FACTOR]) // COVERAGE_FACTOR
                         out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
                     chr_depth[name] = chr_depth[name][index + COVERAGE_FACTOR:]
-            os.remove(raw_cov_fpath)
+            if not qconfig.debug:
+                os.remove(raw_cov_fpath)
 
 
 def get_max_min_is(insert_sizes):

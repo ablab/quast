@@ -43,23 +43,15 @@ Contact:
 
 -------------------------------------------------------------------------------
 
-If you use QUAST in your research, please include Gurevich et al., 2013 into your
-reference list:
+If you use QUAST v5.* or QUAST-LG in your research, please include
+Mikheenko et al., 2018 into your reference list:
 
-Alexey Gurevich, Vladislav Saveliev, Nikolay Vyahhi and Glenn Tesler,
-QUAST: quality assessment tool for genome assemblies,
-Bioinformatics (2013) 29 (8): 1072-1075. doi: 10.1093/bioinformatics/btt086
-First published online: February 19, 2013
+Alla Mikheenko, Andrey Prjibelski, Vladislav Saveliev, Dmitry Antipov, Alexey Gurevich,
+Versatile genome assembly evaluation with QUAST-LG,
+Bioinformatics (2018) 34 (13): i142-i150. doi: 10.1093/bioinformatics/bty266
+First published online: June 27, 2018
 
-If you use MetaQUAST in your research, please include Mikheenko et al., 2016 into 
-your reference list:
-
-Alla Mikheenko, Vladislav Saveliev, Alexey Gurevich,
-MetaQUAST: evaluation of metagenome assemblies,
-Bioinformatics (2016) 32 (7): 1088-1090. doi: 10.1093/bioinformatics/btv697
-First published online: November 26, 2015
-
-If you use Icarus visualizations in your research, please include 
+If you use QUAST v4.* or Icarus visualizations in your research, please include
 Mikheenko et al., 2016 into your reference list:
 
 Alla Mikheenko, Gleb Valin, Andrey Prjibelski, Vladislav Saveliev, Alexey Gurevich,
@@ -67,13 +59,21 @@ Icarus: visualizer for de novo assembly evaluation,
 Bioinformatics (2016) 32 (21): 3321-3323. doi: 10.1093/bioinformatics/btw379
 First published online: July 4, 2016
 
-If you use QUAST-LG in your research, please include Mikheenko et al., 2018 into
-your reference list:
+If you use QUAST v3.* or MetaQUAST in your research, please include
+Mikheenko et al., 2016 into your reference list:
 
-Alla Mikheenko, Andrey Prjibelski, Vladislav Saveliev, Dmitry Antipov, Alexey Gurevich,
-Versatile genome assembly evaluation with QUAST-LG,
-Bioinformatics (2018) 34 (13): i142-i150. doi: 10.1093/bioinformatics/bty266
-First published online: June 27, 2018
+Alla Mikheenko, Vladislav Saveliev, Alexey Gurevich,
+MetaQUAST: evaluation of metagenome assemblies,
+Bioinformatics (2016) 32 (7): 1088-1090. doi: 10.1093/bioinformatics/btv697
+First published online: November 26, 2015
+
+If you use QUAST v1.* or v2.* in your research or want to cite QUAST software in general,
+please include Gurevich et al., 2013 into your reference list:
+
+Alexey Gurevich, Vladislav Saveliev, Nikolay Vyahhi and Glenn Tesler,
+QUAST: quality assessment tool for genome assemblies,
+Bioinformatics (2013) 29 (8): 1072-1075. doi: 10.1093/bioinformatics/btt086
+First published online: February 19, 2013
 
 
 Third-party tools incorporated into QUAST:

@@ -394,12 +394,13 @@ def create_housekeeping_file(chr_lengths, max_points, root_dir, output_dir, logg
             template_fpath = join(circos_dirpath, '..', 'etc', 'housekeeping.conf')
 
     if not is_non_empty_file(template_fpath):
-        if not get_path_to_program('circos'):
-            msg = 'Circos is not found.'
-        else:
-            msg = 'File etc/housekeeping.conf is not found.'
-        logger.warning(msg + ' You will have to manually edit etc/housekeeping.conf: '
-                       'set max_points_per_track to ' + str(max_points) + ' and max_ideograms to ' + str(max_ideograms))
+        logger.notice('Circos housekeeping configuration file (<circos_installation_dir>/etc/housekeeping.conf) is not found. '
+                      'For better comprehension, it is recommended to manually edit this file (inplace or copy it to '
+                      + root_dir + '/etc/housekeeping.conf) and set max_points_per_track to at least ' + str(max_points) +
+                      ' and max_ideograms to at least ' + str(max_ideograms))
+        dir_for_template = join(root_dir, 'etc')
+        if not os.path.isdir(dir_for_template):
+            os.makedirs(dir_for_template)
         return '<<include %s>>\n' % join('etc', 'housekeeping.conf')
 
     housekeeping_fpath = join(output_dir, 'housekeeping.conf')
@@ -432,19 +433,19 @@ def set_window_size(ref_len):
 def create_legend(assemblies, min_gc, max_gc, features_containers, coverage_fpath, output_dir):
     legend_fpath = join(output_dir, 'legend.txt')
     with open(legend_fpath, 'w') as out_f:
-        out_f.write('1) The outer circle represents reference sequence(s) with GC (%%) heatmap [from %d%% (white) to %d%% (black)].\n' %
-                    (min_gc, max_gc))
+        out_f.write('1) The outer circle represents reference sequence%s with GC (%%) heatmap [from %d%% (white) to %d%% (black)].\n' %
+                    (('s' if qconfig.is_combined_ref else ''), min_gc, max_gc))
         if qconfig.is_combined_ref:
             out_f.write('Color bars help to distinguish between different references.\n')
 
-        out_f.write('2) Assembly tracks.\n')
+        out_f.write('\n2) Assembly tracks:\n')
         for i, assembly in enumerate(assemblies):
-            out_f.write('Assembly %d - %s\n' % (i, assembly.label))
+            out_f.write('\tassembly%d - %s\n' % (i + 1, assembly.label))
         out_f.write('Assembly tracks are combined with mismatches visualization: higher columns indicate larger mismatch rate.\n')
         if features_containers:
-            out_f.write('3) User-provided genes. A darker color indicates higher density of genes.\n')
+            out_f.write('\n3) User-provided genes. A darker color indicates higher density of genes.\n')
         if coverage_fpath:
-            out_f.write('%d) The inner circle represents read coverage histogram.\n' % (4 if features_containers else 3))
+            out_f.write('\n%d) The inner circle represents read coverage histogram.\n' % (4 if features_containers else 3))
     return legend_fpath
 
 

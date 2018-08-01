@@ -49,7 +49,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     log_out_f.write('\tMisassembled Contig Bases: %d\n' % result['misassembled_bases'])
     log_out_f.write('\tMisassemblies Inter-Contig Overlap: %d\n' % result['misassembly_internal_overlap'])
     log_out_f.write('Unaligned Contigs: %d + %d part\n' % (result['unaligned'], result['partially_unaligned']))
-    log_out_f.write('Half Unaligned Contigs with Misassemblies: %d\n' % result['half_unaligned_with_misassembly'])
+    log_out_f.write('Half Unaligned Contigs with Misassemblies: %s\n' % str(result['half_unaligned_with_misassembly']))
     log_out_f.write('Unaligned Contig Bases: %d\n' % (result['fully_unaligned_bases'] + result['partially_unaligned_bases']))
 
     log_out_f.write('\n')

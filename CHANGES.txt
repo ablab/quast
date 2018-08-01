@@ -14,7 +14,7 @@
          using a given set of reads. The algorithm takes into account zero covered regions
          and genomic repeats (identified with Red repeat finder). The constructed assembly
          is added to the evaluation to demonstrate the theoretical limits on the assembly
-         completeness and correctness quality metrics for the given genome and set of reads.
+         completeness and contiguity quality metrics for the given genome and set of reads.
 
       3. New module: k-mer-based statistics ("--k-mer-stats").
          We identify unique k-mers in the reference genome (using KMC tool) and track
@@ -36,15 +36,15 @@
 
       5. Icarus updates:
        — changes in alignment viewers:
-           * GC% track is added to read coverage pane;
-           * button for highlighting all assembly misassemblies is added;
-           * local misassemblies are unchecked (hidden) by default.
-       — added static Circos plot of alignments ("--circos");
-       — natural sorting of chromosome names in the main menu (chr1, chr2, ..., chr10
-         instead of chr1, chr10, chr2, ...).
+           * GC% track is added to the read coverage pane;
+           * a button for highlighting all assembly misassemblies is added;
+           * local misassemblies are now unchecked (hidden) by default.
+       — static Circos plot of alignments ("--circos") is added;
+       — chromosome names in the main menu are sorted in the human-friendly order now
+         (e.g., chr1, chr2, ..., chr10 instead of chr1, chr10, chr2, ...).
 
       6. Improved reads support:
-       — reads are now mapped to assemblies and various alignment stats are reported;
+       — reads are now mapped to all assemblies and various alignment stats are reported;
        — single ("--single") and interlaced ("--12") reads are supported;
        — multiple read libraries are supported, including both paired-end ("--pe1/2/12")
          and mate-pair ("--mp1/2/12") libraries;
@@ -73,8 +73,9 @@
        - local scaffold gap misassemblies are added (local misassemblies caused by incorrect
          estimation of scaffold gap sizes);
        - contig and scaffold misassemblies are separated in the detailed misassemblies report
-         (these scaffold misassemblies contain incorrectly estimated scaffold gap sizes but their
-         inconsistencies exceed scaffold-gap-max-size threshold).
+         (these scaffold misassemblies contain incorrectly estimated scaffold gap sizes
+         exceeding scaffold-gap-max-size threshold or they are inversions/translocations caused
+         by incorrect scaffolding).
 
       10. New and renamed options:
        - "--scaffolds" is renamed to "--split-scaffolds";

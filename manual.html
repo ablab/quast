@@ -277,6 +277,7 @@ Thus, you can efficiently reuse already computed results when running QUAST with
 Reference genome file. Optional. Many metrics can't be evaluated without a reference. If this is omitted, QUAST will only report the metrics that can be evaluated without a reference.
 
 <div class='option'>
+<a name='genomic_feature'></a>
 <code><b>--features</b></code> (or <code>-g</code>) <code>&lt;path&gt;</code>
 </div>
 File with genomic feature positions in the reference genome. See details about the file format in <a href="#sec2.2">section 2.2</a>.<br>
@@ -401,9 +402,9 @@ If the genome is fungal, use <a href='#fungus'><code>--fungus</code></a> option 
 If it is a metagenome (you are running <a href='#sec2.4'>metaquast.py</a>), MetaGeneMark is used. You can also force
 MetaGeneMark predictions with <a href='#mgm'><code>--mgm</code></a> option described below.
 <span style='line-height: 50%;'>&nbsp;</span><br><br>
-If a <a href='#sec2.2'>gene file</a> is provided with <code>-G</code> as well, both
-<span class='metric_ref'><a href='#genes'># genes</a></span> in the file covered by the assembly, and
-<span class='metric_ref'><a href='#predicted_genes'># predicted genes</a></span> are reported. Note that operons are not predicted,
+    If a <a href='#sec2.2'>genomic feature file</a> is provided with <a href="#genomic_feature"><code>--features</code></a> as well, both
+<span class='metric_ref'><a href='#genes'># genomic features</a></span> (according to the provided feature positions and assembly mappings to the reference), and
+<span class='metric_ref'><a href='#predicted_genes'># predicted genes</a></span> (according to the gene finding software) are reported. Note that operons are not predicted,
 but a file of known operon positions can be provided with <code>-O</code>.<br>
 
 <div class='option'>
@@ -465,7 +466,7 @@ Comma-separated list of contig length thresholds (in bp). Used in <span class='m
 <div class='option'>
     <code><b>--use-all-alignments</b></code> (or <code>-u</code>)
 </div>
-Compute <span class='metric-ref'>genome fraction, # genes, # operons</span> metrics in the manner used in QUAST v.1.*.
+Compute <span class='metric-ref'>genome fraction, # genomic features, # operons</span> metrics in the manner used in QUAST v.1.*.
 By default, QUAST v.2.0 and higher filters out ambiguous and redundant alignments, keeping only one alignment per contig 
 (or one set of non-overlapping or slightly overlapping alignments). This option makes QUAST count all alignments.
 
@@ -1050,7 +1051,7 @@ changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>
 This metric sums up <code># unaligned mis. contigs</code> described above.</p>
 
 <p><span class='metric-name'>Unaligned length</span> is the total length of all unaligned regions in the assembly
-    (sum of lengths of fully unaligned contigs and unaligned parts of partially unaligned ones). </p>
+    (sum of lengths of fully unaligned contigs and unaligned parts of partially unaligned ones). This length does not include uncalled bases (N's) in the assembly.</p>
 
 <!--p><span class='metric-name'># ambiguous contigs</span> is the number of contigs which have reference alignments
     of equal quality in multiple locations on the reference. </p>
@@ -1076,13 +1077,13 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
 <p><span class='metric-name'># indels per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of indels per 100<span class='hs'></span>000 aligned bases. 
     Several consecutive single nucleotide indels are counted as one indel.</p>
 
-<p><a name='genes'></a><span class='metric-name'># genes</span> is the number of genes in the assembly (complete and partial), based on a user-provided 
-    list of gene positions in the reference genome. A gene 'partially covered' if the assembly contains at least 100<span class="rhs">&nbsp;</span>bp
-    of this gene but not the whole one.<br>
+<p><a name='genes'></a><span class='metric-name'># genomic features</span> is the number of genomic features (genes, CDS, etc) in the assembly (complete and partial), based on a user-provided
+    list of genomic features positions in the reference genome. A feature is 'partially covered' if the assembly contains at least 100<span class="rhs">&nbsp;</span>bp
+    of this feature but not the whole one.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>
-    This metric is computed only if a reference genome and an annotated list of gene positions are provided (see <a href="#sec2.3">section 2.3</a>).</p>
+    This metric is computed only if a reference genome and an annotated list of genomic feature positions are provided (see <a href="#sec2.3">section 2.3</a>).</p>
 
-<p><span class='metric-name'># operons</span> is defined similarly to <span class='metric-ref'># genes</span>, but an operon positions file required instead.</p>
+<p><span class='metric-name'># operons</span> is defined similarly to <span class='metric-ref'># genomic features</span>, but an operon positions file required instead.</p>
 
 <p><span class='metric-name'>Complete/Partial BUSCO (%)</span> is the percent of BUSCO genes found in the assembly completely (or partially).
     See the description of <a href='#busco'><code>--conserved-genes-finding</code></a> option for details. </p>
@@ -1199,12 +1200,12 @@ Note that all these metrics are excluded from <code>#&nbsp;misassemblies</code> 
 
 <p><span class='metric-name'># fully unaligned contigs</span> is the number of contigs that have no alignment to the reference sequence.</p>
 
-<p><span class='metric-name'>Fully unaligned length</span> is the total number of bases in all unaligned contigs.</p>
+<p><span class='metric-name'>Fully unaligned length</span> is the total number of bases in all unaligned contigs. Uncalled bases (N's) are not counted.</p>
 
 <p><span class='metric-name'># partially unaligned contigs</span> is the number of contigs that are not fully unaligned (i.e. have at least one alignment), but have at least one unaligned fragment
     &ge; the threshold defined by <a href='#unaligned_part_size'><code>--unaligned-part-size</code></a> (default value is 500 bp).</p>
 
-<p><span class='metric-name'>Partially unaligned length</span> is the total number of unaligned bases in all partially unaligned contigs.</p>
+<p><span class='metric-name'>Partially unaligned length</span> is the total number of unaligned bases in all partially unaligned contigs. Uncalled bases (N's) are not counted.</p>
 
 <p><span class='metric-name'># N's</span> is the total number of uncalled bases (N's) in the assembly.</p>
 
@@ -1270,7 +1271,7 @@ Note that all these metrics are excluded from <code>#&nbsp;misassemblies</code> 
     (see <a href='#duplication_ratio'>Duplication ratio</a>), the total number of aligned bases may exceed the reference length and cause
     Genome coverage % larger than 100%.<br>
     <br>
-    FRCurves plots are currently available for # misassemblies (both PDF and interactive HTML formats) and # genes/operons (PDF version only).
+    FRCurves plots are currently available for # misassemblies (both PDF and interactive HTML formats) and # genomic features/operons (PDF version only).
     We probably will extend this set in the future.
 
 </div>

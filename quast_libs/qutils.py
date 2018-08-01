@@ -731,8 +731,9 @@ def check_java_version(min_version):
         return False
 
 
-def is_non_empty_file(fpath):
-    return fpath and os.path.exists(fpath) and os.path.getsize(fpath) > 10
+def is_non_empty_file(fpath, min_size=10):
+    # optional parameter is the minimum file size (in bytes) for considering it as a non empty file
+    return fpath and os.path.exists(fpath) and os.path.getsize(fpath) > min_size
 
 
 def cat_files(in_fnames, out_fname):

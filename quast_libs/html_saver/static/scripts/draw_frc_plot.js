@@ -113,11 +113,11 @@ var frc = {
                     yaxis: {
                         min: 0,
                         max: Math.max(100, info.maxY),
-                        labelWidth: 120,
+                        labelWidth: 145,
                         reserveSpace: true,
                         lineWidth: 0.5,
                         color: '#000',
-                        tickFormatter: getPercentTickFormatter(info.maxY),
+                        tickFormatter: getPercentTickFormatter(Math.max(100, info.maxY)),
                         minTickSize: 1
                     },
                     xaxis: {

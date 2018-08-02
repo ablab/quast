@@ -111,7 +111,7 @@ def make_config(output_dirpath, tmp_dirpath, threads, clade_dirpath, augustus_di
               'hmmsearch_path': busco_dirpath
     }
     default_config_fpath = join(busco_dirpath, default_config_fname)
-    config_fpath = join(busco_dirpath, config_fname)
+    config_fpath = join(output_dirpath, config_fname)
     with open(default_config_fpath) as f_in:
         with open(config_fpath, 'w') as f_out:
             for line in f_in:
@@ -124,6 +124,53 @@ def make_config(output_dirpath, tmp_dirpath, threads, clade_dirpath, augustus_di
                 f_out.write(' '.join(fs) + '\n')
     return config_fpath
 
+
+def busco_main_handler(*busco_args):
+    try:
+        return busco.main(*busco_args)
+    except SystemExit:
+        return None
+
+
+def copy_augustus_contigs(augustus_dirpath, output_dirpath):
+    input_basedir = join(augustus_dirpath, 'config')
+    output_basedir = join(output_dirpath, 'config')
+    if not os.path.isdir(input_basedir):
+        return None
+    if not os.path.isdir(output_basedir):
+        os.makedirs(output_basedir)
+    for dirpath, dirnames, files in os.walk(input_basedir):
+        for dirname in dirnames:
+            if dirname != 'species':
+                if not os.path.isdir(join(output_basedir, dirname)):
+                    shutil.copytree(join(dirpath, dirname), join(output_basedir, dirname))
+        break  # note: we use for-break instead of os.walk().next() or next(os.walk()) due to support of both Python 2.5 and Python 3.*
+    # species -- special case, we need to copy only generic/template subdirs
+    species_input_dir = join(input_basedir, 'species')
+    species_output_dir = join(output_basedir, 'species')
+    if not os.path.isdir(species_input_dir):
+        return None
+    if not os.path.isdir(species_output_dir):
+        os.makedirs(species_output_dir)
+    for dirpath, dirnames, files in os.walk(species_input_dir):
+        for dirname in dirnames:
+            if 'generic' in dirname or 'template' in dirname or 'fly' in dirname:  # 'fly' is the default species
+                if not os.path.isdir(join(species_output_dir, dirname)):
+                    shutil.copytree(join(dirpath, dirname), join(species_output_dir, dirname))
+        break
+    return output_basedir
+
+
+def cleanup(busco_output_dir):
+    do_not_remove_exts = ['.log', '.txt']
+    for dirpath, dirnames, files in os.walk(busco_output_dir):
+        for dirname in dirnames:
+            shutil.rmtree(join(dirpath, dirname))
+        for filename in files:
+            if os.path.splitext(filename)[1] not in do_not_remove_exts:
+                os.remove(join(dirpath, filename))
+        break
+        
 
 def do(contigs_fpaths, output_dir, logger):
     logger.print_timestamp()
@@ -162,9 +209,11 @@ def do(contigs_fpaths, output_dir, logger):
     logger.info('Logs and results will be saved under ' + output_dir + '...')
 
     os.environ['BUSCO_CONFIG_FILE'] = config_fpath
-    os.environ['AUGUSTUS_CONFIG_PATH'] = join(augustus_dirpath, 'config')
+    os.environ['AUGUSTUS_CONFIG_PATH'] = copy_augustus_contigs(augustus_dirpath, tmp_dir)
+    if not os.environ['AUGUSTUS_CONFIG_PATH']:
+        logger.error('Augustus configs not found, failed to run BUSCO without them.')
     busco_args = [[contigs_fpath, qutils.label_from_fpath_for_fname(contigs_fpath)] for contigs_fpath in contigs_fpaths]
-    summary_fpaths = run_parallel(busco.main, busco_args, qconfig.max_threads)
+    summary_fpaths = run_parallel(busco_main_handler, busco_args, qconfig.max_threads)
     if not any(fpath for fpath in summary_fpaths):
         logger.error('Failed running BUSCO for all the assemblies. See log files in ' + output_dir + ' for information.')
         return
@@ -186,7 +235,10 @@ def do(contigs_fpaths, output_dir, logger):
             if total_buscos != 0:
                 report.add_field(reporting.Fields.BUSCO_COMPLETE, ('%.2f' % (float(complete_buscos) * 100.0 / total_buscos)))
                 report.add_field(reporting.Fields.BUSCO_PART, ('%.2f' % (float(part_buscos) * 100.0 / total_buscos)))
+            shutil.copy(summary_fpaths[i], output_dir)
         else:
             logger.error(
                 'Failed running BUSCO for ' + contigs_fpath + '. See the log for detailed information.')
+    if not qconfig.debug:
+        cleanup(output_dir)
     logger.info('Done.')

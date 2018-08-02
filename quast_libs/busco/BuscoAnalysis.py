@@ -909,7 +909,10 @@ class BuscoAnalysis(Analysis):
         """
 
         frame = inspect.stack()[-1]
-        entry_point = inspect.getmodule(frame[0]).__file__
+        if inspect.getmodule(frame[0]) is not None:
+            entry_point = inspect.getmodule(frame[0]).__file__
+        else:
+            entry_point = '<undefined_entry_point>'
 
         self._rerun_cmd = 'python %s -i %s -o %s -l %s -m %s -c %s' % (entry_point, self._sequences, self._out,
                                                                        self._lineage_path, self._mode, self._cpus)

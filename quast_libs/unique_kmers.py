@@ -317,7 +317,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
                         mis_len += contig_lens[contig]
                     elif len(contig_markers) > 0:
                         corr_len += contig_lens[contig]
-                    undef_len = total_len - corr_len - mis_len
+            undef_len = total_len - corr_len - mis_len
             report.add_field(reporting.Fields.KMER_CORR_LENGTH, '%.2f' % (corr_len * 100.0 / total_len))
             report.add_field(reporting.Fields.KMER_MIS_LENGTH, '%.2f' % (mis_len * 100.0 / total_len))
             report.add_field(reporting.Fields.KMER_UNDEF_LENGTH, '%.2f' % (undef_len * 100.0 / total_len))

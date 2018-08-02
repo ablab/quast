@@ -47,7 +47,7 @@ THE SOFTWARE.
     var margin = {
                 top: 20, right: 15, bottom: 15, left: /*Math.max(d3.max(lanes, function (d) {
                  return getTextSize(d.label);
-                 }), 120)*/ 145
+                 }), 120)*/ 155
             },
             mainLanesHeight = 45,
             miniLanesHeight = 18,
@@ -753,23 +753,38 @@ THE SOFTWARE.
             .attr('class', 'y gc_plot')
             .style("fill", "#3d6f15")
             .attr('transform', 'translate(' + width + ', 0)');
-        mini_cov.append("text")
-            .attr("y", "-0.75em")
-            .attr("x", "-1.1em")
-            .attr("dy", "1em")
-            .style("text-anchor", "middle")
-            .attr("fill", "steelblue")
-            .text("Cov");
         mini_cov.select('.y.gc_plot').call(y_gc_axis);
 
+        function calculateTicks(scale) {
+            var maxValue = scale.domain()[0];
+            var covTicks = d3.scale.linear().domain(scale.domain()).ticks(4);
+            var tickStep = covTicks[1] - covTicks[0];
+            covTicks = covTicks.filter(function (x) {
+                return x < maxValue - tickStep / 2;
+            });
+            covTicks.push(maxValue);
+            return covTicks;
+        }
         // draw main coverage
-        y_cov_main_A = y_cov_mini_A = d3.svg.axis()
+        y_cov_mini_A = d3.svg.axis()
             .orient('left')
-            .tickFormat(function(tickValue) {
-                return tickValue + 'x';
+            .tickFormat(function(val, i, n) {
+                return val < y_cov_mini_S.domain()[0] ? val + 'x' : "Cov";
             })
             .tickSize(2, 0)
-            .ticks(numYTicks);
+            .tickValues(function () {
+                return calculateTicks(y_cov_mini_S);
+            });
+
+        y_cov_main_A = d3.svg.axis()
+            .orient('left')
+            .tickFormat(function(val, i, n) {
+                return val < y_cov_main_S.domain()[0] ? val + 'x' : "Cov";
+            })
+            .tickSize(2, 0)
+            .tickValues(function () {
+                return calculateTicks(y_cov_main_S);
+            });
 
         var x_cov_main_A = xMainAxis;
         main_cov = chart.append('g')

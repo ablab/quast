@@ -991,6 +991,7 @@ function resetMaxMainCoverage() {
     setYScaleLabels(main_cov, y_cov_main_A, y_cov_main_S);
     updateMainCoverage();
     document.getElementById('zoomOutCoverageMain').disabled = true;
+    document.getElementById('zoomInCoverageMain').disabled = false;
 }
 
 function resetMaxMiniCoverage() {
@@ -999,6 +1000,7 @@ function resetMaxMiniCoverage() {
     setYScaleLabels(mini_cov, y_cov_mini_A, y_cov_mini_S);
     updateMiniCoverage();
     document.getElementById('zoomOutCoverageMini').disabled = true;
+    document.getElementById('zoomInCoverageMini').disabled = false;
 }
 
 function setYScaleCoverage(maxValue) {

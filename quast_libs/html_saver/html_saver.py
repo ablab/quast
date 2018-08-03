@@ -271,7 +271,7 @@ def save_total_report(results_dirpath, min_contig, ref_fpath):
     json_fpath = json_saver.save_total_report(results_dirpath, min_contig, ref_fpath)
     if json_fpath:
         json_saver.json_text = append(results_dirpath, json_fpath, 'totalReport')
-        log.info('  HTML version (interactive tables and plots) saved to ' + os.path.join(results_dirpath, report_fname))
+        log.info('  HTML version (interactive tables and plots) is saved to ' + os.path.join(results_dirpath, report_fname))
 
 
 def copy_meta_alignment_viewers(html_fpath, html_top_fpath):

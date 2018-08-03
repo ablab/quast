@@ -108,9 +108,9 @@ class QLogger(object):
     def finish_up(self, numbers=None, check_test=False):
         test_result = 0
         if not self._is_metaquast:
-            self._logger.info('  Log saved to ' + self._log_fpath)
+            self._logger.info('  Log is saved to ' + self._log_fpath)
             if qconfig.save_error:
-                self._logger.info('  Errors saved to ' + qconfig.error_log_fpath)
+                self._logger.info('  Errors are saved to ' + qconfig.error_log_fpath)
 
             finish_time = self.print_timestamp('Finished: ')
             self._logger.info('Elapsed time: ' + str(finish_time - self._start_time))

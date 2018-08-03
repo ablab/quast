@@ -170,7 +170,7 @@ def cleanup(busco_output_dir):
             if os.path.splitext(filename)[1] not in do_not_remove_exts:
                 os.remove(join(dirpath, filename))
         break
-        
+
 
 def do(contigs_fpaths, output_dir, logger):
     logger.print_timestamp()

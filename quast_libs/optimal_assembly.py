@@ -501,7 +501,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
                     result_fasta.append((chrom + '_' + str(idx), seq[region[0]: region[1]]))
 
     fastaparser.write_fasta(result_fpath, result_fasta)
-    logger.info('  ' + 'Theoretical Upper Bound Assembly saved to ' + result_fpath)
+    logger.info('  ' + 'Theoretical Upper Bound Assembly is saved to ' + result_fpath)
     logger.notice('(on reusing *this* Upper Bound Assembly in the *future* evaluations on *the same* dataset)\n'
                   '\tThe next time, you can simply provide this file as an additional assembly (you could also rename it to UpperBound.fasta for the clarity). '
                   'In this case, you do not need to specify --upper-bound-assembly and provide files with reads (--pe1/pe2, etc).\n'

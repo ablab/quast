@@ -562,8 +562,8 @@ def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, gc_fpath, feature
     if not circos_exec:
         logger.warning('Circos is not installed!\n'
                        'If you want to create Circos plots, install Circos as described at http://circos.ca/tutorials/lessons/configuration/distribution_and_installation '
-                       'and run the following command:\n circos -conf ' + conf_fpath + '.\n '
-                       'The plot legend is saved to ' + circos_legend_fpath)
+                       'and run the following command:\n\tcircos -conf ' + conf_fpath + '\n'
+                       'The plot legend is saved to ' + circos_legend_fpath + '\n')
         return None, None
 
     cmdline = [circos_exec, '-conf', conf_fpath]

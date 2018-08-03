@@ -34,14 +34,13 @@ MAX_POINTS = 50000
 
 
 def create_ideogram(chr_lengths, output_dir):
-    num_chromosomes = 0
+    num_chromosomes = len(chr_lengths.keys())
     max_len = 0
     karyotype_fpath = join(output_dir, 'reference.karyotype.txt')
     with open(karyotype_fpath, 'w') as out_f:
         for name, seq_len in chr_lengths.items():
             out_f.write('\t'.join(['chr', '-', name, name, '0', str(seq_len), 'lgrey']) + '\n')
             max_len = max(max_len, seq_len)
-            num_chromosomes += 1
 
     ideogram_fpath = join(output_dir, 'ideogram.conf')
     with open(ideogram_fpath, 'w') as out_f:
@@ -383,39 +382,6 @@ def create_labels(chr_lengths, assemblies, features_containers, coverage_fpath, 
     return labels_conf_fpath, track_labels
 
 
-def create_housekeeping_file(chr_lengths, max_points, root_dir, output_dir, logger):
-    max_ideograms = len(chr_lengths.keys())
-    template_fpath = None
-    circos_bin_fpath = get_path_to_program('circos')
-    if circos_bin_fpath:
-        circos_dirpath = dirname(realpath(get_path_to_program('circos')))
-        template_fpath = join(circos_dirpath, '..', 'libexec', 'etc', 'housekeeping.conf')
-        if not is_non_empty_file(template_fpath):
-            template_fpath = join(circos_dirpath, '..', 'etc', 'housekeeping.conf')
-
-    if not is_non_empty_file(template_fpath):
-        logger.notice('Circos housekeeping configuration file (<circos_installation_dir>/etc/housekeeping.conf) is not found. '
-                      'For better comprehension, it is recommended to manually edit this file (inplace or copy it to '
-                      + root_dir + '/etc/housekeeping.conf) and set max_points_per_track to at least ' + str(max_points) +
-                      ' and max_ideograms to at least ' + str(max_ideograms))
-        dir_for_template = join(root_dir, 'etc')
-        if not os.path.isdir(dir_for_template):
-            os.makedirs(dir_for_template)
-        return '<<include %s>>\n' % join('etc', 'housekeeping.conf')
-
-    housekeeping_fpath = join(output_dir, 'housekeeping.conf')
-    with open(template_fpath) as f:
-        with open(housekeeping_fpath, 'w') as out_f:
-            for line in f:
-                if 'max_points_per_track' in line:
-                    out_f.write('max_points_per_track = %d\n' % max_points)
-                elif 'max_ideograms' in line:
-                    out_f.write('max_ideograms = %d\n' % max_ideograms)
-                else:
-                    out_f.write(line)
-    return '<<include %s>>\n' % relpath(housekeeping_fpath, root_dir)
-
-
 def set_window_size(ref_len):
     if ref_len > 5 * 10 ** 8:
         window_size = 20000
@@ -522,7 +488,9 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
             out_f.write('r1 = 1r - 30p\n')
             out_f.write('</highlight>\n')
             out_f.write('</highlights>\n')
-        out_f.write(create_housekeeping_file(chr_lengths, max_points, output_dir, data_dir, logger))
+        out_f.write('<<include %s>>\n' % join('etc', 'housekeeping.conf'))
+        out_f.write('max_points_per_track* = %d\n' % max_points)
+        out_f.write('max_ideograms* = %d\n' % len(chr_lengths.keys()))
         out_f.write('<plots>\n')
         out_f.write('layers_overflow = collapse\n')
         for label, i in track_labels:

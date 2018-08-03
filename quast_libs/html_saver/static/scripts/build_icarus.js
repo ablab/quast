@@ -43,11 +43,13 @@ THE SOFTWARE.
     var lanes = data.lanes, items = data.items;
     var shortRefNames = typeof chrContigs !== "undefined" ? trimChrNames(chrContigs) : null;
 
-    var w = 0.9 * (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth) - 300;
+    var contigInfoWidth = 240;
+    var marginTop = 20, marginRight = 15, marginBottom = 15, marginLeft = 155;
+
+    var w = ((window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth)
+             - contigInfoWidth - marginRight - marginLeft - 50);
     var margin = {
-                top: 20, right: 15, bottom: 15, left: /*Math.max(d3.max(lanes, function (d) {
-                 return getTextSize(d.label);
-                 }), 120)*/ 155
+                top: marginTop, right: marginRight, bottom: marginBottom, left: marginLeft
             },
             mainLanesHeight = 45,
             miniLanesHeight = 18,

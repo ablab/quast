@@ -86,7 +86,8 @@ def count_kmers(tmp_dirpath, fpath, kmer_len, log_fpath, err_fpath):
 
 def align_kmers(output_dir, ref_fpath, kmers_fpath, log_err_fpath, max_threads):
     out_fpath = join(output_dir, 'kmers.coords')
-    cmdline = [minimap_fpath(), '-ax', 'sr', '-s202', '--frag=no', '-t', str(max_threads), ref_fpath, kmers_fpath]
+    cmdline = [minimap_fpath(), '-cx', 'sr', '-s' + str(qconfig.unique_kmer_len * 2), '--frag=no',
+               '-t', str(max_threads), ref_fpath, kmers_fpath]
     qutils.call_subprocess(cmdline, stdout=open(out_fpath, 'w'), stderr=open(log_err_fpath, 'a'), indent='  ')
     kmers_pos_by_chrom = defaultdict(list)
     kmers_by_chrom = defaultdict(list)
@@ -95,7 +96,7 @@ def align_kmers(output_dir, ref_fpath, kmers_fpath, log_err_fpath, max_threads):
             fs = line.split('\t')
             if len(fs) < 10:
                 continue
-            contig, chrom, pos = fs[0], fs[2], fs[3]
+            contig, chrom, pos = fs[0], fs[5], fs[7]
             kmers_pos_by_chrom[chrom].append(int(pos))
             kmers_by_chrom[chrom].append(int(contig))
     return kmers_by_chrom, kmers_pos_by_chrom
@@ -316,7 +317,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
                         mis_len += contig_lens[contig]
                     elif len(contig_markers) > 0:
                         corr_len += contig_lens[contig]
-                    undef_len = total_len - corr_len - mis_len
+            undef_len = total_len - corr_len - mis_len
             report.add_field(reporting.Fields.KMER_CORR_LENGTH, '%.2f' % (corr_len * 100.0 / total_len))
             report.add_field(reporting.Fields.KMER_MIS_LENGTH, '%.2f' % (mis_len * 100.0 / total_len))
             report.add_field(reporting.Fields.KMER_UNDEF_LENGTH, '%.2f' % (undef_len * 100.0 / total_len))

@@ -34,14 +34,13 @@ MAX_POINTS = 50000
 
 
 def create_ideogram(chr_lengths, output_dir):
-    num_chromosomes = 0
+    num_chromosomes = len(chr_lengths.keys())
     max_len = 0
     karyotype_fpath = join(output_dir, 'reference.karyotype.txt')
     with open(karyotype_fpath, 'w') as out_f:
         for name, seq_len in chr_lengths.items():
             out_f.write('\t'.join(['chr', '-', name, name, '0', str(seq_len), 'lgrey']) + '\n')
             max_len = max(max_len, seq_len)
-            num_chromosomes += 1
 
     ideogram_fpath = join(output_dir, 'ideogram.conf')
     with open(ideogram_fpath, 'w') as out_f:
@@ -383,38 +382,6 @@ def create_labels(chr_lengths, assemblies, features_containers, coverage_fpath, 
     return labels_conf_fpath, track_labels
 
 
-def create_housekeeping_file(chr_lengths, max_points, root_dir, output_dir, logger):
-    max_ideograms = len(chr_lengths.keys())
-    template_fpath = None
-    circos_bin_fpath = get_path_to_program('circos')
-    if circos_bin_fpath:
-        circos_dirpath = dirname(realpath(get_path_to_program('circos')))
-        template_fpath = join(circos_dirpath, '..', 'libexec', 'etc', 'housekeeping.conf')
-        if not is_non_empty_file(template_fpath):
-            template_fpath = join(circos_dirpath, '..', 'etc', 'housekeeping.conf')
-
-    if not is_non_empty_file(template_fpath):
-        if not get_path_to_program('circos'):
-            msg = 'Circos is not found.'
-        else:
-            msg = 'File etc/housekeeping.conf is not found.'
-        logger.warning(msg + ' You will have to manually edit etc/housekeeping.conf: '
-                       'set max_points_per_track to ' + str(max_points) + ' and max_ideograms to ' + str(max_ideograms))
-        return '<<include %s>>\n' % join('etc', 'housekeeping.conf')
-
-    housekeeping_fpath = join(output_dir, 'housekeeping.conf')
-    with open(template_fpath) as f:
-        with open(housekeeping_fpath, 'w') as out_f:
-            for line in f:
-                if 'max_points_per_track' in line:
-                    out_f.write('max_points_per_track = %d\n' % max_points)
-                elif 'max_ideograms' in line:
-                    out_f.write('max_ideograms = %d\n' % max_ideograms)
-                else:
-                    out_f.write(line)
-    return '<<include %s>>\n' % relpath(housekeeping_fpath, root_dir)
-
-
 def set_window_size(ref_len):
     if ref_len > 5 * 10 ** 8:
         window_size = 20000
@@ -432,19 +399,19 @@ def set_window_size(ref_len):
 def create_legend(assemblies, min_gc, max_gc, features_containers, coverage_fpath, output_dir):
     legend_fpath = join(output_dir, 'legend.txt')
     with open(legend_fpath, 'w') as out_f:
-        out_f.write('1) The outer circle represents reference sequence(s) with GC (%%) heatmap [from %d%% (white) to %d%% (black)].\n' %
-                    (min_gc, max_gc))
+        out_f.write('1) The outer circle represents reference sequence%s with GC (%%) heatmap [from %d%% (white) to %d%% (black)].\n' %
+                    (('s' if qconfig.is_combined_ref else ''), min_gc, max_gc))
         if qconfig.is_combined_ref:
             out_f.write('Color bars help to distinguish between different references.\n')
 
-        out_f.write('2) Assembly tracks.\n')
+        out_f.write('\n2) Assembly tracks:\n')
         for i, assembly in enumerate(assemblies):
-            out_f.write('Assembly %d - %s\n' % (i, assembly.label))
+            out_f.write('\tassembly%d - %s\n' % (i + 1, assembly.label))
         out_f.write('Assembly tracks are combined with mismatches visualization: higher columns indicate larger mismatch rate.\n')
         if features_containers:
-            out_f.write('3) User-provided genes. A darker color indicates higher density of genes.\n')
+            out_f.write('\n3) User-provided genes. A darker color indicates higher density of genes.\n')
         if coverage_fpath:
-            out_f.write('%d) The inner circle represents read coverage histogram.\n' % 4 if features_containers else 3)
+            out_f.write('\n%d) The inner circle represents read coverage histogram.\n' % (4 if features_containers else 3))
     return legend_fpath
 
 
@@ -521,7 +488,9 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
             out_f.write('r1 = 1r - 30p\n')
             out_f.write('</highlight>\n')
             out_f.write('</highlights>\n')
-        out_f.write(create_housekeeping_file(chr_lengths, max_points, output_dir, data_dir, logger))
+        out_f.write('<<include %s>>\n' % join('etc', 'housekeeping.conf'))
+        out_f.write('max_points_per_track* = %d\n' % max_points)
+        out_f.write('max_ideograms* = %d\n' % len(chr_lengths.keys()))
         out_f.write('<plots>\n')
         out_f.write('layers_overflow = collapse\n')
         for label, i in track_labels:
@@ -593,8 +562,8 @@ def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, gc_fpath, feature
     if not circos_exec:
         logger.warning('Circos is not installed!\n'
                        'If you want to create Circos plots, install Circos as described at http://circos.ca/tutorials/lessons/configuration/distribution_and_installation '
-                       'and run the following command:\n circos -conf ' + conf_fpath + '.\n '
-                       'The plot legend is saved to ' + circos_legend_fpath)
+                       'and run the following command:\n\tcircos -conf ' + conf_fpath + '\n'
+                       'The plot legend is saved to ' + circos_legend_fpath + '\n')
         return None, None
 
     cmdline = [circos_exec, '-conf', conf_fpath]

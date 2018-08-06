@@ -454,7 +454,7 @@ function addAnnotationsTrackButtons() {
 }
 
 function setTrackBtnPos(hideBtn, offsetY, track, pane, doHide) {
-    var hideBtnExpandWidth = 130;
+    var hideBtnExpandWidth = 150;
     hideBtn.style.display = "";
     hideBtn.style.left = (margin.left - hideBtnExpandWidth) + "px";
     hideBtn.style.top = offsetY + "px";

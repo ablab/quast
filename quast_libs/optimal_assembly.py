@@ -459,8 +459,8 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
 
     if qconfig.optimal_assembly_insert_size and qconfig.optimal_assembly_insert_size != insert_size:
         calculated_insert_size = qconfig.optimal_assembly_insert_size
-        result_fpath = result_fpath.replace('is%d' % insert_size, 'is%d' % calculated_insert_size)
-        prepared_optimal_assembly_basename = prepared_optimal_assembly_basename.replace('is%d' % insert_size, 'is%d' % calculated_insert_size)
+        result_fpath = result_fpath.replace('is' + str(insert_size), 'is' + str(calculated_insert_size))
+        prepared_optimal_assembly_basename = prepared_optimal_assembly_basename.replace('is' + str(insert_size), 'is' + str(calculated_insert_size))
         insert_size = calculated_insert_size
         ref_prepared_optimal_assembly = os.path.join(os.path.dirname(original_ref_fpath), prepared_optimal_assembly_basename)
         already_done_fpath = check_prepared_optimal_assembly(insert_size, result_fpath, ref_prepared_optimal_assembly)
@@ -501,10 +501,15 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
                     result_fasta.append((chrom + '_' + str(idx), seq[region[0]: region[1]]))
 
     fastaparser.write_fasta(result_fpath, result_fasta)
-    logger.info('  ' + 'Theoretical Upper Bound Assembly saved to ' + result_fpath)
-    logger.notice('You can copy it to ' + ref_prepared_optimal_assembly +
-                  ', specify insert size using the option --est-insert-size ' + str(insert_size) +
-                  ' and QUAST will reuse it in further runs against the same reference (' + original_ref_fpath + ')')
+    logger.info('  ' + 'Theoretical Upper Bound Assembly is saved to ' + result_fpath)
+    logger.notice('(on reusing *this* Upper Bound Assembly in the *future* evaluations on *the same* dataset)\n'
+                  '\tThe next time, you can simply provide this file as an additional assembly (you could also rename it to UpperBound.fasta for the clarity). '
+                  'In this case, you do not need to specify --upper-bound-assembly and provide files with reads (--pe1/pe2, etc).\n'
+                  '\t\tOR\n'
+                  '\tYou can copy ' + result_fpath + ' to ' + ref_prepared_optimal_assembly + '. '
+                  'The next time you evaluate assemblies with --upper-bound-assembly option and against the same reference (' + original_ref_fpath + ') and '
+                  'the same reads (or if you specify the insert size of the paired-end reads explicitly with --est-insert-size ' + str(insert_size) + '), '
+                  'QUAST will reuse this Upper Bound Assembly.\n')
 
     if not qconfig.debug:
         shutil.rmtree(tmp_dir)

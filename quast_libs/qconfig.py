@@ -132,6 +132,9 @@ trivial_deletions_fname = 'trivial_deletions.bed'
 sv_bed_fname = 'structural_variations.bed'
 used_colors = None
 used_ls = None
+MAX_PE_IS = 1000  # for separating mate-pairs from paired-ends; the former should be excluded from physical coverage calculation
+cov_fpath = None
+phys_cov_fpath = None
 
 # dirnames
 busco_dirname = 'busco_stats'
@@ -157,8 +160,6 @@ max_contigs_num_for_size_viewer = 1000
 min_contig_for_size_viewer = 10000
 contig_len_delta = 0.05
 min_similar_contig_size = 10000
-cov_fpath = None
-phys_cov_fpath = None
 
 # other settings (mostly constants). Can't be changed by command-line options
 
@@ -427,7 +428,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("                                      [default: %s]\n" % genes_lengths)
         stream.write("    --rna-finding                     Predict ribosomal RNA genes using Barrnap\n")
         stream.write("-b  --conserved-genes-finding         Count conserved orthologs using BUSCO (only on Linux)\n")
-        stream.write("-O  --operons  <filename>             File with operon coordinates in the reference (GFF, BED, NCBI or TXT)\n")
+        stream.write("    --operons  <filename>             File with operon coordinates in the reference (GFF, BED, NCBI or TXT)\n")
         if not meta:
             stream.write("    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)\n")
         else:
@@ -472,18 +473,15 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("                                      This may significantly reduce memory consumption on large genomes\n")
         stream.write("    --space-efficient                 Create only reports and plots files. Aux files including .stdout, .stderr, .coords will not be created.\n")
         stream.write("                                      This may significantly reduce space consumption on large genomes. Icarus viewers also will not be built\n")
-        stream.write("-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped)\n")
-        stream.write("-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped)\n")
-        stream.write("    --12      <filename>              File with interlaced forward and reverse paired-end reads. (in FASTQ format, may be gzipped)\n")
-        stream.write("    --pe1     <filename>              File with forward paired-end reads (in FASTQ format, may be gzipped)\n")
-        stream.write("    --pe2     <filename>              File with reverse paired-end reads (in FASTQ format, may be gzipped)\n")
-        stream.write("    --pe12    <filename>              File with interlaced forward and reverse paired-end reads (in FASTQ format, may be gzipped)\n")
+        stream.write("-1  --pe1     <filename>              File with forward paired-end reads (in FASTQ format, may be gzipped)\n")
+        stream.write("-2  --pe2     <filename>              File with reverse paired-end reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --pe12    <filename>              File with interlaced forward and reverse paired-end reads. (in FASTQ format, may be gzipped)\n")
         stream.write("    --mp1     <filename>              File with forward mate-pair reads (in FASTQ format, may be gzipped)\n")
         stream.write("    --mp2     <filename>              File with reverse mate-pair reads (in FASTQ format, may be gzipped)\n")
         stream.write("    --mp12    <filename>              File with interlaced forward and reverse mate-pair reads (in FASTQ format, may be gzipped)\n")
-        stream.write("    --single  <filename>              File with unpaired reads (in FASTQ format, may be gzipped)\n")
-        stream.write("    --pacbio  <filename>              File with PacBio reads (in FASTQ format, may be gzipped)\n")
-        stream.write("    --nanopore  <filename>            File with Oxford Nanopore reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --single  <filename>              File with unpaired short reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --pacbio     <filename>           File with PacBio reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --nanopore   <filename>           File with Oxford Nanopore reads (in FASTQ format, may be gzipped)\n")
         stream.write("    --ref-sam <filename>              SAM alignment file obtained by aligning reads to reference genome file\n")
         stream.write("    --ref-bam <filename>              BAM alignment file obtained by aligning reads to reference genome file\n")
         stream.write("    --sam     <filename,filename,...> Comma-separated list of SAM alignment files obtained by aligning reads to assemblies\n"

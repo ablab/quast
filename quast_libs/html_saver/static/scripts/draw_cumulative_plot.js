@@ -99,7 +99,7 @@ var cumulative = {
                 cumulative.colors.push(cumulative.series[i].color);
             }
 
-            cumulative.maxYTick = getMaxDecimalTick(cumulative.maxY);
+            //cumulative.maxYTick = getMaxDecimalTick(cumulative.maxY);
 
             if (refLengths) {
                 size = refLengths.length;
@@ -126,7 +126,7 @@ var cumulative = {
             //    }
             var yaxis = {
                 min: 0,
-                max: cumulative.maxYTick,
+                //max: cumulative.maxYTick,
                 labelWidth: 120,
                 reserveSpace: true,
                 lineWidth: 0.5,

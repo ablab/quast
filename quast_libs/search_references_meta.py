@@ -183,17 +183,20 @@ def download_blastdb(logger=logger, only_clean=False):
             os.makedirs(blastdb_dirpath)
         silva_download = urllib.FancyURLopener()
         silva_remote_fpath = silva_db_url + silva_fname + '.gz'
+        silva_download_in_progress_path = db_gz_fpath + '.download'
         try:
-            silva_download.retrieve(silva_remote_fpath, db_gz_fpath + '.download', show_progress)
+            silva_download.retrieve(silva_remote_fpath, silva_download_in_progress_path, show_progress)
+            if not qutils.is_non_empty_file(silva_download_in_progress_path, min_size=1024*1024):
+                raise ValueError
         except Exception:
             logger.error(
                 'Failed downloading SILVA 16S rRNA gene database (%s)! The search for reference genomes cannot be performed. '
-                'Try to download it manually in %s and restart your command.' % (silva_remote_fpath, blastdb_dirpath))
+                'Try to download it manually, put under %s/ and restart your command.' % (silva_remote_fpath, blastdb_dirpath))
             return False
-        shutil.move(db_gz_fpath + '.download', db_gz_fpath)
+        shutil.move(silva_download_in_progress_path, db_gz_fpath)
 
     logger.info('Processing downloaded file. Logging to %s...' % log_fpath)
-    if not os.path.isfile(silva_fpath):
+    if not qutils.is_non_empty_file(silva_fpath):
         logger.info('Unpacking and replacing " " with "_"...')
 
         unpacked_fpath = silva_fpath + ".unpacked"

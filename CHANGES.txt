@@ -14,7 +14,7 @@
          using a given set of reads. The algorithm takes into account zero covered regions
          and genomic repeats (identified with Red repeat finder). The constructed assembly
          is added to the evaluation to demonstrate the theoretical limits on the assembly
-         completeness and correctness quality metrics for the given genome and set of reads.
+         completeness and contiguity quality metrics for the given genome and set of reads.
 
       3. New module: k-mer-based statistics ("--k-mer-stats").
          We identify unique k-mers in the reference genome (using KMC tool) and track
@@ -25,56 +25,57 @@
          specified with "--k-mer-size" option.
 
       4. Improved and extended gene prediction/annotation functionality:
-       — Barrnap for rRNA genes prediction ("--rna-finding") is added;
-       — BUSCO for finding conserved single-copy orthologs ("--conserved-genes-finding";
+       - Barrnap for rRNA genes prediction ("--rna-finding") is added;
+       - BUSCO for finding conserved single-copy orthologs ("--conserved-genes-finding";
          Linux only) is added;
-       — regular predicted genes (using GeneMark or Glimmer) are split into full and partial;
-       — "--fungus" option is added for more accurate processing of fungus assemblies using
+       - regular predicted genes (using GeneMark or Glimmer) are split into full and partial;
+       - "--fungus" option is added for more accurate processing of fungus assemblies using
          GeneMark-ES and BUSCO;
-       — "--features" option is added to replace "-G/--genes", it allows to count all genomic
+       - "--features" option is added to replace "-G/--genes", it allows to count all genomic
          features from GFF or any specific feature type (e.g., 'CDS').
 
       5. Icarus updates:
-       — changes in alignment viewers:
-           * GC% track is added to read coverage pane;
-           * button for highlighting all assembly misassemblies is added;
-           * local misassemblies are unchecked (hidden) by default.
-       — added static Circos plot of alignments ("--circos");
-       — natural sorting of chromosome names in the main menu (chr1, chr2, ..., chr10
-         instead of chr1, chr10, chr2, ...).
+       - changes in alignment viewers:
+           * GC% track is added to the read coverage pane;
+           * a button for highlighting all assembly misassemblies is added;
+           * local misassemblies are now unchecked (hidden) by default.
+       - static Circos plot of alignments ("--circos") is added;
+       - chromosome names in the main menu are sorted in the human-friendly order now
+         (e.g., chr1, chr2, ..., chr10 instead of chr1, chr10, chr2, ...).
 
       6. Improved reads support:
-       — reads are now mapped to assemblies and various alignment stats are reported;
-       — single ("--single") and interlaced ("--12") reads are supported;
-       — multiple read libraries are supported, including both paired-end ("--pe1/2/12")
+       - reads are now mapped to all assemblies and various alignment stats are reported;
+       - single ("--single") and interlaced ("--12") reads are supported;
+       - multiple read libraries are supported, including both paired-end ("--pe1/2/12")
          and mate-pair ("--mp1/2/12") libraries;
-       — Oxford Nanopores ("--nanopore") and PacBio SMRT ("--pacbio") are supported;
-       — ready SAM and BAM files can be provided both for reads mapped against assemblies
+       - Oxford Nanopores ("--nanopore") and PacBio SMRT ("--pacbio") are supported;
+       - ready SAM and BAM files can be provided both for reads mapped against assemblies
          ("--sam/bam") and reads mapped against the reference genome ("--ref-sam/bam");
        - reads stats can still be skipped by using "--no-read-stats" option.
 
       7. Modified processing of undefined nucleotides ('N'):
-       — reference Ns are excluded from Genome Fraction computation (100% if all ACGT bases
+       - reference Ns are excluded from Genome Fraction computation (100% if all ACGT bases
          are covered);
-       — assembly Ns are excluded from "Unaligned" and "partially unaligned length"
+       - assembly Ns are excluded from "Unaligned" and "partially unaligned length"
          computation;
-       — scaffold gaps are now defined as simply a gap between alignments having at least 10
+       - scaffold gaps are now defined as simply a gap between alignments having at least 10
          consecutive Ns (affects "# scaffold gap size mis.", previously it was underestimated
          due to a strict threshold on the percentage of Ns in the gap sequence).
 
       8. MetaQUAST changes:
-       — trying to download next best match if a reference genome is not found in NCBI
+       - trying to download next best match if a reference genome is not found in NCBI
          (without references mode only);
        - link to the combined reference report is added to the main report HTML;
-       — sample summary reports (TXT, TEX, etc) are renamed to exclude special characters in
+       - sample summary reports (TXT, TEX, etc) are renamed to exclude special characters in
          the filenames ('#', '%', etc).
 
       9. Changes and new metrics related to scaffold gap size misassemblies:
        - local scaffold gap misassemblies are added (local misassemblies caused by incorrect
          estimation of scaffold gap sizes);
        - contig and scaffold misassemblies are separated in the detailed misassemblies report
-         (these scaffold misassemblies contain incorrectly estimated scaffold gap sizes but their
-         inconsistencies exceed scaffold-gap-max-size threshold).
+         (these scaffold misassemblies contain incorrectly estimated scaffold gap sizes
+         exceeding scaffold-gap-max-size threshold or they are inversions/translocations caused
+         by incorrect scaffolding).
 
       10. New and renamed options:
        - "--scaffolds" is renamed to "--split-scaffolds";
@@ -83,9 +84,9 @@
          misassembly-related metrics).
 
       11. Changes in the list of embedded third-party tools:
-       — removed: GAGE, gnuplot;
-       — replaced: MUMmer and E-MEM (new: Minimap2), Manta (new: GRIDSS);
-       — added: BUSCO, Barrnap, KMC, Red.
+       - removed: GAGE, gnuplot;
+       - replaced: MUMmer and E-MEM (new: Minimap2), Manta (new: GRIDSS);
+       - added: BUSCO, Barrnap, KMC, Red.
 
       12. Fixed several minor bugs.
 

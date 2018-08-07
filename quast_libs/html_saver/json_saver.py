@@ -79,8 +79,7 @@ def save_total_report(output_dirpath, min_contig, ref_fpath):
         'report': report,
         'subreferences': ref_names,
         'subreports': subreports,
-        'minContig': min_contig,
-        'assembliesWithNs': None
+        'minContig': min_contig
     })
 
 #def save_old_total_report(output_dir, min_contig):

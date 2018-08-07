@@ -507,7 +507,7 @@ def get_all_rows_out_of_table(table):
     return all_rows
 
 
-def save_txt(fpath, all_rows, potential_scaffolds_assemblies_info=None):
+def save_txt(fpath, all_rows):
     # determine width of columns for nice spaces
     colwidths = [0] * (len(all_rows[0]['values']) + 1)
     for row in all_rows:
@@ -521,10 +521,6 @@ def save_txt(fpath, all_rows, potential_scaffolds_assemblies_info=None):
     if qconfig.min_contig:
         txt_file.write('All statistics are based on contigs of size >= %d bp, unless otherwise noted ' % qconfig.min_contig + \
                           '(e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).\n')
-
-        if potential_scaffolds_assemblies_info:
-            txt_file.write("Suggestion: " + potential_scaffolds_assemblies_info + " continuous fragments of N's of " \
-                          "length >= 10 bp. You may consider rerunning QUAST using --scaffolds (-s) option!\n")
         txt_file.write('\n')
     for row in all_rows:
         txt_file.write('  '.join('%-*s' % (colwidth, cell) for colwidth, cell
@@ -686,8 +682,7 @@ def save(output_dirpath, report_name, transposed_report_name, order, silent=Fals
     report_tex_fpath = os.path.join(output_dirpath, report_name) + '.tex'
 
     all_rows = get_all_rows_out_of_table(tab)
-    potential_scaffolds_assemblies_info = ''
-    save_txt(report_txt_fpath, all_rows, potential_scaffolds_assemblies_info)
+    save_txt(report_txt_fpath, all_rows)
     save_tsv(report_tsv_fpath, all_rows)
     save_tex(report_tex_fpath, all_rows)
     save_pdf(report_name, tab)
@@ -719,7 +714,7 @@ def save(output_dirpath, report_name, transposed_report_name, order, silent=Fals
             report_tsv_fpath = os.path.join(output_dirpath, transposed_report_name) + '.tsv'
             report_tex_fpath = os.path.join(output_dirpath, transposed_report_name) + '.tex'
             all_rows = get_all_rows_out_of_table(transposed_table)
-            save_txt(report_txt_fpath, all_rows, potential_scaffolds_assemblies_info)
+            save_txt(report_txt_fpath, all_rows)
             save_tsv(report_tsv_fpath, all_rows)
             save_tex(report_tex_fpath, all_rows, is_transposed=True)
             transposed_reports_fpaths = report_txt_fpath + ', ' + os.path.basename(report_tsv_fpath) + \

@@ -225,7 +225,7 @@ def clean_metaquast_args(quast_py_args, contigs_fpaths):
 
 def prepare_regular_quast_args(quast_py_args, combined_output_dirpath):
     opts_with_args_to_remove = ['--contig-thresholds', '--sv-bed',]
-    opts_to_remove = ['-s', '--scaffolds', '--combined-ref']
+    opts_to_remove = ['-s', '--split-scaffolds', '--combined-ref']
     for opt in opts_with_args_to_remove:
         remove_from_quast_py_args(quast_py_args, opt, arg=True)
     for opt in opts_to_remove:

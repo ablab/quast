@@ -26,7 +26,7 @@ function buildReport() {
     mainMetrics = ['# contigs', 'Largest alignment', 'Total aligned length', '# misassemblies', 'Misassembled contigs length',
         '# mismatches per 100 kbp', '# indels per 100 kbp', "# N's per 100 kbp", 'Genome fraction (%)', 'Duplication ratio', 'NGA50'];
     buildTotalReport(assembliesNames, totalReport.report, order, totalReport.date,
-        totalReport.minContig, glossary, qualities, mainMetrics, totalReports.slice(1), totalReport.assembliesWithNs);
+        totalReport.minContig, glossary, qualities, mainMetrics, totalReports.slice(1));
 
     var plotsSwitchesDiv = document.getElementById('plots-switches');
     $(plotsSwitchesDiv).html('<b>Plots:</b>');

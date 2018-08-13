@@ -135,7 +135,7 @@ def assert_report_header(name, contigs, fname='report.tsv'):
     print('Report header in %s is OK' % fname)
 
 
-def assert_metric(name, metric, values=None, fname='report.tsv'):
+def assert_metric(name, metric, values=None, fname='report.tsv', absent=False):
     results_dirpath = get_results_dirpath(name)
 
     fpath = os.path.join(results_dirpath, fname)
@@ -147,6 +147,10 @@ def assert_metric(name, metric, values=None, fname='report.tsv'):
         for line in report_tsv_f:
             tokens = line[:-1].split('\t')
             if len(tokens) > 1 and tokens[0] == metric:
+                if absent:
+                    sys.stderr.write('Assertion of "%s" in %s failed: metric is present in the file '
+                                     'but should be missing!' % (metric, fname))
+                    exit(7)
                 if values is None or tokens[1:] == values:
                     print('Metric %s is OK' % metric)
                     return True
@@ -155,6 +159,9 @@ def assert_metric(name, metric, values=None, fname='report.tsv'):
                                          % (metric, fname, ' '.join(values), ' '.join(tokens[1:])))
                     exit(7)
 
+    if absent:
+        print('Metric %s is OK (absent in the file as expected)' % metric)
+        return True
     sys.stderr.write('Assertion of "%s" in %s failed: no such metric in the file' % (metric, fname))
     exit(7)
 

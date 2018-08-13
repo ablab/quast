@@ -80,7 +80,7 @@ def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir
             contigs[ind] = seq
 
     if not gffs:
-        return None, None, None, None
+        return None, None, None, None, None, None
 
     out_gff_fpath = out_fpath + '_genes.gff' + ('.gz' if not qconfig.no_gzip else '')
     out_gff_path = merge_gffs(gffs, out_gff_fpath)
@@ -198,8 +198,8 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
             report.add_field(reporting.Fields.PREDICTED_GENES, genes)
         if unique is None and full_genes is None:
             logger.error(
-                'Glimmer failed running Glimmer for %s. ' + ('Run with the --debug option'
-                ' to see the command line.' if not qconfig.debug else '') % label)
+                'Failed running Glimmer for %s. ' % label + ('Run with the --debug option'
+                ' to see the command line.' if not qconfig.debug else ''))
 
     if not qconfig.debug:
         shutil.rmtree(tmp_dirpath)

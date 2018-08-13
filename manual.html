@@ -231,8 +231,7 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
     A reference genome with multiple chromosomes can be provided as a single FASTA file with separate sequence for each chromosome inside.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>
     <b>Reads</b><br>
-    QUAST accepts various types of reads in FASTQ format (may be compressed) or in the aligned form in SAM/BAM formats.
-    The supported read types include Illumina paired-end and mate-pair reads, PacBio SMRT, and Oxford Nanopore long reads.<br>
+    QUAST accepts Illumina, PacBio, and Oxford Nanopore reads in FASTQ format (may be compressed) or in the aligned form in SAM/BAM formats.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>
     <b>Genes and operons</b><br>
     One can also specify files with gene and operon positions in the reference genome. QUAST will count fully and partially aligned regions,
@@ -608,6 +607,23 @@ zillions of contigs, thus not applicable. Circos plot needs detailed information
     The reads are aligned to reference genome using BWA, then GRIDSS SV calling tool is run on BWA output.
 Found SVs are used for classifying QUAST misassemblies into true ones and fake ones (caused by structural differences between reference sequence and
     sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code>#&nbsp;misassemblies</code></a> and reported as <a href="#sv"><code>#&nbsp;structural variations</code></a>.
+</p>
+<p>
+For specifying multiple read files of the same format just use the corresponding option multiple times. For example:
+<div style='margin-left: 30px; margin-top: 5px; margin-bottom: 10px;'>
+<code>--pe1 lib1/R1.fq --pe2 lib1/R2.fq --pe1 lib2/R1.fq.gz --pe2 lib2/R2.fq.gz</code>
+</div>
+    or<br>
+<div style='margin-left: 30px; margin-top: 5px; margin-bottom: 10px;'>
+<code>--single lib1/unpaired_a.fq --single lib1/unpaired_b.fq --single lib2/unpaired.fastq</code>
+</div>
+</p>
+<p>
+    Currently, the supported read types are Illumina unpaired, paired-end and mate-pair reads, PacBio SMRT, and Oxford Nanopore long reads.
+    If paired reads are specified in separate files (e.g. using <code>--mp1/--mp2</code>), the number of reads in both files should be exactly the same.
+    Moreover, the names of forward and reverse reads of the same pair should be exactly the same except trailing /1 and /2, respectively.
+</p>
+
 <div class='options'>
 
 <div class='option'>
@@ -654,14 +670,6 @@ File with PacBio SMRT reads in FASTQ format (files compressed with gzip are allo
 <code><b>--nanopore</b> &lt;path&gt;</code>
 </div>
 File with Oxford Nanopore reads in FASTQ format (files compressed with gzip are allowed).
-
-<p>
-    <b>Important notes for paired reads files (e.g., specified with <code>-1/-2</code>):</b><br>
-    <ul>
-        <li>Number of reads in both files should be exactly the same.</li>
-        <li>Forward and reverse reads of the same pair should have exactly the same names except trailing /1 and /2 respectively.</li>
-    </ul>
-</p>
 
 <div class='option'>
 <code><b>--ref-bam</b> &lt;path&gt;</code>

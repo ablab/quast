@@ -693,12 +693,25 @@ def relpath(path, start=curdir):
     return join(*rel_list)
 
 
-def get_path_to_program(program, dirpath=None):
+def get_path_to_program(program, dirpath=None, min_version=None):
     """
     returns the path to an executable or None if it can't be found
     """
     def is_exe(fpath):
-        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+        if os.path.isfile(fpath) and os.access(fpath, os.X_OK):
+            if not min_version or check_version(fpath, min_version):
+                return True
+
+    def check_version(fpath, min_version):
+        p = subprocess.Popen([fpath, '--version'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        stdout, stderr = p.communicate()
+        version_pattern = re.compile('(?P<major_version>\d+)\.(?P<minor_version>\d+)')
+        v = version_pattern.search(str(stdout))
+        if not v.group('major_version') or not v.group('minor_version'):
+            return False
+        version, minor_version = map(int, min_version.split('.'))
+        if int(v.group('major_version')) == version and int(v.group('minor_version')) >= minor_version:
+            return True
 
     if dirpath:
         exe_file = os.path.join(dirpath, program)

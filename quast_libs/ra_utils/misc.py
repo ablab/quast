@@ -23,12 +23,12 @@ except:
 from os.path import join, isfile, basename, dirname, getsize
 
 from quast_libs import qconfig, qutils
+from quast_libs.ca_utils.misc import compile_minimap
 from quast_libs.fastaparser import get_chr_lengths_from_fastafile
 from quast_libs.qutils import compile_tool, get_dir_for_download, relpath, get_path_to_program, download_file, \
     download_external_tool, is_non_empty_file, correct_name, get_free_memory
 
 bwa_dirpath = join(qconfig.LIBS_LOCATION, 'bwa')
-minimap_dirpath = join(qconfig.LIBS_LOCATION, 'minimap2')
 
 bedtools_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools')
 bedtools_bin_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools', 'bin')
@@ -44,10 +44,6 @@ gridss_url = qconfig.GIT_ROOT_URL + relpath(gridss_external_fpath, qconfig.QUAST
 
 def bwa_fpath(fname):
     return get_path_to_program(fname, bwa_dirpath)
-
-
-def minimap_fpath():
-    return get_path_to_program('minimap2', minimap_dirpath)
 
 
 def sambamba_fpath(fname):
@@ -95,10 +91,6 @@ def compile_bwa(logger, only_clean=False):
 def compile_bedtools(logger, only_clean=False):
     return bedtools_fpath('bedtools') or \
            compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')], only_clean=only_clean, logger=logger)
-
-
-def compile_minimap(logger, only_clean=False):
-    return compile_tool('Minimap2', minimap_dirpath, ['minimap2'], only_clean=only_clean, logger=logger)
 
 
 def download_gridss(logger, bed_fpath=None, only_clean=False):

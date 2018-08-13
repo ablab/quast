@@ -16,13 +16,13 @@ from math import sqrt
 from os.path import isfile, join, basename, abspath, isdir, dirname, exists
 
 from quast_libs import qconfig, qutils
-from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
+from quast_libs.ca_utils.misc import minimap_fpath, ref_labels_by_chromosomes
 from quast_libs.fastaparser import create_fai_file
 from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, sambamba_fpath, bwa_fpath, bedtools_fpath, \
     bwa_dirpath, download_gridss, get_gridss_fpath, get_gridss_memory, \
     paired_reads_names_are_equal, sort_bam, bwa_index, reformat_bedpe, get_correct_names_for_chroms, \
     all_read_names_correct, clean_read_names, check_cov_file, bam_to_bed, get_safe_fpath, sambamba_view, \
-    calculate_genome_cov, minimap_fpath
+    calculate_genome_cov
 from quast_libs.qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, run_parallel, \
     get_path_to_program, check_java_version, percentile, calc_median
 

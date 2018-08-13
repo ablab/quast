@@ -22,7 +22,7 @@ except ImportError:
    from quast_libs.site_packages.ordered_dict import OrderedDict
 
 from quast_libs import qconfig
-from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed
+from quast_libs.qutils import compile_tool, val_to_str, get_path_to_program
 
 contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'minimap2')
 ref_labels_by_chromosomes = OrderedDict()
@@ -34,21 +34,20 @@ def bin_fpath(fname):
     return join(contig_aligner_dirpath, fname)
 
 
+def minimap_fpath():
+    return get_path_to_program('minimap2', contig_aligner_dirpath, min_version='2.10')
+
+
+def compile_minimap(logger, only_clean=False):
+    if (minimap_fpath() and not only_clean) or compile_tool('Minimap2', contig_aligner_dirpath, ['minimap2'],
+                                                            just_notice=False, logger=logger, only_clean=only_clean):
+        return True
+    return False
+
+
 def compile_aligner(logger, only_clean=False):
-    requirements = ['minimap2']
-    aligner_failed_compilation_flag = join(contig_aligner_dirpath, 'make.failed')
-
-    if only_clean:
-        compile_tool('Minimap2', contig_aligner_dirpath, requirements, logger=logger, only_clean=only_clean)
+    if compile_minimap(logger, only_clean=only_clean):
         return True
-
-    if check_prev_compilation_failed('Minimap2', aligner_failed_compilation_flag, just_notice=True, logger=logger):
-        logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
-        return False
-
-    if compile_tool('Minimap2', contig_aligner_dirpath, requirements, just_notice=False, logger=logger, only_clean=only_clean):
-        return True
-
     logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
     return False
 

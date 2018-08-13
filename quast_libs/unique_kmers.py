@@ -14,10 +14,10 @@ from collections import defaultdict
 from os.path import join, abspath, exists, basename, isdir
 
 from quast_libs import qconfig, reporting, qutils
+from quast_libs.ca_utils.misc import compile_minimap, minimap_fpath
 from quast_libs.fastaparser import read_fasta
 from quast_libs.qutils import get_free_memory, md5, download_external_tool, \
     get_dir_for_download
-from quast_libs.ra_utils.misc import minimap_fpath, compile_minimap
 from quast_libs.reporting import save_kmers
 
 KMER_FRACTION = 0.001

@@ -13,11 +13,10 @@ import datetime
 
 from quast_libs import qconfig, qutils
 from quast_libs.ca_utils.analyze_misassemblies import Mapping
-from quast_libs.ca_utils.misc import parse_cs_tag
+from quast_libs.ca_utils.misc import minimap_fpath, parse_cs_tag
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import md5, is_non_empty_file
-from quast_libs.ra_utils.misc import minimap_fpath
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 

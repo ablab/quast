@@ -13,11 +13,11 @@ from collections import defaultdict
 from os.path import join, basename, dirname, exists, isdir
 
 from quast_libs import fastaparser, qconfig, qutils, reads_analyzer
+from quast_libs.ca_utils.misc import minimap_fpath
 from quast_libs.log import get_logger
 from quast_libs.qutils import splitext_for_fasta_file, is_non_empty_file, download_external_tool, \
-    add_suffix, get_dir_for_download, get_blast_fpath, get_chr_len_fpath
-from quast_libs.ra_utils.misc import sort_bam, bam_to_bed, bedtools_fpath, sambamba_view, calculate_read_len, \
-    minimap_fpath, calculate_genome_cov
+    add_suffix, get_dir_for_download
+from quast_libs.ra_utils.misc import sort_bam, bam_to_bed, bedtools_fpath, sambamba_view, calculate_read_len
 from quast_libs.reads_analyzer import calculate_insert_size
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)

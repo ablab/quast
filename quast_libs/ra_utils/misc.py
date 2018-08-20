@@ -102,8 +102,9 @@ def download_gridss(logger, bed_fpath=None, only_clean=False):
     gridss_fpath = get_gridss_fpath()
     if not qconfig.no_sv and bed_fpath is None and not isfile(gridss_fpath):
         if not download_external_tool(gridss_fname, gridss_dirpath, 'gridss'):
-            logger.warning('Failed to download binary distribution from https://github.com/ablab/quast/external_tools/gridss. '
-                           'QUAST SV module will be able to search trivial deletions only.')
+            logger.warning('Failed to download binary distribution from https://github.com/ablab/quast/tree/master/external_tools/gridss. '
+                           'QUAST SV module will be able to search trivial deletions only. '
+                           'You can try to download it manually, save the jar archive under %s, and restart QUAST.' % gridss_dirpath)
             return False
     return True
 

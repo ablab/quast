@@ -11,6 +11,11 @@ import glob
 import shutil
 import tempfile
 
+try:
+   from collections import OrderedDict
+except ImportError:
+   from quast_libs.site_packages.ordered_dict import OrderedDict
+
 from quast_libs import reporting, qconfig, qutils
 from quast_libs.ca_utils.misc import open_gzipsafe
 from quast_libs.fastaparser import write_fasta, get_chr_lengths_from_fastafile
@@ -78,13 +83,16 @@ def parse_gmhmm_out(out_fpath):
     reading_gene = False
     reading_protein = False
     protein = ''
+    genes_by_id = OrderedDict()
+    gene_id = None
     with open(out_fpath) as f:
         for line in f:
             if line.startswith('>gene'):
                 seq = []
                 seq_id, contig_id = line.strip().split('\t')
                 # >gene_2|GeneMark.hmm|57_nt|+|1|57	>NODE_3_length_713_cov_1.25228
-                _, _, seq_len, strand, left_index, right_index = seq_id.split('|')
+                gene_id, _, seq_len, strand, left_index, right_index = seq_id.split('|')
+                gene_id = gene_id[1:]
                 contig_id = contig_id[1:]
                 if 'nt' in seq_len:
                     reading_gene = True
@@ -102,11 +110,18 @@ def parse_gmhmm_out(out_fpath):
                         seq = []
                         reading_protein = False
                     #genes.append(Gene(contig_id, strand, left_index, right_index, str_seq))
+                    gene = genes_by_id[gene_id] if gene_id in genes_by_id else \
+                        Gene(contig=contig_id, start=left_index, end=right_index, strand=strand)
                     if seq:
-                        gene = Gene(contig=contig_id, start=left_index, end=right_index, strand=strand, seq=seq, protein=protein)
-                        yield gene
+                        gene.seq = seq
+                        seq = []
+                    if protein:
+                        gene.protein = protein
+                        protein = None
+                    genes_by_id[gene_id] = gene
                 else:
                     seq.append(line.strip())
+    return list(genes_by_id.values())
 
 
 def parse_gtf_out(out_fpath):
@@ -180,7 +195,7 @@ def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath, nu
         ok = gmhmm_p(tool_exec_fpath, fasta_fpath, heu_fpath,
                    out_fpath, err_file, index)
         if ok:
-            genes.extend(parse_gmhmm_out(out_fpath))
+            genes = parse_gmhmm_out(out_fpath)
 
     if not qconfig.debug:
         shutil.rmtree(tmp_dirpath)
@@ -195,7 +210,7 @@ def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath
 
     with open(err_fpath, 'w') as err_file:
         if gmhmm_p(tool_exec_fpath, fasta_fpath, heu_fpath, gmhmm_fpath, err_file, index):
-            return list(parse_gmhmm_out(gmhmm_fpath))
+            return parse_gmhmm_out(gmhmm_fpath)
         else:
             return None
 

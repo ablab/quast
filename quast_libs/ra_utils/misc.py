@@ -99,6 +99,10 @@ def download_gridss(logger, bed_fpath=None, only_clean=False):
     if not gridss_dirpath:
         return False
 
+    if only_clean:
+        if os.path.isdir(gridss_dirpath):
+            shutil.rmtree(gridss_dirpath, ignore_errors=True)
+        return True
     gridss_fpath = get_gridss_fpath()
     if not qconfig.no_sv and bed_fpath is None and not isfile(gridss_fpath):
         if not download_external_tool(gridss_fname, gridss_dirpath, 'gridss'):

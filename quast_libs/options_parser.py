@@ -20,7 +20,7 @@ from quast_libs.qconfig import get_mode
 test_data_dir_basename = 'test_data'
 test_data_dir = join(qconfig.QUAST_HOME, test_data_dir_basename)
 if not isdir(test_data_dir) and isdir(test_data_dir_basename):  # special case: test_data in CWD
-    test_data_dir = test_data_dir_basename
+    test_data_dir = abspath(test_data_dir_basename)
 
 test_reference           = join(test_data_dir, 'reference.fasta.gz')
 test_forward_reads       = [join(test_data_dir, 'reads1.fastq.gz')]
@@ -753,8 +753,8 @@ def parse_options(logger, quast_args):
                 if not qconfig.large_genome:  # special case -- large mode imposes eukaryote gene finding (GeneMark-ES) and our test data is too small for it.
                     qconfig.gene_finding = True
         if qconfig.test_sv:
-            qconfig.forward_reads = [abspath(fpath) for fpath in test_forward_reads]
-            qconfig.reverse_reads = [abspath(fpath) for fpath in test_reverse_reads]
+            qconfig.forward_reads = test_forward_reads
+            qconfig.reverse_reads = test_reverse_reads
         contigs_fpaths += meta_test_contigs_fpaths if is_metaquast else test_contigs_fpaths
         qconfig.test = True
 

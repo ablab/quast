@@ -80,6 +80,14 @@ def _read_compressed_file(compressed_file):
     return compressed_file
 
 
+def __get_entry_name(line):
+    """
+        Extracts name from fasta entry line:
+        ">chr1  length=100500; coverage=15;" ---> "chr1"
+    """
+    return line[1:].split()[0]
+
+
 def get_chr_lengths_from_fastafile(fpath):
     """
         Takes filename of FASTA-file
@@ -101,7 +109,7 @@ def get_chr_lengths_from_fastafile(fpath):
                 if l:  # not the first sequence in FASTA
                     chr_lengths[chr_name] = l
                     l = 0
-                chr_name = line[1:].strip()
+                chr_name = __get_entry_name(line)
             else:
                 l += len(line.strip())
 
@@ -147,7 +155,7 @@ def create_fai_file(fasta_fpath):
                         total_offset += chr_offset
                         l = 0
                         chr_offset = 0
-                    chr_name = line[1:].strip()
+                    chr_name = __get_entry_name(line)
                     total_offset += len(line)
                 else:
                     if not l:
@@ -165,7 +173,7 @@ def split_fasta(fpath, output_dirpath):
         Takes filename of FASTA-file and directory to output
         Creates separate FASTA-files for each sequence in FASTA-file
         Returns nothing
-        Oops, similar to: pyfasta split --header "%(seqid).fasta" original.fasta
+        Oops, similar to: pyfasta split --header "%(seqid)s.fasta" original.fasta
     """
     if not os.path.isdir(output_dirpath):
         os.mkdir(output_dirpath)
@@ -174,7 +182,7 @@ def split_fasta(fpath, output_dirpath):
         if line[0] == '>':
             if outFile:
                 outFile.close()
-            outFile = open(os.path.join(output_dirpath, line[1:].strip() + '.fa'), 'w')
+            outFile = open(os.path.join(output_dirpath, __get_entry_name(line) + '.fa'), 'w')
         if outFile:
             outFile.write(line)
     if outFile: # if filename is empty
@@ -183,7 +191,7 @@ def split_fasta(fpath, output_dirpath):
 
 def read_fasta(fpath):
     """
-        Returns list of FASTA entries (in tuples: name, seq)
+        Generator that returns FASTA entries in tuples (name, seq)
     """
     first = True
     seq = []
@@ -201,7 +209,7 @@ def read_fasta(fpath):
                     yield name, "".join(seq)
 
                 first = False
-                name = line.strip()[1:]
+                name = __get_entry_name(line)
                 seq = []
             else:
                 seq.append(line.strip())
@@ -216,32 +224,9 @@ def read_fasta_one_time(fpath):
     """
         Returns list of FASTA entries (in tuples: name, seq)
     """
-    first = True
-    seq = []
-    name = ''
-
-    fasta_file = _get_fasta_file_handler(fpath)
     list_seq = []
-
-    for raw_line in fasta_file:
-        lines = raw_line.split('\r')
-        for line in lines:
-            if not line:
-                continue
-            if line[0] == '>':
-                if not first:
-                    list_seq.append((name, "".join(seq)))
-
-                first = False
-                name = line.strip()[1:]
-                seq = []
-            else:
-                seq.append(line.strip())
-
-    if name or seq:
-        list_seq.append((name, "".join(seq)))
-
-    fasta_file.close()
+    for (name, seq) in read_fasta(fpath):
+        list_seq.append((name, seq))
     return list_seq
 
 

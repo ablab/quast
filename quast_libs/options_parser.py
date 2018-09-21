@@ -753,12 +753,13 @@ def parse_options(logger, quast_args):
                 if not qconfig.large_genome:  # special case -- large mode imposes eukaryote gene finding (GeneMark-ES) and our test data is too small for it.
                     qconfig.gene_finding = True
         if qconfig.test_sv:
-            qconfig.forward_reads = test_forward_reads
-            qconfig.reverse_reads = test_reverse_reads
+            qconfig.forward_reads = [abspath(fpath) for fpath in test_forward_reads]
+            qconfig.reverse_reads = [abspath(fpath) for fpath in test_reverse_reads]
         contigs_fpaths += meta_test_contigs_fpaths if is_metaquast else test_contigs_fpaths
         qconfig.test = True
 
-        if any(not isfile(fpath) for fpath in contigs_fpaths):
+        if any(not isfile(fpath) for fpath in contigs_fpaths) or \
+                any(not isfile(fpath) for fpath in qconfig.forward_reads) or any(not isfile(fpath) for fpath in qconfig.reverse_reads):
             logger.info(
                 '\nYou are probably running QUAST installed via pip, which does not include test data.\n'
                 'This is fine, just start using QUAST on your own data!\n\n'

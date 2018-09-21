@@ -815,7 +815,7 @@ def draw_misassemblies_plot(reports, plot_fpath, title='', yaxis_title=''):
 
 
 def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
-    if not can_draw_plots:
+    if not can_draw_plots or len(table_to_draw) <= 1:
         return
 
     # some magic constants ..

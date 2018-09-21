@@ -146,7 +146,7 @@ def parse_features(option, opt_str, value, parser, logger, is_old_format=False):
         fpath = value
         assert_file_exists(fpath, 'genomic feature')
         features = dict([('gene', fpath)])
-        logger.warning('Option -G is deprecated! Please use --features to specify a file with genomic features.\n'
+        logger.warning('Option -G is deprecated! Please use --features (or -g) to specify a file with genomic features.\n'
                        'If you want QUAST to extract only a specific genomic feature from the file, \n'
                        'you should prepend the filepath with the feature name and a colon, for example:\n'
                        '--features CDS:genes.gff --features transcript:transcripts.bed\n'

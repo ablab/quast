@@ -291,8 +291,8 @@ at quast.sf.net/manual.html, or run quast.py --help
 Usage:
 $ quast.py test_data/contigs_1.fasta \\
            test_data/contigs_2.fasta \\
-        -R test_data/reference.fasta.gz \\
-        -G test_data/genes.txt \\
+        -r test_data/reference.fasta.gz \\
+        -g test_data/genes.txt \\
         -o quast_test_output
 ----------------------------------------------''' % (str(version), not_installed_message))
 
@@ -313,8 +313,8 @@ at quast.sf.net/manual.html, or run quast.py --help
 Usage:
 $ quast.py test_data/contigs_1.fasta \\
            test_data/contigs_2.fasta \\
-        -R test_data/reference.fasta.gz \\
-        -G test_data/genes.txt \\
+        -r test_data/reference.fasta.gz \\
+        -g test_data/genes.txt \\
         -1 test_data/reads1.fastq.gz -2 test_data/reads2.fastq.gz \\
         -o quast_test_output
 ----------------------------------------------''' % (str(version), not_installed_message))

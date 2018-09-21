@@ -213,8 +213,8 @@ Running QUAST on test data from the installation tarball (reference genome, gene
 <pre class="code">
     ./quast.py test_data/contigs_1.fasta \
                test_data/contigs_2.fasta \
-               -R test_data/reference.fasta.gz \
-               -G test_data/genes.gff
+               -r test_data/reference.fasta.gz \
+               -g test_data/genes.gff
 </pre>
 View the summary of the evaluation results with the <a href="http://www.greenwoodsoftware.com/less/">less</a> utility:
 <pre class="code">
@@ -454,7 +454,7 @@ File with operon positions in the reference genome. See details about the file f
     <a name='est_ref_size'></a><code><b>--est-ref-size</b> &lt;int&gt;</code>
 </div>
 Estimated reference genome size (in bp) for computing <span class='metric-ref'>NGx</span> statistics. This value will be used only if a reference genome file is
-not specified (see <code>-R</code> option).
+not specified (see <code>-r</code> option).
 
 <div class='option'>
     <code><b>--contig-thresholds</b> &lt;int,int,...&gt;</code>
@@ -714,7 +714,7 @@ Speedup options:
     are present after this modifications the whole FASTA file is skipped from further processing. </div>
     <i>Caution</i>: use this option at your own risk. Incorrect FASTA files may cause failing of
     third-party tools incorporated to QUAST, e.g. Minimap2, GeneMark, GlimmerHMM.
-    This option is useful for running QUAST without <code>-R</code> and <code>--gene-finding</code>
+    This option is useful for running QUAST without <code>-r</code> and <code>--gene-finding</code>
     (no third-party tools will be run) or if you are absolutely sure that your FASTA files are correct.
 
 <div class='option'>
@@ -800,13 +800,13 @@ Print version and exit.
 <h3>2.4 Metagenomic assemblies</h3>
 <p>
     The <code>metaquast.py</code> script accepts multiple reference genomes.
-    One can provide several files or directories with multiple reference files inside with <code>-R</code> option.
-    Option <code>-R</code> may be specified multiple times or all references may be specified as a comma-separated list (<b>without spaces!</b>)
-    with a single <code>-R</code> option beforehand. Another way is to use <a href='#references_list'><code>--references-list</code></a> option.
+    One can provide several files or directories with multiple reference files inside with <code>-r</code> option.
+    Option <code>-r</code> may be specified multiple times or all references may be specified as a comma-separated list (<b>without spaces!</b>)
+    with a single <code>-r</code> option beforehand. Another way is to use <a href='#references_list'><code>--references-list</code></a> option.
 
     <p>General usage:
 <pre class="code">
-    python metaquast.py contigs_1 contigs_2 ... -R reference_1,reference_2,reference_3,...
+    python metaquast.py contigs_1 contigs_2 ... -r reference_1,reference_2,reference_3,...
 </pre>
 
     <p>

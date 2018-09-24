@@ -634,11 +634,10 @@ def run_aligner(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, e
         out_sam_fpaths.extend(temp_sam_fpaths)
 
     if insert_sizes:
-        qconfig.optimal_assembly_insert_size = max(insert_sizes)
         ref_name = qutils.name_from_fpath(ref_fpath)
         insert_size_fpath = join(output_dir, ref_name + '.is.txt')
         with open(insert_size_fpath, 'w') as out:
-            out.write(str(qconfig.optimal_assembly_insert_size))
+            out.write(str(max(insert_sizes)))
 
 
 def merge_sam_files(tmp_sam_fpaths, sam_fpath, bam_fpath, max_threads, err_fpath):

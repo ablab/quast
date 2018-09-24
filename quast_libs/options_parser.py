@@ -739,6 +739,25 @@ def parse_options(logger, quast_args):
     if qconfig.glimmer and qconfig.gene_finding:
         logger.error("You cannot use --glimmer and " + ("--mgm" if qconfig.metagenemark else "--gene-finding") + \
                      " simultaneously!", exit_with_code=3)
+    if len(qconfig.forward_reads) != len(qconfig.reverse_reads):
+        logger.error('Use the SAME number of files with forward and reverse reads for paired-end libraries '
+                     '(-1 <filepath> -2 <filepath>).\n'
+                     'Use --12 option to specify a file with interlaced forward and reverse paired-end reads.\n'
+                     'Use -s option to specify a file with unpaired (single-end) reads.', exit_with_code=3)
+    if len(qconfig.mp_forward_reads) != len(qconfig.mp_reverse_reads):
+        logger.error('Use the SAME number of files with forward and reverse reads for mate-pair libraries '
+                     '(--mp1 <filepath> --mp2 <filepath>).\n'
+                     'Use --mp12 option to specify a file with interlaced forward and reverse mate-pair reads.',
+                     exit_with_code=3)
+    if qconfig.optimal_assembly:
+        if not qconfig.reference:
+            logger.error("UpperBound assembly is reference-based by design, so you cannot use --upper-bound-assembly"
+                         " option without specifying a reference (-r)!", exit_with_code=3)
+        if not qconfig.pacbio_reads and not qconfig.nanopore_reads and \
+                not (qconfig.mp_forward_reads or qconfig.mp_interlaced_reads):
+            logger.error("UpperBound assembly construction requires mate-pairs or long reads (Pacbio SMRT or"
+                         " Oxford Nanopore), so you cannot use --upper-bound-assembly without specifying them!",
+                         exit_with_code=3)
 
     if qconfig.test or qconfig.test_no_ref or qconfig.test_sv:
         qconfig.output_dirpath = abspath(qconfig.test_output_dirname)

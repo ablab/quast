@@ -48,7 +48,18 @@ def check_successful_check(fpath, contigs_fpath, ref_fpath):
     return True
 
 
+def run_minimap_agv(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_threads):  # run minimap2 for AGV
+    cmdline = [minimap_fpath(), '-cx', 'asm20', '--mask-level', '0.95', '-N', '100',
+               '--score-N', '0', '-E', '1,0', '-f', '200', '--cs', '-t', str(max_threads), ref_fpath, contigs_fpath]
+    return_code = qutils.call_subprocess(cmdline, stdout=open(out_fpath, 'w'), stderr=open(log_err_fpath, 'a'),
+                                         indent='  ' + qutils.index_to_str(index))
+    return return_code
+
+
 def run_minimap(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_threads):
+    if qconfig.is_agv_mode:
+        return run_minimap_agv(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_threads)
+
     preset = 'asm5' if qconfig.min_IDY >= 95 and not qconfig.is_combined_ref else 'asm10'
     # -s -- min CIGAR score, -z -- affects how often to stop alignment extension, -B -- mismatch penalty
     # -O -- gap penalty, -r -- max gap size

@@ -169,7 +169,7 @@ def main(args):
                 aligned_contigs_fpaths.append(contigs_fpath)
                 aligned_lengths_lists.append(aligned_lengths_per_fpath[contigs_fpath])
 
-    if qconfig.is_agv_mode:  # AGV needs only alignments information
+    if qconfig.is_agb_mode:  # AGB needs only alignments information
         sys.exit(0)
 
     # Before continue evaluating, check if aligner didn't skip all of the contigs files.

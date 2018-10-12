@@ -90,8 +90,8 @@ optimal_assembly_max_IS = 1023
 # print in stdout only main information
 silent = False
 
-# QUAST is run by AGV
-is_agv_mode = False
+# QUAST is run by AGB
+is_agb_mode = False
 
 # the following 2 are for web-quast:
 error_log_fpath = None

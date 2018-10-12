@@ -701,8 +701,8 @@ def parse_options(logger, quast_args):
              dest='calculate_read_support',
              action='store_true')
          ),
-        (['--agv'], dict(
-             dest='is_agv_mode',
+        (['--agb'], dict(
+             dest='is_agb_mode',
              action='store_true')
          )
     ]

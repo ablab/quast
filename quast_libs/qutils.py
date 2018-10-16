@@ -1043,7 +1043,12 @@ def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):
     else:
         n_jobs = n_jobs or qconfig.max_threads
         try:
-            from joblib import Parallel, delayed
+            import joblib
+            minor_version = float(joblib.__version__[2:])
+            if minor_version < 10:
+                from joblib import Parallel, delayed
+            else:
+                raise ImportError
         except:
             if is_python2():
                 from joblib2 import Parallel, delayed

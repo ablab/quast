@@ -175,33 +175,24 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
         qconfig.max_threads = 1
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    if is_python2():
-        from joblib2 import Parallel, delayed
-    else:
-        from joblib3 import Parallel, delayed
     logger.main_info('  Pre-processing...')
-    if not qconfig.memory_efficient:
-        corrected_info = Parallel(n_jobs=n_jobs)(delayed(parallel_correct_contigs)(i, contigs_fpath,
-                corrected_dirpath, labels) for i, contigs_fpath in enumerate(contigs_fpaths))
-    else:
-        corrected_info = [parallel_correct_contigs(i, contigs_fpath, corrected_dirpath, labels)
-                          for i, contigs_fpath in enumerate(contigs_fpaths)]
-
+    parallel_run_args = [(i, contigs_fpath, corrected_dirpath, labels) for i, contigs_fpath in enumerate(contigs_fpaths)]
+    old_fpaths, corr_fpaths, broken_scaffold_fpaths, logs, is_fatal_error = run_parallel(parallel_correct_contigs, parallel_run_args, n_jobs)
     corrected_contigs_fpaths = []
     old_contigs_fpaths = []
-    if any([is_fatal_error for (old_fpaths, corr_fpaths, broken_scaffold_fpaths, logs, is_fatal_error) in corrected_info]):
+    if any(is_fatal_error):
        exit(4)
-    for contig_idx, (old_fpaths, corr_fpaths, broken_scaffold_fpaths, logs, is_fatal_error) in enumerate(corrected_info):
+    for contig_idx in range(len(old_fpaths)):
         label = labels[contig_idx]
-        logger.main_info('\n'.join(logs))
-        for old_fpath in old_fpaths:
+        logger.main_info('\n'.join(logs[contig_idx]))
+        for old_fpath in old_fpaths[contig_idx]:
             old_contigs_fpaths.append(old_fpath)
             qconfig.assembly_labels_by_fpath[old_fpath] = label
-        for corr_fpath, lengths in corr_fpaths:
+        for corr_fpath, lengths in corr_fpaths[contig_idx]:
             corrected_contigs_fpaths.append(corr_fpath)
             qconfig.assembly_labels_by_fpath[corr_fpath] = label
             add_lengths_to_report(lengths, reporting, corr_fpath)
-        for broken_fpath, lengths in broken_scaffold_fpaths:
+        for broken_fpath, lengths in broken_scaffold_fpaths[contig_idx]:
             old_contigs_fpaths.append(broken_fpath)
             corrected_contigs_fpaths.append(broken_fpath)
             qconfig.assembly_labels_by_fpath[broken_fpath] = label + '_broken'
@@ -1051,10 +1042,13 @@ def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):
         results_tuples = [_fn(*args) for args in fn_args]
     else:
         n_jobs = n_jobs or qconfig.max_threads
-        if is_python2():
-            from joblib2 import Parallel, delayed
-        else:
-            from joblib3 import Parallel, delayed
+        try:
+            from joblib import Parallel, delayed
+        except:
+            if is_python2():
+                from joblib2 import Parallel, delayed
+            else:
+                from joblib3 import Parallel, delayed
         results_tuples = Parallel(n_jobs=n_jobs)(delayed(_fn)(*args) for args in fn_args)
     results = []
     if results_tuples:

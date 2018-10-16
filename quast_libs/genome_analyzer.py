@@ -12,7 +12,7 @@ from collections import defaultdict
 
 from quast_libs import fastaparser, genes_parser, reporting, qconfig, qutils
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python2
+from quast_libs.qutils import run_parallel
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 ref_lengths_by_contigs = {}
@@ -80,7 +80,7 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
     if not os.path.isfile(coords_fpath):
         logger.error('File with alignment coords (' + coords_fpath + ') not found! Try to restart QUAST.',
             indent='  ')
-        return None
+        return None, None
 
     # EXAMPLE:
     #    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]
@@ -320,29 +320,18 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, features_dict, operons
     # process all contig files
     num_nf_errors = logger._num_nf_errors
     n_jobs = min(len(aligned_contigs_fpaths), qconfig.max_threads)
-    if is_python2():
-        from joblib2 import Parallel, delayed
-    else:
-        from joblib3 import Parallel, delayed
-    if not qconfig.memory_efficient:
-        process_results = Parallel(n_jobs=n_jobs)(delayed(process_single_file)(
-            contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
-            reference_chromosomes, ns_by_chromosomes, containers)
-            for index, contigs_fpath in enumerate(aligned_contigs_fpaths))
-    else:
-        process_results = [process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
-                                               reference_chromosomes, ns_by_chromosomes, containers)
-                           for index, contigs_fpath in enumerate(aligned_contigs_fpaths)]
-    num_nf_errors += len([res for res in process_results if res is None])
+
+    parallel_run_args = [(contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
+                          reference_chromosomes, ns_by_chromosomes, containers)
+                        for index, contigs_fpath in enumerate(aligned_contigs_fpaths)]
+    ref_lengths, results_genes_operons_tuples = run_parallel(process_single_file, parallel_run_args, n_jobs, filter_results=True)
+    num_nf_errors += len(aligned_contigs_fpaths) - len(ref_lengths)
     logger._num_nf_errors = num_nf_errors
-    process_results = [res for res in process_results if res]
-    if not process_results:
+    if not ref_lengths:
         logger.main_info('Genome analyzer failed for all the assemblies.')
         res_file.close()
         return
 
-    ref_lengths = [process_results[i][0] for i in range(len(process_results))]
-    results_genes_operons_tuples = [process_results[i][1] for i in range(len(process_results))]
     for ref in reference_chromosomes:
         ref_lengths_by_contigs[ref] = [ref_lengths[i][ref] for i in range(len(ref_lengths))]
     res_file.write('reference chromosomes:\n')

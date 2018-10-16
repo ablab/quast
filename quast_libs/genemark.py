@@ -22,7 +22,7 @@ from quast_libs.fastaparser import write_fasta, get_chr_lengths_from_fastafile
 from quast_libs.genes_parser import Gene
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python2
+from quast_libs.qutils import run_parallel
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -313,19 +313,10 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
 
         n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
         num_threads = max(1, qconfig.max_threads // n_jobs)
-        if is_python2():
-            from joblib2 import Parallel, delayed
-        else:
-            from joblib3 import Parallel, delayed
-        if not qconfig.memory_efficient:
-            results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
-                index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote, num_threads)
-                for index, fasta_fpath in enumerate(fasta_fpaths))
-        else:
-            results = [predict_genes(index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath,
-                                     gmhmm_p_function, prokaryote, num_threads)
-                       for index, fasta_fpath in enumerate(fasta_fpaths)]
-
+        parallel_run_args = [(index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath,
+                              gmhmm_p_function, prokaryote, num_threads)
+                             for index, fasta_fpath in enumerate(fasta_fpaths)]
+        genes_list, unique_count, full_genes, partial_genes = run_parallel(predict_genes, parallel_run_args, n_jobs)
         if not is_license_valid(out_dirpath, fasta_fpaths):
             return
 
@@ -334,13 +325,13 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
         for i, fasta_path in enumerate(fasta_fpaths):
             report = reporting.get(fasta_path)
             label = qutils.label_from_fpath(fasta_path)
-            genes_by_labels[label], unique_count, full_genes, partial_genes = results[i]
-            if unique_count is not None:
-                report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique_count)
-            if full_genes is not None:
-                genes = ['%s + %s part' % (full_cnt, partial_cnt) for full_cnt, partial_cnt in zip(full_genes, partial_genes)]
+            genes_by_labels[label] = genes_list[i]
+            if unique_count[i] is not None:
+                report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique_count[i])
+            if full_genes[i] is not None:
+                genes = ['%s + %s part' % (full_cnt, partial_cnt) for full_cnt, partial_cnt in zip(full_genes[i], partial_genes[i])]
                 report.add_field(reporting.Fields.PREDICTED_GENES, genes)
-            if unique_count is None and full_genes is None:
+            if unique_count[i] is None and full_genes[i] is None:
                 logger.error('  ' + qutils.index_to_str(i) +
                      'Failed predicting genes in ' + label + '. ' +
                      ('File may be too small for GeneMark-ES. Try to use GeneMarkS instead (remove --eukaryote option).'

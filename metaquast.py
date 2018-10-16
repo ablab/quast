@@ -19,6 +19,8 @@ except ImportError:
 from quast_libs import qconfig
 qconfig.check_python_version()
 
+from site import addsitedir
+addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 from quast_libs.metautils import Assembly, correct_meta_references, correct_assemblies, \
     get_downloaded_refs_with_alignments, partition_contigs, calculate_ave_read_support
 from quast_libs.options_parser import parse_options, remove_from_quast_py_args, prepare_regular_quast_args
@@ -29,9 +31,6 @@ from quast_libs.qutils import cleanup, check_dirpath, is_python2, run_parallel
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
 logger.set_up_console_handler()
-
-from site import addsitedir
-addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
 
 def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=None, num_notifications_tuple=None,

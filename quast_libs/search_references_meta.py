@@ -17,8 +17,8 @@ from os.path import isdir, isfile, join
 from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import _get_fasta_file_handler
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_non_empty_file, is_python2, slugify, correct_name, get_dir_for_download, show_progress, \
-    download_blast_binaries, get_blast_fpath, md5
+from quast_libs.qutils import is_non_empty_file, slugify, correct_name, get_dir_for_download, show_progress, \
+    download_blast_binaries, get_blast_fpath, md5, run_parallel
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 try:
@@ -380,13 +380,10 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
         logger.main_info('Running BlastN..')
         n_jobs = min(qconfig.max_threads, len(blast_assemblies))
         blast_threads = max(1, qconfig.max_threads // n_jobs)
-        if is_python2():
-            from joblib2 import Parallel, delayed
-        else:
-            from joblib3 import Parallel, delayed
-        Parallel(n_jobs=n_jobs)(delayed(parallel_blast)(assembly.fpath, assembly.label, corrected_dirpath,
-                                                        err_fpath, blast_res_fpath, blast_check_fpath, blast_threads)
-                                for i, assembly in enumerate(blast_assemblies))
+        parallel_run_args = [(assembly.fpath, assembly.label, corrected_dirpath,
+                              err_fpath, blast_res_fpath, blast_check_fpath, blast_threads)
+                             for assembly in blast_assemblies]
+        run_parallel(parallel_blast, parallel_run_args, n_jobs, filter_results=True)
 
     logger.main_info()
     species_scores = []

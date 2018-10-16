@@ -261,10 +261,6 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
     create_minimap_output_dir(output_dir)
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     threads = max(1, qconfig.max_threads // n_jobs)
-    if is_python2():
-        from joblib2 import Parallel, delayed
-    else:
-        from joblib3 import Parallel, delayed
 
     genome_size, reference_chromosomes, ns_by_chromosomes = get_genome_stats(reference, skip_ns=True)
     threads = qconfig.max_threads if qconfig.memory_efficient else threads

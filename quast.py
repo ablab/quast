@@ -16,6 +16,8 @@ from quast_libs import qconfig
 
 qconfig.check_python_version()
 
+from site import addsitedir
+addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 from quast_libs import qutils, run_barrnap, plotter_data, unique_kmers
 from quast_libs.qutils import cleanup, check_dirpath, check_reads_fpaths
 from quast_libs.options_parser import parse_options
@@ -24,8 +26,6 @@ from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 logger.set_up_console_handler()
 
-from site import addsitedir
-addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 is_combined_ref = False
 
 

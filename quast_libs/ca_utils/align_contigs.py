@@ -61,7 +61,12 @@ def run_minimap(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_t
     if qconfig.is_agb_mode:
         return run_minimap_agb(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_threads)
 
-    preset = 'asm5' if qconfig.min_IDY >= 95 and not qconfig.is_combined_ref else 'asm10'
+    if qconfig.min_IDY < 90:
+        preset = 'asm20'
+    elif qconfig.min_IDY < 95 or qconfig.is_combined_ref:
+        preset = 'asm10'
+    else:
+        preset = 'asm5'
     # -s -- min CIGAR score, -z -- affects how often to stop alignment extension, -B -- mismatch penalty
     # -O -- gap penalty, -r -- max gap size
     mask_level = '1' if qconfig.is_combined_ref else '0.9'

@@ -1042,19 +1042,25 @@ def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):
         results_tuples = [_fn(*args) for args in fn_args]
     else:
         n_jobs = n_jobs or qconfig.max_threads
+        parallel_args = {'n_jobs': n_jobs}
         try:
             import joblib
-            minor_version = float(joblib.__version__[2:])
-            if minor_version < 10:
-                from joblib import Parallel, delayed
-            else:
-                raise ImportError
-        except:
+            from joblib import Parallel, delayed
+            try:
+                # starting from joblib 0.10 the default backend has changed to 'loky' which causes QUAST crashes,
+                # since it uses default values in qconfig module. So, we explicitly require 'sharedmem' here.
+                # Note that Parallel doesn't have 'require' argument in joblib 0.9 and earlier.
+                new_style_parallel_args = {'require': 'sharedmem'}
+                Parallel(**new_style_parallel_args)
+                parallel_args.update(new_style_parallel_args)
+            except TypeError:
+                pass
+        except ImportError:
             if is_python2():
                 from joblib2 import Parallel, delayed
             else:
                 from joblib3 import Parallel, delayed
-        results_tuples = Parallel(n_jobs=n_jobs)(delayed(_fn)(*args) for args in fn_args)
+        results_tuples = Parallel(**parallel_args)(delayed(_fn)(*args) for args in fn_args)
     results = []
     if results_tuples:
         if isinstance(results_tuples[0], list) or isinstance(results_tuples[0], tuple):

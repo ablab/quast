@@ -1,5 +1,30 @@
 -- Version history --
 
+5.0.1
+      1. Using 'asm20' minimap2 preset for references with high divergence from the
+         assembled organism (provided --min-identity is below 90%). As before, 'asm10' is
+         used for --min-identity below 95% and 'asm5' for 95% and above.
+
+      2. Fixed bug in using --split-scaffolds with MetaQUAST.
+
+      3. Fixed bug in parsing genome sequences of GeneMark predicted genes.
+
+      4. Fixed bug with crash of UpperBound creation when no paired-end reads are provided.
+
+      5. Now FASTA entry names are considered as a sequence before the first space in the
+         header line (">..."). Previously, the entire lines were considered.
+         This change
+           * shortens names of intermediate files (e.g. in k-mer-based metrics calculation)
+           * simplifies using of standard annotation files (provided with --features/-g)
+
+      6. Trying to use already installed minimap2, Glimmer, joblib, simplejson rather than
+         distributions from the QUAST package (important for external QUAST installers).
+
+      7. Improved documentation and error/warning/info messages.
+
+      8. GeneMark licence files are updated.
+
+
 5.0.0
       1. QUAST-LG mode is added ("--large") for evaluating large genomes!
          Significant speed up on large genomes achieved by the switch to fast Minimap2

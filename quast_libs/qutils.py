@@ -988,20 +988,20 @@ def download_blast_binaries(logger=logger, filenames=None, only_clean=False):
     return True
 
 
-def download_file(url, fpath, fname, move_file=True):
+def download_file(url, fpath, tool_name, move_file=True):
     if not os.path.exists(fpath):
-        logger.info('Downloading %s...' % fname)
+        logger.info('Downloading %s (file: %s)...' % (tool_name, os.path.basename(fpath)))
         try:
             urllib.URLopener().retrieve(url, fpath + '.download', show_progress)
         except Exception:
             _, exc_value, _ = sys.exc_info()
             logger.error(
                 'Failed downloading %s (url: %s), QUAST functionality will be limited! '
-                'Exception caught: %s' % (fname, url, exc_value))
+                'Exception caught: %s' % (tool_name, url, exc_value))
             return None
         if move_file:
             shutil.move(fpath + '.download', fpath)
-            logger.info('%s successfully downloaded!' % fname)
+            logger.info('%s successfully downloaded!' % tool_name)
     return fpath
 
 

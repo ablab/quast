@@ -90,7 +90,8 @@ For the main pipeline:
 - Python2 (2.5 or higher) or Python3 (3.3 or higher)
 - Perl 5.6.0 or higher
 - GCC 4.7 or higher
-- basic UNIX tools (make, sh, sed, awk, ar)
+- GNU make and ar
+- zlib development files
 
 For the optional submodules:
 - Time::HiRes perl module for GeneMark-ES (needed when using `--gene-finding --eukaryote`)

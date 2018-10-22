@@ -15,7 +15,7 @@ from quast_libs.ca_utils.misc import open_gzipsafe
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
-txt_pattern_gi = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<gene_id>.+)\s+(?P<start>\d+)\s+(?P<end>\d+)$', re.I)
+txt_pattern_gi = re.compile(r'(?P<seqname>\S+)\s+(?P<gene_id>.+)\s+(?P<start>\d+)\s+(?P<end>\d+)$', re.I)
 
 txt_pattern = re.compile(r'(?P<seqname>\S+)\s+(?P<gene_id>.+)\s+(?P<start>\d+)\s+(?P<end>\d+)$', re.I)
 

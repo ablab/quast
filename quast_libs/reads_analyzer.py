@@ -799,7 +799,7 @@ def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, bam_sorted_fpat
         logger.info('  Calculating reads coverage...')
         if not is_non_empty_file(raw_cov_fpath):
             if not is_non_empty_file(bam_sorted_fpath):
-                sort_bam(bam_fpath, bam_sorted_fpath, log_path, err_fpath, logger)
+                sort_bam(bam_fpath, bam_sorted_fpath, err_fpath, logger)
             calculate_genome_cov(bam_sorted_fpath, raw_cov_fpath, chr_len_fpath, err_fpath, logger)
             qutils.assert_file_exists(raw_cov_fpath, 'coverage file')
         if uncovered_fpath:

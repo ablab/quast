@@ -1048,9 +1048,9 @@ def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):
             from joblib import Parallel, delayed
             try:
                 # starting from joblib 0.10 the default backend has changed to 'loky' which causes QUAST crashes,
-                # since it uses default values in qconfig module. So, we explicitly require 'sharedmem' here.
+                # since it uses default values in qconfig module. So, we explicitly require 'multiprocessing' here.
                 # Note that Parallel doesn't have 'require' argument in joblib 0.9 and earlier.
-                new_style_parallel_args = {'require': 'sharedmem'}
+                new_style_parallel_args = {'backend': 'multiprocessing'}
                 Parallel(**new_style_parallel_args)
                 parallel_args.update(new_style_parallel_args)
             except TypeError:

@@ -12,7 +12,7 @@ function buildReport() {
     var alignedContigsLens = null;
     var refLengths = null;
     var contigs = null;
-    var genesInContigs = null;
+    var featuresInContigs = null;
     var operonsInContigs = null;
     var gcInfos = null;
 
@@ -117,18 +117,18 @@ function buildReport() {
         firstPlot = false;
     }
 
-    genesInContigs = readJson('genes-in-contigs');
+    featuresInContigs = readJson('features-in-contigs');
     operonsInContigs = readJson('operons-in-contigs');
 //    if (genesInContigs || operonsInContigs)
 //        contigs = readJson('contigs');
 
-    if (genesInContigs) {
-        makePlot(firstPlot, assembliesNames, order, 'genes', 'Genes', gns.draw,  {
-                filesFeatureInContigs: genesInContigs.genes_in_contigs,
+    if (featuresInContigs) {
+        makePlot(firstPlot, assembliesNames, order, 'features', 'Genomic features', gns.draw,  {
+                filesFeatureInContigs: featuresInContigs.features_in_contigs,
                 kind: 'gene',
-                filenames: genesInContigs.filenames
+                filenames: featuresInContigs.filenames
             },
-            genesInContigs.ref_genes_number, tickX
+            featuresInContigs.ref_features_number, tickX
         );
         firstPlot = false;
     }

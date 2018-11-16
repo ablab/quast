@@ -1,6 +1,6 @@
 
 var gns = {
-    genes: {
+    features: {
         isInitialized: false,
 
         maxY: 0,

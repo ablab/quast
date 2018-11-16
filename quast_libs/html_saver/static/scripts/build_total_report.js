@@ -148,7 +148,7 @@ function buildTotalReport(assembliesNames, totalReport, order, glossary, qualiti
             var refLen = referenceValues['Reference length'];
             var refFragments = referenceValues['Reference fragments'];
             var refGC = referenceValues['Reference GC (%)'];
-            var refGenes = referenceValues['Reference genes'];
+            var refFeatures = referenceValues['Reference genomic features'];
             var refOperons = referenceValues['Reference operons'];
             var refChr = referenceValues['Reference chromosomes'];
             var totalReads = referenceValues['# total reads'];
@@ -167,8 +167,8 @@ function buildTotalReport(assembliesNames, totalReport, order, glossary, qualiti
             }
             if (refGC)
                 $('#reference_gc').show().find('.val').html(toPrettyString(refGC));
-            if (refGenes)
-                $('#reference_genes').show().find('.val').html(toPrettyString(refGenes));
+            if (refFeatures)
+                $('#reference_features').show().find('.val').html(toPrettyString(refFeatures));
             if (refOperons)
                 $('#reference_operons').show().find('.val').html(toPrettyString(refOperons));
             if (refChr) {

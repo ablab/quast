@@ -22,7 +22,7 @@ var gns = {
         yAxisLabeled: false
     },
 
-    draw: function (name, title, colors, filenames, data, refGenesNumber, tickX,
+    draw: function (name, title, colors, filenames, data, refFeaturesNumber, tickX,
                     placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
 //    div.html(
 //        "<span class='plot-header'>" + kind[0].toUpperCase() + kind.slice(1) + "s covered</span>" +
@@ -44,8 +44,8 @@ var gns = {
             info.maxY = 0;
             info.maxX = 0;
 
-            if (refGenesNumber) {
-                info.maxY = refGenesNumber;
+            if (refFeaturesNumber) {
+                info.maxY = refFeaturesNumber;
             }
 
             for (var fi = 0; fi < plotsN; fi++) {
@@ -103,10 +103,10 @@ var gns = {
             //        }
             //    }
 
-            if (refGenesNumber) {
+            if (refFeaturesNumber) {
                 info.series.push({
-                    data: [[0, refGenesNumber], [info.maxX, refGenesNumber]],
-                    label: 'reference,&nbsp;' + toPrettyString(refGenesNumber, 'genes'),
+                    data: [[0, 0], [1, refFeaturesNumber], [info.maxX, refFeaturesNumber]],
+                    label: 'reference,&nbsp;' + toPrettyString(refFeaturesNumber, 'features'),
                     isReference: true,
                     dashes: {
                         show: true,
@@ -173,7 +173,7 @@ var gns = {
             info.isInitialized = true;
         }
 
-        addLegendClickEvents(info, filenames.length, showPlotWithInfo, refGenesNumber);
+        addLegendClickEvents(info, filenames.length, showPlotWithInfo, refFeaturesNumber);
 
         showPlotWithInfo(info);
 

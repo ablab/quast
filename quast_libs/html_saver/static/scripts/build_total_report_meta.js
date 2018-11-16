@@ -102,7 +102,7 @@ function buildGenomeTable(reports, group_n, numColumns) {
     tableGenome += '<div class="report" id="ref_report">';
     tableGenome += '<table cellspacing="0" id="refgenome">';
     tableGenome += '<tr class="top_row_tr"><td class="left_column_td"><span>' + 'Reference' + '</span></td>';
-    var colNames = ['Size, bp', 'Fragments', 'GC, %', 'Genes', 'Operons'];
+    var colNames = ['Size, bp', 'Fragments', 'GC, %', 'Genomic features', 'Operons'];
     for (var col_n = 0; col_n < numColumns; col_n++) {
         var columnName = colNames[col_n];
         tableGenome += '<td class="second_through_last_col_headers_td">' +
@@ -128,7 +128,7 @@ function buildGenomeTable(reports, group_n, numColumns) {
             '</td>';
         var metrics = reports[report_n].report[group_n][1];
         var referenceMetrics = ['Reference length', 'Reference fragments', 'Reference GC (%)',
-                                'Reference genes', 'Reference operons'];
+                                'Reference genomic features', 'Reference operons'];
         for (var metric_n = 0; metric_n < metrics.length; metric_n++) {
             var metric = metrics[metric_n];
             if (referenceMetrics.indexOf(metric.metricName) === -1) continue;
@@ -289,7 +289,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             var refLen = referenceValues['Reference length'];
             var refFragments = referenceValues['Reference fragments'];
             var refGC = referenceValues['Reference GC (%)'];
-            var refGenes = referenceValues['Reference genes'];
+            var refFeatures = referenceValues['Reference genomic features'];
             var refOperons = referenceValues['Reference operons'];
             var totalReads = referenceValues['# total reads'];
             var refMappedReads = referenceValues['Reference mapped (%)'];
@@ -323,8 +323,8 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             if (refGC) {
                 $('#reference_gc').show().find('.val').html(toPrettyString(refGC));
             }
-            if (refGenes) {
-                $('#reference_genes').show().find('.val').html(toPrettyString(refGenes));
+            if (refFeatures) {
+                $('#reference_features').show().find('.val').html(toPrettyString(refFeatures));
                 numColumns++;
             }
             if (refOperons) {

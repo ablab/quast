@@ -105,7 +105,7 @@ var gns = {
 
             if (refFeaturesNumber) {
                 info.series.push({
-                    data: [[0, 0], [1, refFeaturesNumber], [info.maxX, refFeaturesNumber]],
+                    data: [[0, refFeaturesNumber], [info.maxX, refFeaturesNumber]],
                     label: 'reference,&nbsp;' + toPrettyString(refFeaturesNumber, 'features'),
                     isReference: true,
                     dashes: {

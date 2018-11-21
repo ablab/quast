@@ -62,16 +62,14 @@ def get_gridss_fpath():
 
 
 def download_unpack_compressed_tar(name, download_url, downloaded_fpath, final_dirpath, logger, ext='gz'):
-    if download_file(download_url, downloaded_fpath, name, move_file=False):
-        unpack_tar(downloaded_fpath + '.download', final_dirpath, ext=ext)
+    if download_file(download_url, downloaded_fpath, name, move_file=True):
+        unpack_tar(downloaded_fpath, final_dirpath, ext=ext)
         logger.main_info('  Done')
-    else:
-        logger.main_info('  Failed downloading %s from %s!' % (name, download_url))
-        return False
+        return True
+    return False
 
 
 def unpack_tar(fpath, dst_dirpath, ext='bz2'):
-    shutil.move(fpath, fpath)
     import tarfile
     tar = tarfile.open(fpath, "r:" + ext)
     tar.extractall(dst_dirpath)

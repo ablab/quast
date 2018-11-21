@@ -220,9 +220,9 @@ def main(args):
         if qconfig.platform_name == 'macosx':
             logger.main_info("")
             logger.warning("BUSCO can be run on Linux only")
-        elif sys.version[0:3] == '2.5':
+        elif sys.version[0:3] < '2.7':
             logger.main_info("")
-            logger.warning("BUSCO does not support Python versions earlier than 2.6.")
+            logger.warning("BUSCO does not support Python versions earlier than 2.7.")
         else:
             from quast_libs import run_busco
             run_busco.do(contigs_fpaths, os.path.join(output_dirpath, qconfig.busco_dirname), logger)

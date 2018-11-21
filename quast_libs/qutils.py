@@ -997,7 +997,9 @@ def download_file(url, fpath, tool_name, move_file=True):
             _, exc_value, _ = sys.exc_info()
             logger.error(
                 'Failed downloading %s (url: %s), QUAST functionality will be limited! '
-                'Exception caught: %s' % (tool_name, url, exc_value))
+                'Exception caught: %s\n'
+                'You can try to download the file manually, place it in %s and restart QUAST'
+                % (tool_name, url, exc_value, fpath))
             return None
         if move_file:
             shutil.move(fpath + '.download', fpath)

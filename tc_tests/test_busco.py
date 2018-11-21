@@ -9,6 +9,10 @@ if platform.system() == 'Darwin':
     print('Busco can be run on Linux only')
     sys.exit(0)
 
+if sys.version[:3] < '2.7':
+    print('BUSCO does not support Python versions earlier than 2.7')
+    sys.exit(0)
+
 name = os.path.basename(__file__)[5:-3]
 contigs = [meta_contigs_1, meta_contigs_2]
 

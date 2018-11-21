@@ -76,6 +76,9 @@
     "# predicted genes (unique)"    : "<span>is the number of unique genes in the assembly found by a gene prediction tool.</span>",
     "# predicted genes (>= 0 bp)"   : "<span>is the number of found genes having length greater than or equal to 0 bp.</span>",
 
+    "Complete BUSCO (%)"            : "<span>is the percent of BUSCO (Universal Single-Copy Ortholog) genes found in the assembly in a complete form.</span>",
+    "Partial BUSCO (%)"             : "<span>is the percent of BUSCO (Universal Single-Copy Ortholog) genes found in the assembly in a partial form.</span>",
+
     "Cumulative length"             : "<span>plot shows the growth of assembly contig lengths. On the x-axis, contigs are ordered from largest (contig #1) to smallest. The y-axis gives the size of the x largest contigs in the assembly.</span>",
     "Nx"                            : "<span>plot shows the Nx metric value as x varies from 0 to 100.</span>  <span>Nx is the minimum contig length <b>y</b> such that using contigs of length at least <b>y</b> accounts for at least x% of the total assembly length.</span>",
     "NGx"                           : "<span>plot shows the NGx metric value as x varies from 0 to 100.</span> <span>NGx is the minimum contig length <b>y</b> such that using contigs of length at least <b>y</b> accounts for at least x% of the bases of the reference genome. This metric is computed only if a reference genome is provided.</span>",

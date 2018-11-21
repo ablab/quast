@@ -1,5 +1,13 @@
 -- Version history --
 
+5.0.2
+      1. Fixed bug with missing genome features reference stats and plot in report.html
+
+      2. Fixed bug related to newest versions of joblib (0.10 and higher).
+
+      3. Fixed bug with some rare crashes of reads_analyzer module.
+
+
 5.0.1
       1. Using 'asm20' minimap2 preset for references with high divergence from the
          assembled organism (provided --min-identity is below 90%). As before, 'asm10' is

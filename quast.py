@@ -38,10 +38,10 @@ def main(args):
         sys.exit(1)
 
     try:
-        import imp
-        imp.reload(qconfig)
-        imp.reload(qutils)
-    except:
+        import importlib
+        importlib.reload(qconfig)
+        importlib.reload(qutils)
+    except (ImportError, AttributeError):
         reload(qconfig)
         reload(qutils)
 
@@ -63,9 +63,9 @@ def main(args):
     from quast_libs import reporting
     reports = reporting.reports
     try:
-        import imp
-        imp.reload(reporting)
-    except:
+        import importlib
+        importlib.reload(reporting)
+    except (ImportError, AttributeError):
         reload(reporting)
     reporting.reports = reports
     reporting.assembly_fpaths = []

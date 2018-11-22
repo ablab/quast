@@ -7,6 +7,8 @@
 
       3. Fixed bug with some rare crashes of reads_analyzer module.
 
+      4. Tiny fixes in error and warning messages.
+
 
 5.0.1
       1. Using 'asm20' minimap2 preset for references with high divergence from the

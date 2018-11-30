@@ -461,9 +461,12 @@ def table(order=Fields.order, ref_name=None):
             else:
                 values.append(value)
 
-        if list(filter(lambda v: v is not None, values)) or \
-                (field == 'NGA50' and not qconfig.is_combined_ref and report.get_field(Fields.REFLEN)):
-
+        required_fields = []
+        if report.get_field(Fields.REFLEN):  # keep the same number of metrics in different reports (no matter what percent of the genome was assembled)
+            required_fields = ['NA50', 'LA50', 'NA75', 'LA75']
+            if not qconfig.is_combined_ref:
+                required_fields.extend(['NG50', 'NGA50', 'LG50', 'LGA50', 'NG75', 'NGA75', 'LG75', 'LGA75'])
+        if list(filter(lambda v: v is not None, values)) or field in required_fields:
             metric_name = field if (feature is None) else pattern % int(feature)
             # ATTENTION! Contents numeric values, needed to be converted to strings.
             rows.append({

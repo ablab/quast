@@ -16,6 +16,7 @@ from quast_libs.circos import set_window_size
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 MIN_HISTOGRAM_POINTS = 5
+MIN_GC_WINDOW_SIZE = 50
 
 
 def GC_content(contigs_fpath, skip=False):
@@ -46,7 +47,7 @@ def GC_content(contigs_fpath, skip=False):
         n = 100 # blocks of length 100
         # non-overlapping windows
         for seq in (seq_full[i:i+n] for i in range(0, len(seq_full), n)):
-            GC_percent = get_GC_percent(seq, n)
+            GC_percent = get_GC_percent(seq)
             if not GC_percent:
                 continue
             GC_distribution_y[int(int(GC_percent / qconfig.GC_bin_size) * qconfig.GC_bin_size)] += 1
@@ -61,27 +62,28 @@ def GC_content(contigs_fpath, skip=False):
     return total_GC, (GC_distribution_x, GC_distribution_y), (GC_contigs_distribution_x, GC_contigs_distribution_y)
 
 
-def get_GC_percent(seq, n):
+def get_GC_percent(seq):
     ACGT_len = len(seq) - seq.count("N")
     # skip block if it has less than half of ACGT letters (it also helps with "ends of contigs")
-    if ACGT_len < n // 2:
+    if ACGT_len < len(seq) // 2:
         return 0
 
     GC_len = seq.count("G") + seq.count("C")
-    GC_percent = 100.0 * GC_len / ACGT_len
+    GC_percent = 100 * GC_len // ACGT_len
     return GC_percent
 
 
 def save_icarus_GC(ref_fpath, gc_fpath):
     chr_index = 0
-    n = qconfig.GC_window_size_large if qconfig.large_genome else qconfig.GC_window_size  # non-overlapping windows
+    window_size = qconfig.GC_window_size_large if qconfig.large_genome else qconfig.GC_window_size  # non-overlapping windows
     with open(gc_fpath, 'w') as out_f:
         for name, seq_full in fastaparser.read_fasta(ref_fpath):
             out_f.write('#' + name + ' ' + str(chr_index) + '\n')
-            for i in range(0, len(seq_full), n):
-                seq = seq_full[i:i + n]
-                GC_percent = get_GC_percent(seq, n)
-                out_f.write(str(chr_index) + ' ' + str(GC_percent) + '\n')
+            for i in range(0, len(seq_full), window_size):
+                seq = seq_full[i:i + window_size]
+                if len(seq) >= MIN_GC_WINDOW_SIZE:
+                    GC_percent = get_GC_percent(seq)
+                    out_f.write(str(chr_index) + ' ' + str(GC_percent) + '\n')
 
 
 def save_circos_GC(ref_fpath, reference_length, gc_fpath):
@@ -90,8 +92,9 @@ def save_circos_GC(ref_fpath, reference_length, gc_fpath):
         for name, seq_full in fastaparser.read_fasta(ref_fpath):
             for i in range(0, len(seq_full), window_size):
                 seq = seq_full[i:i + window_size]
-                GC_percent = get_GC_percent(seq, window_size)
-                out_f.write('\t'.join([name, str(i), str(i + window_size), str(GC_percent) + '\n']))
+                if len(seq) >= MIN_GC_WINDOW_SIZE:
+                    GC_percent = get_GC_percent(seq)
+                    out_f.write('\t'.join([name, str(i), str(i + len(seq)), str(GC_percent) + '\n']))
 
 
 def binning_coverage(cov_values, nums_contigs):

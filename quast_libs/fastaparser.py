@@ -85,7 +85,10 @@ def __get_entry_name(line):
         Extracts name from fasta entry line:
         ">chr1  length=100500; coverage=15;" ---> "chr1"
     """
-    return line[1:].split()[0]
+    try:
+        return line[1:].split()[0]
+    except IndexError:
+        return ''  # special case: line == ">"
 
 
 def get_chr_lengths_from_fastafile(fpath):

@@ -106,7 +106,8 @@ def correct_fasta(original_fpath, min_contig, corrected_fpath=None, is_reference
     used_seq_names = defaultdict(int)
     for first_line, seq in fastaparser.read_fasta(original_fpath):
         if not first_line:
-            logger.error('Skipping ' + original_fpath + ' because >sequence_name field is empty.', indent='    ')
+            logger.error('Skipping ' + original_fpath + ' because >sequence_name field is empty '
+                                                        'for the entry starting with "%s".' % seq[:20], indent='    ')
             return False
         if (len(seq) >= min_contig) or is_reference:
             corr_name = correct_name(first_line)

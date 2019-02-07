@@ -10,6 +10,7 @@ import os
 import shlex
 import shutil
 import re
+import time
 from collections import defaultdict
 
 from os.path import isdir, isfile, join
@@ -80,6 +81,9 @@ def try_send_request(url):
                     logger.error('Cannot established internet connection to download reference genomes! '
                          'Check internet connection or run MetaQUAST with option "--max-ref-number 0".', exit_with_code=404)
                 return None
+            # NCBI recommends users post no more than three URL requests per second, so adding artificial 1-sec delay
+            # see more: https://github.com/ablab/quast/issues/8
+            time.sleep(1)
     return response
 
 

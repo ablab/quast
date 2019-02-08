@@ -805,6 +805,8 @@ def parse_options(logger, quast_args):
         qconfig.min_contig = qconfig.LARGE_MIN_CONTIG if qconfig.large_genome else qconfig.DEFAULT_MIN_CONTIG
     if qconfig.min_alignment is None:
         qconfig.min_alignment = qconfig.LARGE_MIN_ALIGNMENT if qconfig.large_genome else qconfig.DEFAULT_MIN_ALIGNMENT
+    if qconfig.min_IDY is None and not is_metaquast:
+        qconfig.min_IDY = qconfig.DEFAULT_MIN_IDY
 
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')

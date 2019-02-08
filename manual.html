@@ -478,7 +478,8 @@ Minimum length of alignment (in bp). Alignments shorter than this value will be 
 <div class='option'>
     <a name='min_identity'></a><code><b>--min-identity</b></code> <code>&lt;float&gt;</code>
 </div>
-Minimum IDY% considered as proper alignment. Alignments with IDY% worse than this value will be filtered. Default is 95.0 %. Note that all alignments with IDY% less than 80.0% will be filtered regardless of this threshold.
+Minimum IDY% considered as proper alignment. Alignments with IDY% worse than this value will be filtered. Default is 95.0% for regular QUAST and 90.0% for MetaQUAST.
+    Note that all alignments with IDY% less than 80.0% will be filtered regardless of this threshold.
 
 <div class='option'>
     <a name='ambiguity_usage'></a><code><b>--ambiguity-usage</b> (or <code>-a</code>) &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>

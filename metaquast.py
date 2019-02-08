@@ -164,6 +164,9 @@ def main(args):
     # Running QUAST(s)
     if qconfig.gene_finding:
         quast_py_args += ['--mgm']
+    if qconfig.min_IDY is None: # special case: user not specified min-IDY, so we need to use MetaQUAST default value
+        quast_py_args += ['--min-identity', str(qconfig.META_MIN_IDY)]
+
     downloaded_refs = False
 
     # SEARCHING REFERENCES

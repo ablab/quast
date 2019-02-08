@@ -48,7 +48,9 @@ use_all_alignments = False
 max_threads = None
 min_alignment = None
 DEFAULT_MIN_ALIGNMENT = 65
-min_IDY = 95.0
+min_IDY = None
+DEFAULT_MIN_IDY = 95.0
+META_MIN_IDY = 90.0
 estimated_reference_size = None
 strict_NA = False
 split_scaffolds = False
@@ -376,11 +378,15 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write('QUAST: Quality Assessment Tool for Genome Assemblies\n')
     stream.write("Version: " + quast_version() + '\n')
 
-    # defaults which depend on options (--large or not)
+    # defaults which depend on mode (large or not, meta or not)
     if mode == 'large':
         m_default, i_default, x_default = LARGE_MIN_CONTIG, LARGE_MIN_ALIGNMENT, LARGE_EXTENSIVE_MIS_THRESHOLD
     else:
         m_default, i_default, x_default = DEFAULT_MIN_CONTIG, DEFAULT_MIN_ALIGNMENT, DEFAULT_EXT_MIS_SIZE
+    if mode == 'meta':
+        min_idy_default = META_MIN_IDY
+    else:
+        min_idy_default = DEFAULT_MIN_IDY
 
     stream.write("\n")
     stream.write('Usage: python ' + sys.argv[0] + ' [options] <files_with_contigs>\n')
@@ -443,7 +449,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style.\n")
         stream.write("                                      By default, QUAST filters Minimap\'s alignments to keep only best ones\n")
         stream.write("-i  --min-alignment <int>             The minimum alignment length [default: %s]\n" % i_default)
-        stream.write("    --min-identity <float>            The minimum alignment identity (80.0, 100.0) [default: %.1f]\n" % min_IDY)
+        stream.write("    --min-identity <float>            The minimum alignment identity (80.0, 100.0) [default: %.1f]\n" % min_idy_default)
         stream.write("-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments of a contig when all of them\n")
         stream.write("                                      are almost equally good (see --ambiguity-score) [default: %s]\n" % ambiguity_usage)
         stream.write("    --ambiguity-score <float>         Score S for defining equally good alignments of a single contig. All alignments are sorted \n")

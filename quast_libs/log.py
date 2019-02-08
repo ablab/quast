@@ -247,12 +247,12 @@ class QLogger(object):
         line = indent
         options = [('MODE', qconfig.get_mode()),
                    ('threads', qconfig.max_threads), ('eukaryotic', not qconfig.prokaryote),
-                   ('split scaffolds', qconfig.split_scaffolds), ('minimum contig length', qconfig.min_contig),
-                   ('minimum alignment length', qconfig.min_alignment),
+                   ('split scaffolds', qconfig.split_scaffolds), ('min contig length', qconfig.min_contig),
+                   ('min alignment length', qconfig.min_alignment), ('min alignment IDY', qconfig.min_IDY),
                    ('ambiguity', qconfig.ambiguity_usage), ('use all alignments', qconfig.use_all_alignments),
                    ('threshold for extensive misassembly size', qconfig.extensive_misassembly_threshold)]
         for i, (option, value) in enumerate(options):
-            if value:
+            if value is not False:
                 line += option + ': ' + str(value).lower()
 
                 if i == len(options) - 1:

@@ -63,7 +63,7 @@ def run_minimap(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_t
 
     if qconfig.min_IDY < 90:
         preset = 'asm20'
-    elif qconfig.min_IDY < 95 or qconfig.is_combined_ref:
+    elif qconfig.min_IDY < 95:
         preset = 'asm10'
     else:
         preset = 'asm5'

@@ -16,6 +16,7 @@ from quast_libs.ca_utils.analyze_misassemblies import Mapping
 from quast_libs.ca_utils.misc import minimap_fpath, parse_cs_tag
 
 from quast_libs.log import get_logger
+from quast_libs.qconfig import SHORT_INDEL_THRESHOLD
 from quast_libs.qutils import md5, is_non_empty_file
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -171,18 +172,27 @@ def split_align(coords_file, align_start, strand_direction, ref_start, ref_name,
             align_cs += op
             ref_len += 1
             align_len += 1
+        ## split alignment in positions of indels to get smaller alignments with higher identity
         elif op.startswith('+'):
-            _write_align()
-            align_start += (align_len + n_bases) * strand_direction
-            ref_start += ref_len
-            align_len, ref_len, matched_bases = 0, 0, 0
-            align_cs = ''
+            if n_bases > SHORT_INDEL_THRESHOLD:
+                _write_align()
+                align_start += (align_len + n_bases) * strand_direction
+                ref_start += ref_len
+                align_len, ref_len, matched_bases = 0, 0, 0
+                align_cs = ''
+            else:
+                align_cs += op
+                align_len += n_bases
         elif op.startswith('-'):
-            _write_align()
-            align_start += align_len * strand_direction
-            ref_start += ref_len + n_bases
-            align_len, ref_len, matched_bases = 0, 0, 0
-            align_cs = ''
+            if n_bases > SHORT_INDEL_THRESHOLD:
+                _write_align()
+                align_start += align_len * strand_direction
+                ref_start += ref_len + n_bases
+                align_len, ref_len, matched_bases = 0, 0, 0
+                align_cs = ''
+            else:
+                align_cs += op
+                ref_len += n_bases
         else:
             align_cs += op
             ref_len += n_bases
@@ -224,3 +234,4 @@ def align_contigs(output_fpath, out_basename, ref_fpath, contigs_fpath, old_cont
         log_out_f.write('Filtering alignments...\n')
         parse_minimap_output(tmp_output_fpath, output_fpath)
     return AlignerStatus.OK
+

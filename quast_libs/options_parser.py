@@ -472,8 +472,7 @@ def parse_options(logger, quast_args):
          ),
         (['--fragmented-max-indent'], dict(
              dest='fragmented_max_indent',
-             type='int',
-             default=qconfig.MAX_INDEL_LENGTH)
+             type='int')
          ),
         (['-a', '--ambiguity-usage'], dict(
              dest='ambiguity_usage',

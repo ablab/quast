@@ -771,9 +771,6 @@ def analyse_coverage(output_dirpath, fpath, chr_names, bam_fpath, stats_fpath, e
 
 
 def get_physical_coverage(output_dirpath, ref_name, bam_fpath, log_path, err_fpath, cov_fpath, chr_len_fpath):
-    if not isfile(bedtools_fpath('bamToBed')):
-        logger.info('  Failed calculating physical coverage...')
-        return None
     raw_cov_fpath = add_suffix(cov_fpath, 'raw')
     if not is_non_empty_file(raw_cov_fpath):
         logger.info('  Calculating physical coverage...')

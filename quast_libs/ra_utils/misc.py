@@ -337,7 +337,7 @@ def bam_to_bed(output_dirpath, name, bam_fpath, err_path, logger, bedpe=False):
     if bedpe:
         bedpe_fpath = join(output_dirpath, name + '.bedpe')
         if not is_non_empty_file(bedpe_fpath) and not is_non_empty_file(bedpe_fpath):
-            qutils.call_subprocess([bedtools_fpath('bamToBed'), '-i', bam_fpath, '-bedpe'],
+            qutils.call_subprocess([bedtools_fpath('bedtools'), 'bamtobed', '-i', bam_fpath, '-bedpe'],
                                    stdout=open(bedpe_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
             with open(bedpe_fpath, 'r') as bedpe:
                 with open(raw_bed_fpath, 'w') as bed_file:
@@ -347,7 +347,7 @@ def bam_to_bed(output_dirpath, name, bam_fpath, err_path, logger, bedpe=False):
                         bed_file.write('\t'.join([fs[0], start, end + '\n']))
     else:
         if not is_non_empty_file(raw_bed_fpath):
-            qutils.call_subprocess([bedtools_fpath('bamToBed'), '-i', bam_fpath],
+            qutils.call_subprocess([bedtools_fpath('bedtools'), 'bamtobed', '-i', bam_fpath],
                                stdout=open(raw_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
 
     sorted_bed_fpath = join(output_dirpath, name + '.sorted.bed')

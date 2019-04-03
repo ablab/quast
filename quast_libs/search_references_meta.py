@@ -10,6 +10,7 @@ import os
 import shlex
 import shutil
 import re
+import subprocess
 import time
 from collections import defaultdict
 
@@ -19,7 +20,7 @@ from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import _get_fasta_file_handler
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_non_empty_file, slugify, correct_name, get_dir_for_download, show_progress, \
-    download_blast_binaries, get_blast_fpath, md5, run_parallel
+    download_blast_binaries, get_blast_fpath, md5, run_parallel, add_suffix
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 try:
@@ -45,6 +46,9 @@ blast_filenames = ['makeblastdb', 'blastn']
 blastdb_dirpath = None
 db_fpath = None
 db_nsq_fsize = 194318557
+
+ncbi_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
+quast_fields = '&tool=quast&email=quast.support@bioinf.spbau.ru'
 
 is_quast_first_run = False
 taxons_for_krona = {}
@@ -87,11 +91,40 @@ def try_send_request(url):
     return response
 
 
-def download_ref(organism, ref_fpath):
-    ncbi_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
-    quast_fields = '&tool=quast&email=quast.support@bioinf.spbau.ru'
+def get_download_links(ref_id_list, db):
+    best_ref_links = []
+    for id in ref_id_list:
+        response = try_send_request(
+            ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="%s"' % (id.text, db) + quast_fields)
+        if not response:
+            continue
+        xml_tree = ET.fromstring(response)
+
+        link_set = xml_tree.find('LinkSet')
+        if link_set is None:
+            continue
+        link_db = xml_tree.find('LinkSet').find('LinkSetDb')
+        if link_db is None:
+            continue
+        ref_links = link_db.findall('Link')
+        if not best_ref_links or (ref_links and len(ref_links) < len(best_ref_links)):
+            best_ref_links = ref_links
+            if len(best_ref_links) <= 5:
+                break
+    return best_ref_links
+
+
+def download_ref(organism, ref_fpath, max_ref_fragments):
     organism = organism.replace('_', '+')
-    response = try_send_request(ncbi_url + 'esearch.fcgi?db=assembly&term=%s+[Organism]&retmax=100' % organism + quast_fields)
+    isolate = ''
+    strain = ''
+    if '+isolate+' in organism:
+        organism, isolate = organism.split('+isolate+')
+    if '+strain+' in organism:
+        organism, strain = organism.split('+strain+')
+
+    response = try_send_request(ncbi_url + 'esearch.fcgi?db=assembly&term=%s+[Organism]%s%s&retmax=100%s' %
+                                (organism, (isolate + '+[Isolate]') if isolate else '', (strain + '+[Strain]') if strain else '', quast_fields))
     if not response:
         return None
     xml_tree = ET.fromstring(response)
@@ -100,53 +133,38 @@ def download_ref(organism, ref_fpath):
         return None
 
     ref_id_list = xml_tree.find('IdList').findall('Id')
-    best_ref_links = []
-    for id in ref_id_list:
-        databases = ['assembly_nuccore_refseq', 'assembly_nuccore_insdc']
-        for db in databases:
-            response = try_send_request(
-                ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="%s"' % (id.text, db) + quast_fields)
-            if not response:
-                continue
-            xml_tree = ET.fromstring(response)
-
-            link_set = xml_tree.find('LinkSet')
-            if link_set is None:
-                continue
-            link_db = xml_tree.find('LinkSet').find('LinkSetDb')
-            if link_db is None:
-                continue
-            ref_links = link_db.findall('Link')
-            if best_ref_links and len(ref_links) > len(best_ref_links):
-                continue
-            best_ref_links = ref_links
-            if best_ref_links:
-                break
-        if best_ref_links and len(best_ref_links) < 3:
-            break
-
+    best_ref_links = get_download_links(ref_id_list, "assembly_nuccore_refseq+OR+assembly_nuccore_insdc")
+    used_db = "refseq"
     if not best_ref_links:
-        return None
+        used_db = "wgsmaster"
+        best_ref_links = get_download_links(ref_id_list, "assembly_nuccore_wgsmaster")
 
-    if len(best_ref_links) > 500:
+    if len(best_ref_links) > max_ref_fragments:
         logger.info('%s has too fragmented reference genome! It will not be downloaded.' % organism.replace('+', ' '))
         return None
 
-    ref_ids = sorted(link.find('Id').text for link in best_ref_links)
-    is_first_piece = False
-    fasta_files = []
-    for ref_id in ref_ids:
-        fasta = try_send_request(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
-        if fasta and fasta[0] == '>':
-            fasta_files.append(fasta)
-    fasta_names = [f.split('|')[-1] for f in fasta_files]
-    with open(ref_fpath, "w") as fasta_file:
-        for name, fasta in sorted(zip(fasta_names, fasta_files), key=natural_sort_key):
-            if not is_first_piece:
-                is_first_piece = True
-            else:
-                fasta = '\n' + fasta.rstrip()
-            fasta_file.write(fasta.rstrip())
+    if used_db == "refseq" and best_ref_links:
+        ref_ids = sorted(link.find('Id').text for link in best_ref_links)
+        is_first_piece = False
+        fasta_files = []
+        chunk_size = 200
+        for i in range(0, len(ref_ids), chunk_size):
+            fasta = try_send_request(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ','.join(ref_ids[i:i+chunk_size]))
+            if fasta and fasta[0] == '>':
+                fasta_files.extend(fasta.rstrip().split('\n\n'))
+        fasta_names = [f.split(' ')[0] for f in fasta_files]
+        with open(ref_fpath, "w") as fasta_file:
+            for name, fasta in sorted(zip(fasta_names, fasta_files), key=natural_sort_key):
+                if not is_first_piece:
+                    is_first_piece = True
+                else:
+                    fasta = '\n' + fasta.rstrip()
+                fasta_file.write(fasta.rstrip())
+    elif best_ref_links:  ## download WGS assembly
+        try:
+            download_wgsmaster_contigs(best_ref_links[0].find('Id').text, ref_fpath)
+        except:
+            logger.info('Failed downloading %s!' % organism.replace('+', ' '))
 
     if not os.path.isfile(ref_fpath):
         return None
@@ -155,6 +173,41 @@ def download_ref(organism, ref_fpath):
         return None
 
     return ref_fpath
+
+
+def download_wgsmaster_contigs(ref_id, ref_fpath):
+    temp_fpath = add_suffix(ref_fpath, 'tmp') + '.gz'
+    response = try_send_request(ncbi_url + 'esummary.fcgi?db=nuccore&id=%s&rettype=text&validate=false' % ref_id)
+    xml_tree = ET.fromstring(response)
+
+    for field in xml_tree[0]:
+        if field.get('Name') == 'Extra':
+            download_system = field.text.split('|')[-1][:6]
+            genome_version = int(field.text.split('|')[3].split('.')[-1])
+            break
+    fsize = None
+    while genome_version != 0 and not fsize:
+        try:
+            fname = "%s.%s.fsa_nt.gz" % (download_system, genome_version)
+            url = "ftp://ftp.ncbi.nlm.nih.gov/sra/wgs_aux/%s/%s/%s/%s" % (download_system[:2], download_system[2:4], download_system, fname)
+            response = urlopen(url)
+            meta = response.info()
+            fsize = int(meta.getheaders("Content-length")[0])
+            bsize = 1048576
+        except:
+            fsize = None
+            if genome_version != 0:
+                genome_version -= 1
+    with open(temp_fpath, 'wb') as f:
+        while True:
+            buffer = response.read(bsize)
+            if not buffer:
+                break
+            f.write(buffer)
+
+    with open(ref_fpath, 'w') as f:
+        subprocess.call(['gunzip', '-c', temp_fpath], stdout=f)
+    os.remove(temp_fpath)
 
 
 def download_blastdb(logger=logger, only_clean=False):
@@ -296,7 +349,9 @@ def do(assemblies, labels, downloaded_dirpath, corrected_dirpath, ref_txt_fpath=
 
     species_list = []
     replacement_list = None
+    max_ref_fragments = qconfig.MAX_REFERENCE_FRAGMENTS
     if ref_txt_fpath:
+        max_ref_fragments = 10000
         species_list = parse_refs_list(ref_txt_fpath)
         species_by_assembly = None
     else:
@@ -310,7 +365,7 @@ def do(assemblies, labels, downloaded_dirpath, corrected_dirpath, ref_txt_fpath=
     downloaded_ref_fpaths = [os.path.join(downloaded_dirpath, file) for (path, dirs, files) in os.walk(downloaded_dirpath)
                              for file in files if qutils.check_is_fasta_file(file)]
 
-    ref_fpaths = search_references(species_list, assemblies, labels, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
+    ref_fpaths = search_references(species_list, assemblies, labels, max_ref_fragments, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
                  blast_check_fpath, err_fpath, species_by_assembly, replacement_list)
 
     if not ref_fpaths:
@@ -457,14 +512,14 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
     return species_scores, species_by_assembly, replacement_dict
 
 
-def process_ref(ref_fpaths, organism, downloaded_dirpath, max_organism_name_len, downloaded_organisms, not_founded_organisms,
+def process_ref(ref_fpaths, organism, max_ref_fragments, downloaded_dirpath, max_organism_name_len, downloaded_organisms, not_founded_organisms,
                  total_downloaded, total_scored_left):
     ref_fpath = os.path.join(downloaded_dirpath, correct_name(organism) + '.fasta')
     spaces = (max_organism_name_len - len(organism)) * ' '
     new_ref_fpath = None
     was_downloaded = False
     if not os.path.exists(ref_fpath) and organism not in not_founded_organisms:
-        new_ref_fpath = download_ref(organism, ref_fpath)
+        new_ref_fpath = download_ref(organism, ref_fpath, max_ref_fragments)
     elif os.path.exists(ref_fpath):
         was_downloaded = True
         new_ref_fpath = ref_fpath
@@ -497,7 +552,7 @@ def parse_refs_list(ref_txt_fpath):
     return organisms
 
 
-def search_references(organisms, assemblies, labels, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
+def search_references(organisms, assemblies, labels, max_ref_fragments, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
                  blast_check_fpath, err_fpath, organisms_assemblies=None, replacement_list=None):
     ref_fpaths = []
     downloaded_organisms = []
@@ -521,13 +576,13 @@ def search_references(organisms, assemblies, labels, downloaded_dirpath, not_fou
         logger.main_info('MetaQUAST will attempt to use previously downloaded references...')
 
     for idx, organism in enumerate(organisms):
-        ref_fpath, total_downloaded, total_scored_left = process_ref(ref_fpaths, organism, downloaded_dirpath, max_organism_name_len,
+        ref_fpath, total_downloaded, total_scored_left = process_ref(ref_fpaths, organism, max_ref_fragments, downloaded_dirpath, max_organism_name_len,
                                                                       downloaded_organisms, not_founded_organisms, total_downloaded, total_scored_left)
         if not ref_fpath and replacement_list:
             for next_match in replacement_list[idx]:
                 if next_match not in organisms:
                     logger.main_info('  ' + organism.replace('+', ' ') + ' was not found in NCBI database, trying to download the next best match')
-                    ref_fpath, total_downloaded, _ = process_ref(ref_fpaths, next_match, downloaded_dirpath,
+                    ref_fpath, total_downloaded, _ = process_ref(ref_fpaths, next_match, max_ref_fragments, downloaded_dirpath,
                                                                  max_organism_name_len, downloaded_organisms, not_founded_organisms,
                                                                  total_downloaded, total_scored_left + 1)
                     organism = next_match

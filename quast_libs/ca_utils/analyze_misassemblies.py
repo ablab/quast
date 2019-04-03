@@ -514,8 +514,8 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
                 region_misassemblies.append(Misassembly.LOCAL_SCAFFOLD_GAP)
                 misassemblies_by_ref[prev_ref].append(Misassembly.LOCAL_SCAFFOLD_GAP)
                 ca_output.icarus_out_f.write('fake: scaffold gap size wrong estimation' + scaff_gap_type + '\n')
-            ca_output.stdout_f.write('\t\t\t  Incorrectly estimated size of scaffold gap between these two alignments: ')
-            ca_output.stdout_f.write('gap length difference = ' + str(inconsistency) + scaff_gap_type + '\n')
+            ca_output.stdout_f.write('\t\t\t  Scaffold gap between these two alignments, ')
+            ca_output.stdout_f.write('gap lengths difference (reference vs assembly) = ' + str(inconsistency) + scaff_gap_type + '\n')
         elif is_extensive_misassembly and is_potential_mge and is_potential_mge[i]:
             ca_output.stdout_f.write(
                 '\t\t\t  Not a misassembly (possible transposable element) between these two alignments\n')

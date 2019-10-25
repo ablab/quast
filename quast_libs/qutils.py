@@ -1089,15 +1089,33 @@ def is_ascii_string(line):
         return True
 
 
-def md5(fname):
+def md5(fpath):
     hash_md5 = hashlib.md5()
-    with open(fname, 'rb') as f:
+    with open(fpath, 'rb') as f:
         while True:
             buf = f.read(8192)
             if not buf:
                 break
             hash_md5.update(buf)
     return hash_md5.hexdigest()
+
+
+def verify_md5(fpath, md5_fpath=None):
+    if md5_fpath is None:
+        md5_fpath = fpath + '.md5'
+    if is_non_empty_file(fpath) and is_non_empty_file(md5_fpath):
+        # logger.warning()
+        with open(md5_fpath) as f:
+            expected_md5 = f.readline().strip().split()[0]
+        calculated_md5 = str(md5(fpath))
+        if expected_md5 != calculated_md5:
+            logger.warning('Failure of md5 check for %s! Expected md5 is %s, calculated md5 is %s.' %
+                           (fpath, expected_md5, calculated_md5))
+            return False
+        return True
+    logger.warning('Failed to check md5 for %s! Either this file or its md5 file (%s) is missing or empty.' %
+                   (fpath, md5_fpath))
+    return False
 
 
 def percentile(values, percent):

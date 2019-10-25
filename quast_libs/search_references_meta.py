@@ -37,15 +37,16 @@ socket.setdefaulttimeout(120)
 silva_pattern = re.compile(r'\S+\_(?P<taxons>\S+);(?P<seqname>\S+)', re.I)
 ncbi_pattern = re.compile(r'(?P<id>\S+\_[0-9.]+)[_ |](?P<seqname>\S+)', re.I)
 
-silva_db_url = 'http://www.arb-silva.de/fileadmin/silva_databases/release_123/Exports/'
-silva_fname = 'SILVA_123_SSURef_Nr99_tax_silva.fasta'
-silva_id = '123'
-silva_downloaded_fname = 'silva.' + silva_id + '.db'
+silva_version = 132
+silva_db_url = 'http://www.arb-silva.de/fileadmin/silva_databases/release_' + str(silva_version) + '/Exports/'
+##https://www.arb-silva.de/fileadmin/silva_databases/release_132/Exports/SILVA_132_SSURef_Nr99_tax_silva.fasta.gz
+silva_fname = 'SILVA_' + str(silva_version) + '_SSURef_Nr99_tax_silva.fasta'
+silva_downloaded_fname = 'silva.' + str(silva_version) + '.db'
 
 blast_filenames = ['makeblastdb', 'blastn']
 blastdb_dirpath = None
 db_fpath = None
-db_nsq_fsize = 194318557
+min_db_nsq_fsize = 10^8
 
 ncbi_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
 quast_fields = '&tool=quast&email=quast.support@bioinf.spbau.ru'
@@ -224,7 +225,7 @@ def download_blastdb(logger=logger, only_clean=False):
 
     global db_fpath
     db_fpath = join(blastdb_dirpath, silva_downloaded_fname)
-    if os.path.isfile(db_fpath + '.nsq') and os.path.getsize(db_fpath + '.nsq') >= db_nsq_fsize:
+    if os.path.isfile(db_fpath + '.nsq') and os.path.getsize(db_fpath + '.nsq') >= min_db_nsq_fsize:
         return True
     log_fpath = os.path.join(blastdb_dirpath, 'blastdb.log')
     db_gz_fpath = os.path.join(blastdb_dirpath, silva_fname + '.gz')
@@ -241,15 +242,19 @@ def download_blastdb(logger=logger, only_clean=False):
         silva_download = urllib.FancyURLopener()
         silva_remote_fpath = silva_db_url + silva_fname + '.gz'
         silva_download_in_progress_path = db_gz_fpath + '.download'
+        silva_md5_remote_fpath = silva_remote_fpath + '.md5'
+        silva_md5_local_fpath = db_gz_fpath + '.md5'
         try:
             silva_download.retrieve(silva_remote_fpath, silva_download_in_progress_path, show_progress)
-            if not qutils.is_non_empty_file(silva_download_in_progress_path, min_size=1024*1024):
+            silva_download.retrieve(silva_md5_remote_fpath, silva_md5_local_fpath, show_progress)
+            if not qutils.verify_md5(silva_download_in_progress_path, silva_md5_local_fpath):
                 raise ValueError
         except Exception:
             logger.error(
                 'Failed downloading SILVA 16S rRNA gene database (%s)! The search for reference genomes cannot be performed. '
                 'Try to download it manually, put under %s/ and restart your command.' % (silva_remote_fpath, blastdb_dirpath))
             return False
+        os.remove(silva_md5_local_fpath)
         shutil.move(silva_download_in_progress_path, db_gz_fpath)
 
     logger.info('Processing downloaded file. Logging to %s...' % log_fpath)
@@ -270,8 +275,10 @@ def download_blastdb(logger=logger, only_clean=False):
 
     logger.info('Making BLAST database...')
     cmd = get_blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (silva_fpath, db_fpath))
-    qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'), logger=logger)
-    if not os.path.exists(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
+    ret_code = qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'), logger=logger)
+    if ret_code != 0 or not os.path.exists(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < min_db_nsq_fsize:
+        if os.path.exists(db_fpath + '.nsq'):
+            os.remove(db_fpath + '.nsq')
         logger.error('Failed to make BLAST database ("' + blastdb_dirpath +
                      '"). See details in log. Try to make it manually: %s' % cmd)
         return False

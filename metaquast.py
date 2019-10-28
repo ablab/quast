@@ -58,9 +58,9 @@ def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=Non
 
     import quast
     try:
-        import imp
-        imp.reload(quast)
-    except:    
+        import importlib
+        importlib.reload(quast)
+    except (ImportError, AttributeError):
         reload(quast)
     quast.logger.set_up_console_handler(indent_val=1, debug=qconfig.debug)
     if not run_regular_quast:
@@ -133,9 +133,9 @@ def main(args):
 
     from quast_libs import reporting
     try:
-        import imp
-        imp.reload(reporting)
-    except:
+        import importlib
+        importlib.reload(reporting)
+    except (ImportError, AttributeError):
         reload(reporting)
     from quast_libs import plotter
 

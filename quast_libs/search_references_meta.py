@@ -39,7 +39,6 @@ ncbi_pattern = re.compile(r'(?P<id>\S+\_[0-9.]+)[_ |](?P<seqname>\S+)', re.I)
 
 silva_version = 132
 silva_db_url = 'http://www.arb-silva.de/fileadmin/silva_databases/release_' + str(silva_version) + '/Exports/'
-##https://www.arb-silva.de/fileadmin/silva_databases/release_132/Exports/SILVA_132_SSURef_Nr99_tax_silva.fasta.gz
 silva_fname = 'SILVA_' + str(silva_version) + '_SSURef_Nr99_tax_silva.fasta'
 silva_downloaded_fname = 'silva.' + str(silva_version) + '.db'
 
@@ -234,9 +233,10 @@ def download_blastdb(logger=logger, only_clean=False):
     logger.info()
 
     if os.path.isfile(db_gz_fpath):
-        logger.info('SILVA 16S ribosomal RNA gene database has already been downloaded.')
+        logger.info('SILVA 16S ribosomal RNA gene database (version %s) has already been downloaded.'
+                    % str(silva_version))
     else:
-        logger.info('Downloading SILVA 16S ribosomal RNA gene database...')
+        logger.info('Downloading SILVA 16S ribosomal RNA gene database (version %s)...' % str(silva_version))
         if not os.path.isdir(blastdb_dirpath):
             os.makedirs(blastdb_dirpath)
         silva_download = urllib.FancyURLopener()

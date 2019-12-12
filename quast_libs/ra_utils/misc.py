@@ -194,34 +194,38 @@ def paired_reads_names_are_equal(reads_fpaths, temp_output_dir, logger):
     return True
 
 
-def get_correct_names_for_chroms(output_dirpath, fasta_fpath, sam_fpath, err_path, reads_fpaths, logger, is_reference=False):
+def get_correct_names_for_chroms(output_dirpath, fasta_fpath, alignment_fpath, err_path, reads_fpaths, logger, is_reference=False):
     correct_chr_names = dict()
     fasta_chr_lengths = get_chr_lengths_from_fastafile(fasta_fpath)
-    sam_chr_lengths = OrderedDict()
-    sam_header_fpath = join(dirname(output_dirpath), basename(sam_fpath) + '.header')
-    if not isfile(sam_fpath) and not isfile(sam_header_fpath):
+    alignment_chr_lengths = OrderedDict()
+    header_fpath = join(dirname(output_dirpath), basename(alignment_fpath) + '.header')
+    if not isfile(alignment_fpath) and not isfile(header_fpath):
         return None
-    if isfile(sam_fpath):
-        qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-H', '-S', sam_fpath],
-                               stdout=open(sam_header_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+    if isfile(alignment_fpath):
+        if alignment_fpath.endswith(".sam"):
+            qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-H', '-S', alignment_fpath],
+                                   stdout=open(header_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+        else:
+            qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-H', alignment_fpath],
+                                   stdout=open(header_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
     chr_name_pattern = 'SN:(\S+)'
     chr_len_pattern = 'LN:(\d+)'
 
-    with open(sam_header_fpath) as sam_in:
-        for l in sam_in:
+    with open(header_fpath) as f:
+        for l in f:
             if l.startswith('@SQ'):
                 chr_name = re.findall(chr_name_pattern, l)[0]
                 chr_len = re.findall(chr_len_pattern, l)[0]
-                sam_chr_lengths[chr_name] = int(chr_len)
+                alignment_chr_lengths[chr_name] = int(chr_len)
 
     inconsistency = ''
-    if len(fasta_chr_lengths) != len(sam_chr_lengths):
+    if len(fasta_chr_lengths) != len(alignment_chr_lengths):
         inconsistency = 'Number of chromosomes'
     else:
-        for fasta_chr, sam_chr in zip(fasta_chr_lengths.keys(), sam_chr_lengths.keys()):
-            if correct_name(sam_chr) == fasta_chr[:len(sam_chr)] and sam_chr_lengths[sam_chr] == fasta_chr_lengths[fasta_chr]:
+        for fasta_chr, sam_chr in zip(fasta_chr_lengths.keys(), alignment_chr_lengths.keys()):
+            if correct_name(sam_chr) == fasta_chr[:len(sam_chr)] and alignment_chr_lengths[sam_chr] == fasta_chr_lengths[fasta_chr]:
                 correct_chr_names[sam_chr] = fasta_chr
-            elif sam_chr_lengths[sam_chr] != fasta_chr_lengths[fasta_chr]:
+            elif alignment_chr_lengths[sam_chr] != fasta_chr_lengths[fasta_chr]:
                 inconsistency = 'Chromosome lengths'
                 break
             else:
@@ -229,10 +233,10 @@ def get_correct_names_for_chroms(output_dirpath, fasta_fpath, sam_fpath, err_pat
                 break
     if inconsistency:
         if reads_fpaths:
-            logger.warning(inconsistency + ' in ' + fasta_fpath + ' and corresponding SAM file ' + sam_fpath + ' do not match. ' +
+            logger.warning(inconsistency + ' in ' + fasta_fpath + ' and corresponding file ' + alignment_fpath + ' do not match. ' +
                            'QUAST will try to realign reads to ' + ('the reference genome' if is_reference else fasta_fpath))
         else:
-            logger.error(inconsistency + ' in ' + fasta_fpath + ' and corresponding SAM file ' + sam_fpath + ' do not match. ' +
+            logger.error(inconsistency + ' in ' + fasta_fpath + ' and corresponding file ' + alignment_fpath + ' do not match. ' +
                          'Use SAM file obtained by aligning reads to ' + ('the reference genome' if is_reference else fasta_fpath))
         return None
     return correct_chr_names

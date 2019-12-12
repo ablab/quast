@@ -475,25 +475,27 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
 def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpath, max_threads, sam_fpath=None, bam_fpath=None,
                       index=None, required_files=None, is_reference=False, alignment_only=False, using_reads='all'):
     filename = qutils.name_from_fpath(fpath)
+    index_str = qutils.index_to_str(index) if index is not None else ''
+    reads_fpaths = qconfig.reads_fpaths
     if not sam_fpath and bam_fpath:
         sam_fpath = get_safe_fpath(output_dirpath, bam_fpath[:-4] + '.sam')
     else:
         sam_fpath = sam_fpath or join(output_dirpath, filename + '.sam')
-    bam_fpath = bam_fpath or get_safe_fpath(output_dirpath, sam_fpath[:-4] + '.bam')
+        bam_fpath = get_safe_fpath(output_dirpath, sam_fpath[:-4] + '.bam')
     if using_reads != 'all':
         sam_fpath = join(output_dirpath, filename + '.' + using_reads + '.sam')
         bam_fpath = sam_fpath.replace('.sam', '.bam')
     if alignment_only or (is_reference and required_files and any(f.endswith('bed') for f in required_files)):
         required_files.append(sam_fpath)
-
-    stats_fpath = get_safe_fpath(dirname(output_dirpath), filename + '.stat')
-    index_str = qutils.index_to_str(index) if index is not None else ''
-
-    reads_fpaths = qconfig.reads_fpaths
-    correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_fpath, reads_fpaths, logger, is_reference)
+    if is_non_empty_file(bam_fpath):
+        correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, bam_fpath, err_fpath, reads_fpaths, logger, is_reference)
+    else:
+        correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_fpath, reads_fpaths, logger, is_reference)
     can_reuse = correct_chr_names is not None
     if not can_reuse and not reads_fpaths:
         return None, None, None
+
+    stats_fpath = get_safe_fpath(dirname(output_dirpath), filename + '.stat')
     if correct_chr_names and (not required_files or all(isfile(fpath) for fpath in required_files)):
         if not alignment_only:
             if isfile(stats_fpath):

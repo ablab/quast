@@ -172,9 +172,11 @@ def is_fragmented_ref_fake_translocation(align1, align2, ref_lens):
     return False
 
 
-def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region_struct_variations=None, is_fake_translocation=False):
+def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region_struct_variations=None, is_fake_translocation=False, is_cyclic_contig=False):
     #Calculate inconsistency between distances on the reference and on the contig
     distance_on_contig = align2.start() - align1.end() - 1
+    if is_cyclic_contig:
+        distance_on_contig += len(contig_seq)
     cyclic_ref_lens = ref_lens if is_cyclic else None
     if cyclic_ref_lens is not None and align1.ref == align2.ref:
         distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, cyclic_ref_lens[align1.ref])
@@ -444,7 +446,6 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
     is_misassembled = False
     contig_is_printed = False
     indels_info = IndelsInfo()
-    contig_aligned_length = 0  # for internal debugging purposes
     cnt_misassemblies = 0
 
     misassemblies = []
@@ -482,6 +483,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
         is_potential_mge = detect_potential_mge(misassemblies)
 
     prev_align = sorted_aligns[0]
+    contig_aligned_lengths = []
     for i in range(len(sorted_aligns) - 1):
         next_align = sorted_aligns[i + 1]
         internal_overlap, overlap_msg, is_extensive_misassembly, aux_data, misassembly_type = misassembly_info[i]
@@ -524,8 +526,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
         elif is_extensive_misassembly:
             is_misassembled = True
             cnt_misassemblies += 1
-            aligned_lengths.append(cur_aligned_length)
-            contig_aligned_length += cur_aligned_length
+            contig_aligned_lengths.append(cur_aligned_length)
             cur_aligned_length = 0
             if not contig_is_printed:
                 ca_output.misassembly_f.write(prev_align.contig + '\n')
@@ -596,8 +597,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
                     ca_output.icarus_out_f.write('indel: ' + indel_class.lower() + reason_msg + '\n')
             else:
                 if qconfig.strict_NA:
-                    aligned_lengths.append(cur_aligned_length)
-                    contig_aligned_length += cur_aligned_length
+                    contig_aligned_lengths.append(cur_aligned_length)
                     cur_aligned_length = 0
 
                 if distance_on_contig < 0:
@@ -624,9 +624,21 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
     ca_output.icarus_out_f.write(next_align.icarus_report_str() + '\n')
     ref_aligns.setdefault(next_align.ref, []).append(next_align)
     ca_output.coords_filtered_f.write(next_align.coords_str() + '\n')
-    aligned_lengths.append(cur_aligned_length)
-    contig_aligned_length += cur_aligned_length
 
+    contig_aligned_lengths.append(cur_aligned_length)
+    contig_aligned_length = sum(contig_aligned_lengths)
+
+    # if contig covers more than 95% of cyclic chromosome/plasmid consider it as cyclic and do not split the first and the last aligned blocks
+    if is_cyclic and len(contig_aligned_lengths) > 1 and sorted_aligns[-1].ref == sorted_aligns[0].ref and contig_aligned_length >= 0.95 * ref_lens[sorted_aligns[0].ref]:
+        is_extensive_misassembly, aux_data = is_misassembly(sorted_aligns[-1], sorted_aligns[0], contig_seq, ref_lens,
+                                                            is_cyclic, is_cyclic_contig=True, region_struct_variations=region_struct_variations)
+        if not is_extensive_misassembly and not aux_data["is_scaffold_gap"] and not aux_data["is_sv"]:
+            inconsistency = abs(aux_data["inconsistency"])
+            if not qconfig.strict_NA or inconsistency <= qconfig.MAX_INDEL_LENGTH:
+                contig_aligned_lengths[0] += contig_aligned_lengths[-1]
+                contig_aligned_lengths = contig_aligned_lengths[:-1]
+
+    aligned_lengths.extend(contig_aligned_lengths)
     assert contig_aligned_length <= len(contig_seq), "Internal QUAST bug: contig aligned length is greater than " \
                                                      "contig length (contig: %s, len: %d, aligned: %d)!" % \
                                                      (sorted_aligns[0].contig, contig_aligned_length, len(contig_seq))

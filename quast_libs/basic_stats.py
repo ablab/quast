@@ -16,7 +16,7 @@ from quast_libs.circos import set_window_size
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 MIN_HISTOGRAM_POINTS = 5
-MIN_GC_WINDOW_SIZE = 50
+MIN_GC_WINDOW_SIZE = qconfig.GC_window_size // 2
 
 
 def GC_content(contigs_fpath, skip=False):
@@ -44,13 +44,12 @@ def GC_content(contigs_fpath, skip=False):
         contig_GC_percent = 100.0 * contig_GC_len / contig_ACGT_len
         GC_contigs_distribution_y[int(contig_GC_percent // qconfig.GC_contig_bin_size)] += 1
 
-        n = 100 # blocks of length 100
+        n = qconfig.GC_window_size
         # non-overlapping windows
         for seq in (seq_full[i:i+n] for i in range(0, len(seq_full), n)):
             GC_percent = get_GC_percent(seq)
-            if not GC_percent:
-                continue
-            GC_distribution_y[int(int(GC_percent / qconfig.GC_bin_size) * qconfig.GC_bin_size)] += 1
+            if GC_percent is not None:
+                GC_distribution_y[int(int(GC_percent / qconfig.GC_bin_size) * qconfig.GC_bin_size)] += 1
         total_GC_amount += contig_GC_len
         total_contig_length += contig_ACGT_len
 
@@ -63,10 +62,12 @@ def GC_content(contigs_fpath, skip=False):
 
 
 def get_GC_percent(seq):
+    if len(seq) < MIN_GC_WINDOW_SIZE:
+        return None
     ACGT_len = len(seq) - seq.count("N")
     # skip block if it has less than half of ACGT letters (it also helps with "ends of contigs")
     if ACGT_len < len(seq) // 2:
-        return 0
+        return None
 
     GC_len = seq.count("G") + seq.count("C")
     GC_percent = 100 * GC_len // ACGT_len
@@ -81,8 +82,8 @@ def save_icarus_GC(ref_fpath, gc_fpath):
             out_f.write('#' + name + ' ' + str(chr_index) + '\n')
             for i in range(0, len(seq_full), window_size):
                 seq = seq_full[i:i + window_size]
-                if len(seq) >= MIN_GC_WINDOW_SIZE:
-                    GC_percent = get_GC_percent(seq)
+                GC_percent = get_GC_percent(seq)
+                if GC_percent is not None:
                     out_f.write(str(chr_index) + ' ' + str(GC_percent) + '\n')
 
 
@@ -92,8 +93,8 @@ def save_circos_GC(ref_fpath, reference_length, gc_fpath):
         for name, seq_full in fastaparser.read_fasta(ref_fpath):
             for i in range(0, len(seq_full), window_size):
                 seq = seq_full[i:i + window_size]
-                if len(seq) >= MIN_GC_WINDOW_SIZE:
-                    GC_percent = get_GC_percent(seq)
+                GC_percent = get_GC_percent(seq)
+                if GC_percent is not None:
                     out_f.write('\t'.join([name, str(i), str(i + len(seq)), str(GC_percent) + '\n']))
 
 

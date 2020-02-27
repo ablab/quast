@@ -2,11 +2,48 @@
 
 ### Genome assembly evaluation tool
 
-QUAST evaluates genome assemblies by computing various metrics.
+QUAST stands for QUality ASsessment Tool. It evaluates genome/metagenome assemblies by computing various metrics.
+The current QUAST toolkit includes the general QUAST tool for genome assemblies, 
+MetaQUAST, the extension for metagenomic datasets, 
+QUAST-LG, the extension for large genomes (e.g., mammalians), and Icarus, the interactive visualizer for these tools.
 
-It works both with and without reference genomes.
-
+The QUAST package works both with and without reference genomes. 
+However, it is much more informative if at least a close reference genome is provided along with the assemblies.
 The tool accepts multiple assemblies, thus is suitable for comparison.
+
+This README file gives a brief introduction into installation, basic usage and parsing of output of QUAST. 
+A much more detailed description of these and many other topics is available in the
+[online manual](http://quast.sf.net/manual.html). 
+There are also many more installation methods for the latest stable release of the QUAST toolkit, 
+all of them are discussed [here](http://quast.sf.net/install.html). For the cutting-edge version, 
+please clone our [GitHub repo](https://github.com/ablab/quast).
+
+Please refer to the [LICENSE.txt](http://quast.sf.net/docs/LICENSE.txt) file for copyrights and citing instructions.
+
+#### System requirements
+
+Linux (64-bit and 32-bit with slightly limited functionality) and macOS are supported.
+
+For the main pipeline:
+- Python2 (2.5 or higher) or Python3 (3.3 or higher)
+- Perl 5.6.0 or higher
+- GCC 4.7 or higher
+- GNU make and ar
+- zlib development files
+
+For the optional submodules:
+- Time::HiRes perl module for GeneMark-ES (needed when using `--gene-finding --eukaryote`)
+- Java 1.8 or later for GRIDSS (needed for SV detection)
+- R for GRIDSS (needed for SV detection)
+
+Most of those tools are usually preinstalled on Linux. MacOS, however, requires to install
+the Command Line Tools for Xcode to make them available. 
+
+QUAST draws plots in two formats: HTML and PDF. If you need the PDF versions, make sure that you have installed 
+Matplotlib. We recommend to use Matplotlib version 1.1 or higher. QUAST is fully tested with Matplotlib v.1.3.1.
+Installation on Ubuntu:
+
+    sudo apt-get update && sudo apt-get install -y pkg-config libfreetype6-dev libpng-dev python-matplotlib
 
 #### Installation
 
@@ -25,15 +62,14 @@ Full installation (about 540 MB, includes (1) tools for SV detection based on re
 The default installation location is `/usr/local/bin/` for the executable scripts, and `/usr/local/lib/` for 
 the python modules and auxiliary files. If you are getting a permission error during the installation, consider running setup.py with
 `sudo`, or create a virtual python environment and [install into it](http://docs.python-guide.org/en/latest/dev/virtualenvs/). 
-Alternatively, you may use old-style installation scripts (`./install.sh` or ./install_full.sh`), which build QUAST package inplace.
+Alternatively, you may use old-style installation scripts (`./install.sh` or `./install_full.sh`), which build QUAST package inplace.
 
 #### Usage
 
     ./quast.py test_data/contigs_1.fasta \
                test_data/contigs_2.fasta \
-            -R test_data/reference.fasta.gz \
-            -G test_data/genes.txt \
-            -O test_data/operons.txt \
+            -r test_data/reference.fasta.gz \
+            -g test_data/genes.txt \
             -1 test_data/reads1.fastq.gz -2 test_data/reads2.fastq.gz \
             -o quast_test_output
 
@@ -75,34 +111,11 @@ This occurs due to multiple reasons, including overestimating repeat multiplicit
 Such blocks are obtained after removing unaligned regions, and then splitting contigs at misassembly breakpoints. 
 Thus, NGA50 is the length of a block, such that all the blocks of at least the same length together cover at least 50% of the reference.  
 
-For the full documentation, see the [manual.html](http://quast.sf.net/manual.html).
 
-You can also check out the web interface: [http://quast.bioinf.spbau.ru](http://quast.bioinf.spbau.ru)
+#### Contact & Info 
 
-Please refer to the LICENSE.txt file for copyrights and citing instructions.
-
-
-#### System requirements
-
-Linux (64-bit and 32-bit with slightly limited functionality) and macOS (OS X) are supported.
-
-For the main pipeline:
-- Python2 (2.5 or higher) or Python3 (3.3 or higher)
-- Perl 5.6.0 or higher
-- GCC 4.7 or higher
-- GNU make and ar
-- zlib development files
-
-For the optional submodules:
-- Time::HiRes perl module for GeneMark-ES (needed when using `--gene-finding --eukaryote`)
-- Java 1.8 or later for GRIDSS (needed for SV detection)
-- R for GRIDSS (needed for SV detection)
-
-Most of those tools are usually preinstalled on Linux. Mac OS X, however, requires to install
-the Command Line Tools for Xcode to make them available. 
-
-QUAST draws plots in two formats: HTML and PDF. If you need the PDF versions, make sure that you have installed 
-Matplotlib. We recommend to use Matplotlib version 1.1 or higher. QUAST is fully tested with Matplotlib v.1.3.1.
-Installation on Ubuntu:
-
-    sudo apt-get update && sudo apt-get install -y pkg-config libfreetype6-dev libpng-dev python-matplotlib
+* Support email: [quast.support@cab.spbu.ru](quast.support@cab.spbu.ru)
+* Issue tracker: [https://github.com/ablab/quast/issues](https://github.com/ablab/quast/issues)
+* Website: [http://quast.sf.net](http://quast.sf.net)
+* Latest news: [https://twitter.com/quast_bioinf](https://twitter.com/quast_bioinf)
+    

@@ -246,11 +246,17 @@ def main(args):
             draw_alignment_plots = qconfig.create_icarus_html
             draw_circos_plot = qconfig.draw_circos and ref_fpath and len(aligned_contigs_fpaths)
             number_of_steps = sum([int(bool(value)) for value in [draw_alignment_plots, draw_circos_plot, all_pdf_fpath]])
+            if all_pdf_fpath:
+                # full report in PDF format: all tables and plots
+                logger.main_info(
+                    '  1 of %d: Creating PDF with all tables and plots...' % number_of_steps)
+                plotter.fill_all_pdf_file(all_pdf_fpath)
+
             if draw_alignment_plots:
                 ########################################################################
                 ### VISUALIZE CONTIG ALIGNMENT
                 ########################################################################
-                logger.main_info('  1 of %d: Creating Icarus viewers...' % number_of_steps)
+                logger.main_info('  %d of %d: Creating Icarus viewers...' % (2 if all_pdf_fpath else 1, number_of_steps))
                 from quast_libs import icarus
                 icarus_html_fpath = icarus.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern, output_dirpath, ref_fpath,
@@ -259,15 +265,11 @@ def main(args):
                     json_output_dir=qconfig.json_output_dirpath, genes_by_labels=genes_by_labels)
 
             if draw_circos_plot:
-                logger.main_info('  %d of %d: Creating Circos plot...' % (2 if draw_alignment_plots else 1, number_of_steps))
+                logger.main_info('  %d of %d: Creating Circos plot...' % (number_of_steps, number_of_steps))
                 from quast_libs import circos
                 circos_png_fpath, circos_legend_fpath = circos.do(ref_fpath, contigs_fpaths, report_for_icarus_fpath_pattern, circos_gc_fpath,
                                                                   features_containers, cov_fpath, os.path.join(output_dirpath, 'circos'), logger)
 
-            if all_pdf_fpath:
-                # full report in PDF format: all tables and plots
-                logger.main_info('  %d of %d: Creating PDF with all tables and plots...' % (number_of_steps, number_of_steps))
-                plotter.fill_all_pdf_file(all_pdf_fpath)
             logger.main_info('Done')
         except KeyboardInterrupt:
             logger.main_info('..step skipped!')

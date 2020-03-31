@@ -848,7 +848,7 @@ def parse_options(logger, quast_args):
     if parser.values.ambiguity_score:
         if qconfig.ambiguity_usage != 'all':
             qconfig.ambiguity_usage = 'all'
-            logger.notice("--ambiguity-usage was set to 'all' because not default --ambiguity-score was specified")
+            logger.warning("--ambiguity-usage was set to 'all' because not default --ambiguity-score was specified")
 
     if is_metaquast:
         quast_py_args = clean_metaquast_args(quast_py_args, contigs_fpaths)

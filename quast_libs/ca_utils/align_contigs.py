@@ -93,7 +93,6 @@ def get_aux_out_fpaths(fname):
 def parse_minimap_output(raw_coords_fpath, coords_fpath):
     cigar_pattern = re.compile(r'(\d+[M=XIDNSH])')
 
-    total_aligned_bases = 0
     with open(raw_coords_fpath) as f:
         with open(coords_fpath, 'w') as coords_file:
             for line in f:
@@ -136,7 +135,6 @@ def parse_minimap_output(raw_coords_fpath, coords_fpath):
 
                 align_end = align_start + (align_len - 1) * strand_direction
                 ref_end = ref_start + ref_len - 1
-                total_aligned_bases += align_len
 
                 idy = '%.2f' % (matched_bases * 100.0 / bases_in_mapping)
                 if ref_name != "*":

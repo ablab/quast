@@ -49,11 +49,11 @@
     "# intergenomic misassemblies"  : "<span>is the number of all found and putative (possible) interspecies translocations.</span>",
     "# structural variations"       : "<span>is the number of misassemblies matched with structural variations.</span>",
     "# possible TEs"                : "<span>is the number of misassemblies possibly caused by transposable elements (TEs). We define a possible TE as an event that satisfies these conditions: <ol> <li>There are two misassembly breakpoints of the same type around a short alignment (less than 7 kbp by default)</li> <li>The gap between two long flanking sequences on the sides of the short alignment is less than 7 kbp.</li> <li> The long flanking sequences both are on the same strand of the same chromosome of the reference genome.</li> </ol> </span>",
-    "# unaligned mis. contigs"      : "<span>is the number of contigs that have the number of unaligned bases more than 50% of contig length and a misassembly event in their aligned fragment. Note that such misassemblies are not counted in <i># misassemblies</i> and other <i>misassemblies</i> statistics.</span>",
+    "# unaligned mis. contigs"      : "<span>is the number of contigs that have the number of unaligned bases more than 50% of the contig length and a misassembly event in their aligned fragment. Note that such misassemblies are not counted in <i># misassemblies</i> and other <i>misassemblies</i> statistics.</span>",
 
     "# fully unaligned contigs"     : "<span>is the number of contigs that have no alignment to the reference sequence.</span>",
     "Fully unaligned length"        : "<span>is the total number of bases contained in all fully unaligned contigs. Uncalled bases (N's) are not counted.</span>",
-    "# partially unaligned contigs" : "<span>is the number of contigs that have at least one alignment to the reference sequence but also have at least one unaligned fragment of length &ge; <i>unaligned-part-size threshold</i>.</span>",
+    "# partially unaligned contigs" : "<span>is the number of contigs that have at least one alignment to the reference sequence but also have at least one unaligned fragment of length &ge; <i>unaligned-part-size threshold</i> (uncalled bases (N's) are not counted towards the fragment length).</span>",
     "Partially unaligned length"    : "<span>is the total number of unaligned bases in all partially unaligned contigs. Uncalled bases (N's) are not counted.</span>",
 
     "# ambiguous contigs"           : "<span>is the number of contigs that have reference alignments of equal quality in multiple locations on the reference.</span>",
@@ -63,9 +63,9 @@
     "GC (%)"                        : "<span>is the total number of G and C nucleotides in the assembly, divided by the total length of the assembly.</span>",
     "Reference GC (%)"              : "<span>is the total number of G and C nucleotides in the reference, divided by the total length of the reference.</span>",
 
-    "# mismatches per 100 kbp"      : "<span>is the average number of mismatches per 100000 aligned bases.</span>",
+    "# mismatches per 100 kbp"      : "<span>is the average number of mismatches per 100000 aligned bases in the reference genome.</span>",
     "# mismatches"                  : "<span>is the number of mismatches in all aligned bases.</span>",
-    "# indels per 100 kbp"          : "<span>is the average number of indels per 100000 aligned bases.</span>",
+    "# indels per 100 kbp"          : "<span>is the average number of indels per 100000 aligned bases in the reference genome.</span>",
     "# indels"                      : "<span>is the number of indels in all aligned bases</span>",
     "# indels (<= 5 bp)"            : "<span>is the number of indels of length less than or equal to 5 bp</span>",
     "# indels (> 5 bp)"             : "<span>is the number of indels of length greater than 5 bp</span>",
@@ -86,7 +86,7 @@
     "NGAx"                          : "<span>plot shows the NGAx metric value as x varies from 0 to 100.</span><span>NGAx is computed similarly to NGx, but based on lengths of aligned blocks instead of contig lengths. Contigs are broken at misassembly breakpoints. NGAx is the minimum block length <b>y</b> such that using blocks of length at least <b>y</b> accounts for at least x% of the bases of the reference genome. This metric is computed only if a reference genome is provided.</span>",
     "GC content"                    : "<span>plot shows the distribution of GC percentage among the contigs, i.e., the total number of bases in contigs with such GC content. Typically, the distribution is approximately Gaussian. However, for some genomes it is not Gaussian. For assembly projects with contaminants, the GC distribution of the contaminants often differs from the reference genome and may give a superposition of multiple curves with different peaks.</span>",
 
-    "Duplication ratio"             : "<span>is the total number of aligned bases in the assembly (i.e. <i>Total length</i> - <i>Fully unaligned length</i> - <i>Partially unaligned length</i>), divided by the total number of aligned bases in the reference (see the <b>Genome fraction (%)</b> metric). If the assembly contains many contigs that cover the same regions of the reference, its <i>Duplication ratio</i> may be much larger than 1. This may occur due to overestimating repeat multiplicities and due to small overlaps between contigs, among other reasons.</span>",
+    "Duplication ratio"             : "<span>is the total number of aligned bases in the assembly, divided by the total number of aligned bases in the reference (see the <b>Genome fraction (%)</b> metric). If the assembly contains many contigs that cover the same regions of the reference, its <i>Duplication ratio</i> may be much larger than 1. This may occur due to overestimating repeat multiplicities and due to small overlaps between contigs, among other reasons.</span>",
     "Largest alignment"             : "<span>is the length of the largest continuous alignment in the assembly. This metric is always equal to the <i>Largest contig</i> metric but it can be smaller if the largest contig of the assembly contains a misassembly event.</span>",
     "Total aligned length"          : "<span>is the total number of aligned bases in the assembly.</span>",
     "Avg contig read support"       : "<span>is the average coverage of contigs that have large unique alignments to the reference. Read coverage is extracted from contig names (SPAdes/Velvet naming scheme only).</span>",

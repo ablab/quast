@@ -47,24 +47,27 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
         log_out_f.write('\tMisassemblies caused by fragmented reference: %d\n' % region_misassemblies.count(Misassembly.FRAGMENTED))
     log_out_f.write('\tMisassembled Contigs: %d\n' % len(misassembled_contigs))
     log_out_f.write('\tMisassembled Contig Bases: %d\n' % result['misassembled_bases'])
-    log_out_f.write('\tMisassemblies Inter-Contig Overlap: %d\n' % result['misassembly_internal_overlap'])
+    log_out_f.write('\tMisassemblies Inter-Contig Overlap ("Extra" Aligned Bases): %d\n' % result['misassembly_internal_overlap'])
     log_out_f.write('Unaligned Contigs: %d + %d part\n' % (result['unaligned'], result['partially_unaligned']))
     log_out_f.write('Half Unaligned Contigs with Misassemblies: %s\n' % str(result['half_unaligned_with_misassembly']))
-    log_out_f.write('Unaligned Contig Bases: %d\n' % (result['fully_unaligned_bases'] + result['partially_unaligned_bases']))
+    log_out_f.write('Unaligned Bases in Fully and Partially Unaligned Contigs: %d\n' % (result['fully_unaligned_bases'] + result['partially_unaligned_bases']))
 
     log_out_f.write('\n')
     log_out_f.write('Ambiguously Mapped Contigs: %d\n' % result['ambiguous_contigs'])
     log_out_f.write('Total Bases in Ambiguously Mapped Contigs: %d\n' % (result['ambiguous_contigs_len']))
-    log_out_f.write('Extra Bases in Ambiguously Mapped Contigs: %d\n' % result['ambiguous_contigs_extra_bases'])
+    log_out_f.write('"Extra" Aligned Bases in Ambiguously Mapped Contigs: %d\n' % result['ambiguous_contigs_extra_bases'])
     if qconfig.ambiguity_usage == "all":
-        log_out_f.write('Note that --allow-ambiguity option was set to "all" and each of these contigs was used several times.\n')
+        log_out_f.write('Note that --allow-ambiguity option was set to "all" and each of these contigs was used several times (there are "extra" aligned bases).\n')
     elif qconfig.ambiguity_usage == "none":
-        log_out_f.write('Note that --allow-ambiguity option was set to "none" and these contigs were skipped.\n')
+        log_out_f.write('Note that --allow-ambiguity option was set to "none" and these contigs were skipped (there is no "extra" aligned bases).\n')
     elif qconfig.ambiguity_usage == "one":
-        log_out_f.write('Note that --allow-ambiguity option was set to "one" and only first alignment per each of these contigs was used.\n')
+        log_out_f.write('Note that --allow-ambiguity option was set to "one" and only first alignment per each of these contigs was used (there is no "extra" aligned bases).\n')
 
     log_out_f.write('\n')
-    log_out_f.write('\tCovered Bases: %d\n' % result['total_aligned_bases'])
+    log_out_f.write('\tCovered Bases in Reference: %d\n' % result['aligned_ref_bases'])
+    log_out_f.write('\tRaw Aligned Bases in Assembly: %d\n' % result['aligned_assembly_bases'])
+    log_out_f.write('\tTotal Aligned Bases in Assembly (with "Extras"): %d\n' %
+                    (result['aligned_assembly_bases'] + result['ambiguous_contigs_extra_bases'] + result['misassembly_internal_overlap']))
     log_out_f.write('\n')
     log_out_f.write('\tSNPs: %d\n' % total_indels_info.mismatches)
     log_out_f.write('\tInsertions: %d\n' % total_indels_info.insertions)
@@ -88,7 +91,8 @@ def save_result(result, report, fname, ref_fpath, genome_size):
     ambiguous_contigs_extra_bases = result['ambiguous_contigs_extra_bases']
     SNPs = result['SNPs']
     indels_list = result['indels_list']
-    total_aligned_bases = result['total_aligned_bases']
+    aligned_ref_bases = result['aligned_ref_bases']
+    aligned_assembly_bases = result['aligned_assembly_bases']
     half_unaligned_with_misassembly = result['half_unaligned_with_misassembly']
 
     report.add_field(reporting.Fields.MISLOCAL, region_misassemblies.count(Misassembly.LOCAL))
@@ -114,17 +118,16 @@ def save_result(result, report, fname, ref_fpath, genome_size):
         report.add_field(reporting.Fields.MIS_SHORT_INDELS, len([i for i in indels_list if i <= qconfig.SHORT_INDEL_THRESHOLD]))
         report.add_field(reporting.Fields.MIS_LONG_INDELS, len([i for i in indels_list if i > qconfig.SHORT_INDEL_THRESHOLD]))
 
-    if total_aligned_bases:
-        genome_fraction = total_aligned_bases * 100.0 / genome_size
-        duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) +
-                             misassembly_internal_overlap +
-                             ambiguous_contigs_extra_bases -
-                             (fully_unaligned_bases + partially_unaligned_bases)) * 1.0 / total_aligned_bases
+    if aligned_ref_bases:
+        genome_fraction = aligned_ref_bases * 100.0 / genome_size
+        duplication_ratio = float(aligned_assembly_bases +
+                                  misassembly_internal_overlap +
+                                  ambiguous_contigs_extra_bases) / aligned_ref_bases
         report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_fraction)
         report.add_field(reporting.Fields.DUPLICATION_RATIO, '%.3f' % duplication_ratio)
-        report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
+        report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(aligned_ref_bases)))
         report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(report.get_field(reporting.Fields.INDELS))
-                                                                 * 100000.0 / float(total_aligned_bases)))
+                                                                 * 100000.0 / float(aligned_ref_bases)))
 
     # for misassemblies report:
     report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, region_misassemblies.count(Misassembly.RELOCATION) +

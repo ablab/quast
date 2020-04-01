@@ -188,12 +188,10 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
 
                     # Alex: skip all alignments or count them as normal (just different aligns of one repeat). Depend on --allow-ambiguity option
                     if qconfig.ambiguity_usage == "none":
-                        ambiguous_contigs_extra_bases -= top_aligns[0].len2
                         ca_output.stdout_f.write('\t\tSkipping these alignments (option --ambiguity-usage is set to "none"):\n')
                         for align in top_aligns:
                             ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
                     elif qconfig.ambiguity_usage == "one":
-                        ambiguous_contigs_extra_bases += 0
                         ca_output.stdout_f.write('\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):\n')
                         ca_output.stdout_f.write('\t\t\tAlignment: %s\n' % str(top_aligns[0]))
                         ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
@@ -205,9 +203,9 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         for align in top_aligns:
                             ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
                     elif qconfig.ambiguity_usage == "all":
-                        ambiguous_contigs_extra_bases -= top_aligns[0].len2
                         ca_output.stdout_f.write('\t\tUsing all these alignments (option --ambiguity-usage is set to "all"):\n')
                         # we count only extra bases, so we shouldn't include bases in the first alignment
+                        ambiguous_contigs_extra_bases -= top_aligns[0].len2
                         first_alignment = True
                         contig_type = 'ambiguous'
                         while len(top_aligns):
@@ -404,6 +402,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
               'misassembly_internal_overlap': misassembly_internal_overlap,
               'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
               'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
+              'aligned_assembly_bases': sum(contigs_aligned_lengths),
               'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases,
               'ambiguous_contigs_len': ambiguous_contigs_len,
               'half_unaligned_with_misassembly': half_unaligned_with_misassembly,

@@ -1073,18 +1073,22 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
     Contigs from repetitive regions may map to multiple places, and thus may be counted multiple times (see <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a>).</p>
 
 <p><a name='duplication_ratio'></a><span class='metric-name'>Duplication ratio</span> is the total number of aligned bases in the assembly divided by the total number of aligned bases in the
-    reference genome (see <span class='metric-ref'>Genome fraction (%)</span> for the 'aligned base' definition). If the assembly contains many contigs that cover the same
+    reference genome (see <span class='metric-ref'>Genome fraction (%)</span> for the 'aligned base' definition).
+    If the assembly contains many contigs that cover the same
     regions of the reference, its <span class='metric-ref'>duplication ratio</span> may be much larger than 1. This may occur due to overestimating
-    repeat multiplicities and due to small overlaps between contigs, among other reasons.</p>
+    repeat multiplicities and due to small overlaps between contigs, among other reasons.
+    Note: aligned bases in ambiguous contigs are counted several times towards the total number of aligned bases in the assembly
+    if <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> is set to 'all'.
+</p>
 
 <p><span class='metric-name'># N's per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of uncalled bases (N's) per 100<span class='hs'></span>000 assembly bases.</p>
 
 <p><span class='metric-name'># mismatches per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of mismatches 
-    per 100<span class='hs'></span>000 aligned bases. True SNPs and sequencing errors are not distinguished and are counted equally.
+    per 100<span class='hs'></span>000 aligned bases in the reference genome. True SNPs and sequencing errors are not distinguished and are counted equally.
     </ul>
 </p>
 
-<p><span class='metric-name'># indels per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of indels per 100<span class='hs'></span>000 aligned bases. 
+<p><span class='metric-name'># indels per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of indels per 100<span class='hs'></span>000 aligned bases in the reference genome.
     Several consecutive single nucleotide indels are counted as one indel.</p>
 
 <p><a name='genes'></a><span class='metric-name'># genomic features</span> is the number of genomic features (genes, CDS, etc) in the assembly (complete and partial), based on a user-provided
@@ -1180,7 +1184,7 @@ opposite strands of the same chromosome. </p>
     is supposed to be a fragment of unknown reference (MetaQUAST only, combined reference only). </p>
 
 <p>
-The next metrics are the same to homonymous metrics from <a href="#sec3.1.1">section 3.1.1</a>.
+The following metrics duplicate metrics from the Summary report (see <a href="#sec3.1.1">section 3.1.1</a>).
     <ul>
         <li><span class='metric-name'># local misassemblies</span>,</li>
         <li><span class='metric-name'># scaffold gap ext. mis.</span>,</li>
@@ -1213,7 +1217,7 @@ Note that all these metrics are excluded from <code>#&nbsp;misassemblies</code> 
 <p><span class='metric-name'>Fully unaligned length</span> is the total number of bases in all unaligned contigs. Uncalled bases (N's) are not counted.</p>
 
 <p><span class='metric-name'># partially unaligned contigs</span> is the number of contigs that are not fully unaligned (i.e. have at least one alignment), but have at least one unaligned fragment
-    &ge; the threshold defined by <a href='#unaligned_part_size'><code>--unaligned-part-size</code></a> (default value is 500 bp).</p>
+    &ge; the threshold defined by <a href='#unaligned_part_size'><code>--unaligned-part-size</code></a> (default value is 500 bp, uncalled bases (N's) are not counted).</p>
 
 <p><span class='metric-name'>Partially unaligned length</span> is the total number of unaligned bases in all partially unaligned contigs. Uncalled bases (N's) are not counted.</p>
 

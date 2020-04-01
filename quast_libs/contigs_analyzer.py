@@ -101,8 +101,8 @@ def analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_
             for i in ns_by_chromosomes[align.ref]:
                 genome_mapping[align.ref][i] = 0
 
-    covered_bases = sum([sum(genome_mapping[chrom]) for chrom in genome_mapping])
-    return covered_bases, indels_info
+    covered_ref_bases = sum([sum(genome_mapping[chrom]) for chrom in genome_mapping])
+    return covered_ref_bases, indels_info
 
 
 # former plantagora and plantakolya
@@ -195,9 +195,9 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:
         log_out_f.write('Writing SNPs into ' + used_snps_fpath + '\n')
-    total_aligned_bases, indels_info = analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_snps_fpath)
+    aligned_ref_bases, indels_info = analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_snps_fpath)
     total_indels_info += indels_info
-    cov_stats = {'SNPs': total_indels_info.mismatches, 'indels_list': total_indels_info.indels_list, 'total_aligned_bases': total_aligned_bases}
+    cov_stats = {'SNPs': total_indels_info.mismatches, 'indels_list': total_indels_info.indels_list, 'aligned_ref_bases': aligned_ref_bases}
     result.update(cov_stats)
     result = print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result)
 

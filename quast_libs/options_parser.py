@@ -544,6 +544,15 @@ def parse_options(logger, quast_args):
         (['--contig-thresholds'], dict(
              dest='contig_thresholds')
          ),
+        (['--x-for-Nx'], dict(
+            dest='x_for_additional_Nx',
+            type='int',
+            default=qconfig.x_for_additional_Nx,
+            action='callback',
+            callback=check_arg_value,
+            callback_args=(logger,),
+            callback_kwargs={'min_value': 0, 'max_value': 100})
+         ),
         (['--gene-thresholds'], dict(
              dest='genes_lengths')
          ),

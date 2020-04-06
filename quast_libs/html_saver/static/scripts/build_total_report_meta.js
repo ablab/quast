@@ -254,6 +254,33 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     var notExtendedMetrics = [];
     if (minContig > 0)
         notExtendedMetrics = [ '# contigs (&gt;= 0 bp)', 'Total length (&gt;= 0 bp)', 'Fully unaligned length', '# fully unaligned contigs'];
+
+    function getGenomeBasedContiguityMetrics() {  // retrieving NG50, LG50, NGA50, NGx, LGx, etc with exact values of 'x'
+        var gbcMetricNames = [];
+        for (var group_n = 0; group_n < report.length; group_n++) { // the metrics are in per_ref reports but not in combined_ref
+            var groupName = report[group_n][0];
+            if (groupName.startsWith('Genome')) {  // only 'Genome statistics' section is needed
+                for (var report_n = 0; report_n < reports.length; report_n++) {
+                    var metrics_by_refs = reports[report_n].report[group_n][1];
+                    if (metrics_by_refs.length > 0) { // check for special case -- not_aligned report: length == 0 there
+                        for (var metric_n = 0; metric_n < metrics_by_refs.length; metric_n++) {
+                            var metricName = metrics_by_refs[metric_n].metricName;
+                            if (metricName.startsWith('NG') || metricName.startsWith('LG')) {
+                                gbcMetricNames.push(metricName);
+                            }
+                        }
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        return gbcMetricNames;
+    }
+
+    var metricsNotForCombinedReference = ['GC (%)', 'Avg contig read support'].concat(
+                                          getGenomeBasedContiguityMetrics(metricsNames));
+
     for (var group_n = 0; group_n < report.length; group_n++) {
         var group = report[group_n];
         var groupName = group[0];
@@ -261,8 +288,6 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         var metricsNames = [];
         for (var metric_n = 0; metric_n < metrics.length; metric_n++)
             metricsNames.push(metrics[metric_n].metricName);
-        var metricsNotForCombinedReference = ['GC (%)', 'NG50', 'NGA50', 'NG75', 'NGA75', 'LG50', 'LGA50', 'LG75', 'LGA75',
-                'Avg contig read support'];
         for (var report_n = 0; report_n < reports.length; report_n++) {
             var metrics_by_refs = reports[report_n].report[group_n][1];
             for (var metric_n = 0; metric_n < metrics_by_refs.length; metric_n++) {

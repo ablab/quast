@@ -883,11 +883,26 @@ function openClose(d) {
     d3.event.stopPropagation();
 }
 
+function getContigColorByMark(mark) {
+    if (mark in contigsColors) {
+        return contigsColors[mark];
+    }
+    else if (mark.startsWith('NG') && 'NGx' in contigsColors) {
+        return contigsColors['NGx'];
+    }
+    else if (mark.startsWith('N') && 'Nx' in contigsColors) {
+        return contigsColors['Nx'];
+    }
+    else {
+        return '#000000';
+    }
+}
+
 function addGradient(d, marks, gradientExists, smoothGradient) {
     if (!marks) return;
     var gradientId = 'gradient' + d.id;
     marks = marks.split(', ');
-    if (marks.length == 1) return contigsColors[marks[0]];
+    if (marks.length == 1) return getContigColorByMark(marks[0]);
     if (gradientExists) return 'url(#' + gradientId + ')';
     var gradient = chart.append("svg:defs")
         .append("svg:linearGradient")
@@ -901,7 +916,7 @@ function addGradient(d, marks, gradientExists, smoothGradient) {
         for (var m = 0; m < marks.length; m++)
             gradient.append("svg:stop")
                 .attr("offset", gradientSteps[m])
-                .attr("stop-color", contigsColors[marks[m]])
+                .attr("stop-color", getContigColorByMark(marks[m]))
                 .attr("stop-opacity", 1);
     }
     else {
@@ -911,7 +926,7 @@ function addGradient(d, marks, gradientExists, smoothGradient) {
                 .attr("y2", "100%");
         var colors = [];
         for (var m = 0; m < marks.length; m++)
-            colors.push(contigsColors[marks[m]])
+            colors.push(getContigColorByMark(marks[m]))
         var colorScale = d3.scale.linear().range(colors);
         gradient.selectAll("stop")
                 .data(colorScale.range())

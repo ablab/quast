@@ -701,14 +701,14 @@ function appendLegendContigSize(legend) {
     else {
         var classes = ['unknown', '', 'predicted_gene'];
         var classMarks = ['', 'N50'];
-        var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)', 'predicted genes'];
+        var classDescriptions = ['contigs', 'contig of length = Nx statistic (e.g. N50)', 'predicted genes'];
         blockTypes = 'unknown, N50';
         for (var i = 0; i < items.length; i++) {
             if (items[i].marks && items[i].marks.search('NG') != -1) {
                 classes = ['unknown', '', '', '', 'predicted_gene'];
                 classMarks = ['', 'N50', 'NG50', 'N50, NG50'];
-                classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)',
-                    'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and NGx simultaneously',
+                classDescriptions = ['contigs', 'contig of length = Nx statistic (e.g. N50)',
+                    'contig of length = NGx statistic (e.g. NG50)', 'contig of length = Nx and NGx simultaneously',
                     'predicted genes'];
                 blockTypes = 'unknown, N50, NG50';
                 break;

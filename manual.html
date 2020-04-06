@@ -464,6 +464,12 @@ Comma-separated list of contig length thresholds (in bp). Used in <span class='m
 <span class='metric-ref'>total length (&ge; x)</span> metrics (see <a href="#sec3">section 3</a>). The default value is 0,1000.
 
 <div class='option'>
+    <a name='x_for_Nx'></a><code><b>--x-for-Nx</b> &lt;int&gt;</code>
+</div>
+Value of 'x' for <span class='metric-ref'>Nx</span>, <span class='metric-ref'>Lx</span>, <span class='metric-ref'>NGx</span>, <span class='metric-ref'>NGAx</span>, etc metrics reported in addition to <span class='metric-ref'>N50</span>, <span class='metric-ref'>L50</span>, <span class='metric-ref'>NG50</span>, <span class='metric-ref'>NGA50</span>, etc (see <a href="#sec3">section 3</a>).
+    The value should be an integer between 0 and 100. The default value is 90.
+
+<div class='option'>
     <code><b>--use-all-alignments</b></code> (or <code>-u</code>)
 </div>
 Compute <span class='metric-ref'>genome fraction, # genomic features, # operons</span> metrics in the manner used in QUAST v.1.*.
@@ -995,9 +1001,9 @@ Note:
     covers at least half the reference genome.<br> This metric is computed only if
     the reference genome is provided.</p>
 
-<p><a name='N75'></a><span class='metric-name'>N75 and NG75</span> are defined similarly to N50 but with 75<span class="rhs">&nbsp;</span>% instead of 50<span class="rhs">&nbsp;</span>%.</p>
+<p><a name='Nx'></a><span class='metric-name'>Nx and NGx (for x between 0 and 100)</span> are defined similarly to N50 but with x<span class="rhs">&nbsp;</span>% instead of 50<span class="rhs">&nbsp;</span>%. The value of <span class="rhs">&nbsp;</span>x<span class="rhs">&nbsp;</span> is set with <a href='#x_for_Nx'><code>--x-for-Nx</code></a> (90 by default).</p>
 
-<p><span class='metric-name'>L50 (L75, LG50, LG75)</span> is the number of contigs equal to or longer than N50 (N75, NG50, NG75)<br>
+<p><span class='metric-name'>L50 (Lx, LG50, LGx)</span> is the number of contigs equal to or longer than N50 (Nx, NG50, NGx)<br>
     In other words, L50, for example, is the minimal number of contigs that cover half the assembly.</p>
 
 <p><a name='misassemblies'></a><span class='metric-name'># misassemblies</span> is the number of positions in the contigs (breakpoints) that satisfy one of the following criteria:<br>
@@ -1113,7 +1119,7 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
 <p><span class='metric-name'>Largest alignment</span> is the length of the largest continuous alignment in the assembly.
     A value can be smaller than a value of <a href='#largest_contig'><span class='metric-ref'>largest contig</span></a> if the largest contig is misassembled or partially unaligned.</p>
 
-<p><a name='NAx'></a><a name='NGAx'></a><span class='metric-name'>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75</span> ("A" stands for "aligned") are similar to
+<p><a name='NAx'></a><a name='NGAx'></a><span class='metric-name'>NA50, NGA50, NAx, NGAx, LA50, LAx, LGA50, LGAx</span> ("A" stands for "aligned") are similar to
     the corresponding metrics without "A", but in this case aligned blocks instead of contigs are considered.<br>
     Aligned blocks are obtained by breaking contigs at misassembly events and removing all unaligned bases.</p>
 
@@ -1330,9 +1336,9 @@ You can view results separately for each reference genome by clicking on a row p
 <p><span class='metric-name'>Contig size viewer</span><br>
     This type of viewer draws contigs ordered from longest to shortest. This ordering is suitable for comparing only largest contigs
     or number of contigs longer than a specific threshold. The viewer shows <a href='#N50'><span class='metric-ref'>N50</span></a>
-    and <a href='#N75'><span class='metric-ref'>N75</span></a> with color and textual indication.
+    and <a href='#Nx'><span class='metric-ref'>Nx</span> (for user-defined x value)</a> with color and textual indication.
     If the reference genome is available or at least approximate genome length is known (see <a href='#est_ref_size'><code>--est-ref-size</code></a>),
-    <a href='#NG50'><span class='metric-ref'>NG50</span></a> and <a href='#N75'><span class='metric-ref'>NG75</span></a> are also shown.
+    <a href='#NG50'><span class='metric-ref'>NG50</span></a> and <a href='#Nx'><span class='metric-ref'>NGx</span></a> are also shown.
     You can also tone down contigs shorter than a specified threshold using Icarus control panel.
     </p>
 

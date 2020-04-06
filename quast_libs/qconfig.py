@@ -33,6 +33,7 @@ else:
 
 # default values for options
 contig_thresholds = "0,1000,5000,10000,25000,50000"
+x_for_additional_Nx = 90
 min_contig = None
 DEFAULT_MIN_CONTIG = 500
 genes_lengths = "0,300,1500,3000"
@@ -448,6 +449,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
             stream.write("    --blast-db <filename>             Custom BLAST database (.nsq file). By default, MetaQUAST searches references in SILVA database\n")
             stream.write("    --use-input-ref-order             Use provided order of references in MetaQUAST summary plots (default order: by the best average value)\n")
         stream.write("    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]\n" % contig_thresholds)
+        stream.write("    --x-for-Nx <int>                  Value of 'x' for Nx, Lx, etc metrics reported in addition to N50, L50, etc (0, 100) [default: %s]\n" % x_for_additional_Nx)
         stream.write("-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style.\n")
         stream.write("                                      By default, QUAST filters Minimap\'s alignments to keep only best ones\n")
         stream.write("-i  --min-alignment <int>             The minimum alignment length [default: %s]\n" % i_default)

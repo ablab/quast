@@ -281,10 +281,10 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
         ng50, lg50 = None, None
         if reference_length:
             ng50, lg50 = N50.NG50_and_LG50(lengths_list, reference_length)
-        n75, l75 = N50.N50_and_L50(lengths_list, 75)
-        ng75, lg75 = None, None
+        nx, lx = N50.N50_and_L50(lengths_list, qconfig.x_for_additional_Nx)
+        ngx, lgx = None, None
         if reference_length:
-            ng75, lg75 = N50.NG50_and_LG50(lengths_list, reference_length, 75)
+            ngx, lgx = N50.NG50_and_LG50(lengths_list, reference_length, qconfig.x_for_additional_Nx)
         total_length = sum(lengths_list)
         total_GC, GC_distribution, GC_contigs_distribution = GC_content(contigs_fpath, skip=qconfig.no_gc)
         list_of_GC_distributions.append(GC_distribution)
@@ -302,11 +302,11 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
         if reference_length and not qconfig.is_combined_ref:
             report.add_field(reporting.Fields.NG50, ng50)
             report.add_field(reporting.Fields.LG50, lg50)
-        report.add_field(reporting.Fields.N75, n75)
-        report.add_field(reporting.Fields.L75, l75)
+        report.add_field(reporting.Fields.Nx, nx)
+        report.add_field(reporting.Fields.Lx, lx)
         if reference_length and not qconfig.is_combined_ref:
-            report.add_field(reporting.Fields.NG75, ng75)
-            report.add_field(reporting.Fields.LG75, lg75)
+            report.add_field(reporting.Fields.NGx, ngx)
+            report.add_field(reporting.Fields.LGx, lgx)
         report.add_field(reporting.Fields.CONTIGS, len(lengths_list))
         if lengths_list:
             report.add_field(reporting.Fields.LARGCONTIG, max(lengths_list))

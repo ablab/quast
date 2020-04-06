@@ -44,9 +44,9 @@ class Fields:
     TOTALLENS__FOR_10000_THRESHOLD = 'Total length (>= 10000 bp)'
     TOTALLENS__FOR_50000_THRESHOLD = 'Total length (>= 50000 bp)'
     N50 = 'N50'
-    N75 = 'N75'
+    Nx = 'N%d' % qconfig.x_for_additional_Nx
     L50 = 'L50'
-    L75 = 'L75'
+    Lx = 'L%d' % qconfig.x_for_additional_Nx
     GC = 'GC (%)'
 
     # Read statistics
@@ -143,12 +143,12 @@ class Fields:
     LG50 = 'LG50'
     LA50 = 'LA50'
     LGA50 = 'LGA50'
-    NG75 = 'NG75'
-    NA75 = 'NA75'
-    NGA75 = 'NGA75'
-    LG75 = 'LG75'
-    LA75 = 'LA75'
-    LGA75 = 'LGA75'
+    NGx = 'NG%d' % qconfig.x_for_additional_Nx
+    NAx = 'NA%d' % qconfig.x_for_additional_Nx
+    NGAx = 'NGA%d' % qconfig.x_for_additional_Nx
+    LGx = 'LG%d' % qconfig.x_for_additional_Nx
+    LAx = 'LA%d' % qconfig.x_for_additional_Nx
+    LGAx = 'LGA%d' % qconfig.x_for_additional_Nx
 
     # Unique k-mer statistics
     KMER_COMPLETENESS = 'K-mer-based compl. (%)'
@@ -197,7 +197,7 @@ class Fields:
 
     ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
     order = [NAME, CONTIGS__FOR_THRESHOLDS, TOTALLENS__FOR_THRESHOLDS, CONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
-             N50, NG50, N75, NG75, L50, LG50, L75, LG75,
+             N50, NG50, Nx, NGx, L50, LG50, Lx, LGx,
              TOTAL_READS, LEFT_READS, RIGHT_READS,
              MAPPED_READS_PCNT, REF_MAPPED_READS_PCNT,
              PROPERLY_PAIRED_READS_PCNT, REF_PROPERLY_PAIRED_READS_PCNT,
@@ -209,7 +209,7 @@ class Fields:
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS,
              BUSCO_COMPLETE, BUSCO_PART,
              PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES,
-             LARGALIGN, TOTAL_ALIGNED_LEN, NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75,
+             LARGALIGN, TOTAL_ALIGNED_LEN, NA50, NGA50, NAx, NGAx, LA50, LGA50, LAx, LGAx,
              KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_MISASSEMBLIES]
 
     reads_order = [NAME, TOTAL_READS, LEFT_READS, RIGHT_READS,
@@ -246,7 +246,7 @@ class Fields:
     grouped_order = [
         ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT, GENES, OPERONS,
                                LARGALIGN, TOTAL_ALIGNED_LEN,
-                               NG50, NG75, NA50, NA75, NGA50, NGA75, LG50, LG75, LA50, LA75, LGA50, LGA75, BUSCO_COMPLETE, BUSCO_PART]),
+                               NG50, NGx, NA50, NAx, NGA50, NGAx, LG50, LGx, LA50, LAx, LGA50, LGAx, BUSCO_COMPLETE, BUSCO_PART]),
 
         ('Reads mapping', [MAPPED_READS, MAPPED_READS_PCNT, PROPERLY_PAIRED_READS, PROPERLY_PAIRED_READS_PCNT,
                            SINGLETONS, SINGLETONS_PCNT, MISJOINT_READS, MISJOINT_READS_PCNT,
@@ -267,7 +267,7 @@ class Fields:
                         MIS_SHORT_INDELS, MIS_LONG_INDELS, UNCALLED, UNCALLED_PERCENT,]),
 
         ('Statistics without reference', [CONTIGS, CONTIGS__FOR_THRESHOLDS, LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS,
-                                          N50, N75, L50, L75, GC,]),
+                                          N50, Nx, L50, Lx, GC,]),
 
         ('K-mer-based statistics', [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH,
                                     KMER_MISASSEMBLIES, KMER_TRANSLOCATIONS, KMER_RELOCATIONS]),
@@ -309,14 +309,14 @@ class Fields:
         Quality.MORE_IS_BETTER:
             [LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS, TOTALLENS__FOR_1000_THRESHOLD, TOTALLENS__FOR_10000_THRESHOLD,
              TOTALLENS__FOR_50000_THRESHOLD, LARGALIGN, TOTAL_ALIGNED_LEN,
-             N50, NG50, N75, NG75, NA50, NGA50, NA75, NGA75,
+             N50, NG50, Nx, NGx, NA50, NGA50, NAx, NGAx,
              MAPPEDGENOME, AVE_READ_SUPPORT, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES,
              BUSCO_COMPLETE,
              MAPPED_READS, MAPPED_READS_PCNT, PROPERLY_PAIRED_READS, PROPERLY_PAIRED_READS_PCNT,
              KMER_COMPLETENESS, KMER_CORR_LENGTH,
              DEPTH, COVERAGE__FOR_THRESHOLDS],
         Quality.LESS_IS_BETTER:
-            [L50, LG50, L75, LG75,
+            [L50, LG50, Lx, LGx,
              MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISINTERNALOVERLAP,
              LARGE_MIS_EXTENSIVE, MIS_ALL_EXTENSIVE,
              CONTIGS_WITH_ISTRANSLOCATIONS, POSSIBLE_MISASSEMBLIES,
@@ -324,7 +324,7 @@ class Fields:
              UNCALLED, UNCALLED_PERCENT, BUSCO_PART,
              SINGLETONS, SINGLETONS_PCNT, MISJOINT_READS, MISJOINT_READS_PCNT,
              KMER_MIS_LENGTH, KMER_UNDEF_LENGTH, KMER_MISASSEMBLIES,
-             LA50, LGA50, LA75, LGA75, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,
+             LA50, LGA50, LAx, LGAx, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,
              MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES],
         Quality.EQUAL:
             [REFLEN, ESTREFLEN, GC, CONTIGS, CONTIGS__FOR_THRESHOLDS, REFGC, STRUCT_VARIATIONS, POTENTIAL_MGE, SIMILAR_CONTIGS, SIMILAR_MIS_BLOCKS],
@@ -463,9 +463,9 @@ def table(order=Fields.order, ref_name=None):
 
         required_fields = []
         if report.get_field(Fields.REFLEN):  # keep the same number of metrics in different reports (no matter what percent of the genome was assembled)
-            required_fields = ['NA50', 'LA50', 'NA75', 'LA75']
+            required_fields = [Fields.NA50, Fields.LA50, Fields.NAx, Fields.LAx]
             if not qconfig.is_combined_ref:
-                required_fields.extend(['NG50', 'NGA50', 'LG50', 'LGA50', 'NG75', 'NGA75', 'LG75', 'LGA75'])
+                required_fields.extend([Fields.NG50, Fields.NGA50, Fields.LG50, Fields.LGA50, Fields.NGx, Fields.NGAx, Fields.LGx, Fields.LGAx])
         if list(filter(lambda v: v is not None, values)) or field in required_fields:
             metric_name = field if (feature is None) else pattern % int(feature)
             # ATTENTION! Contents numeric values, needed to be converted to strings.

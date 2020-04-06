@@ -397,7 +397,6 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
         half_unaligned_with_misassembly = None
 
     result = {'region_misassemblies': region_misassemblies,
-              'region_struct_variations': region_struct_variations.get_count() if region_struct_variations else None,
               'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
               'misassembly_internal_overlap': misassembly_internal_overlap,
               'unaligned': unaligned, 'partially_unaligned': partially_unaligned,

@@ -79,7 +79,6 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
 def save_result(result, report, fname, ref_fpath, genome_size):
     region_misassemblies = result['region_misassemblies']
     misassemblies_by_ref = result['misassemblies_by_ref']
-    region_struct_variations = result['region_struct_variations']
     misassembled_contigs = result['misassembled_contigs']
     misassembled_bases = result['misassembled_bases']
     misassembly_internal_overlap = result['misassembly_internal_overlap']

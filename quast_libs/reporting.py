@@ -263,8 +263,9 @@ class Fields:
         ('Unaligned', [UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
                        UNALIGNED_PART_LENGTH, ]),
 
-        ('Mismatches', [MISMATCHES, INDELS, INDELSBASES, SUBSERROR, INDELSERROR,
-                        MIS_SHORT_INDELS, MIS_LONG_INDELS, UNCALLED, UNCALLED_PERCENT,]),
+        ('Mismatches', [SUBSERROR, MISMATCHES,
+                        INDELSERROR, INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES,
+                        UNCALLED_PERCENT, UNCALLED, ]),
 
         ('Statistics without reference', [CONTIGS, CONTIGS__FOR_THRESHOLDS, LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS,
                                           N50, Nx, L50, Lx, GC,]),

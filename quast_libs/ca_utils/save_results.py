@@ -124,9 +124,9 @@ def save_result(result, report, fname, ref_fpath, genome_size):
                                   ambiguous_contigs_extra_bases) / aligned_ref_bases
         report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_fraction)
         report.add_field(reporting.Fields.DUPLICATION_RATIO, '%.3f' % duplication_ratio)
-        report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(aligned_ref_bases)))
+        report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(aligned_assembly_bases)))
         report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(report.get_field(reporting.Fields.INDELS))
-                                                                 * 100000.0 / float(aligned_ref_bases)))
+                                                                 * 100000.0 / float(aligned_assembly_bases)))
 
     # for misassemblies report:
     report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, region_misassemblies.count(Misassembly.RELOCATION) +

@@ -1087,14 +1087,14 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
     if <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> is set to 'all'.
 </p>
 
-<p><span class='metric-name'># N's per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of uncalled bases (N's) per 100<span class='hs'></span>000 assembly bases.</p>
+<p><span class='metric-name'># N's per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of uncalled bases (N's) per 100,000 assembly bases.</p>
 
 <p><span class='metric-name'># mismatches per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of mismatches 
-    per 100<span class='hs'></span>000 aligned bases in the reference genome. True SNPs and sequencing errors are not distinguished and are counted equally.
+    per 100,000 aligned bases in the assembly. True SNPs and sequencing errors are not distinguished and are counted equally.
     </ul>
 </p>
 
-<p><span class='metric-name'># indels per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of indels per 100<span class='hs'></span>000 aligned bases in the reference genome.
+<p><span class='metric-name'># indels per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of indels per 100,000 aligned bases in the assembly.
     Several consecutive single nucleotide indels are counted as one indel.</p>
 
 <p><a name='genes'></a><span class='metric-name'># genomic features</span> is the number of genomic features (genes, CDS, etc) in the assembly (complete and partial), based on a user-provided
@@ -1203,9 +1203,9 @@ The following metrics duplicate metrics from the Summary report (see <a href="#s
 Note that all these metrics are excluded from <code>#&nbsp;misassemblies</code> and related metrics (e.g., <code>Misassembled contigs length</code>).
 </p>
 
-<p><span class='metric-name'># mismatches</span> is the number of mismatches in all aligned bases.</p>
+<p><span class='metric-name'># mismatches</span> is the number of mismatches in all aligned bases in the assembly. Note that the number of aligned bases in the assembly may slightly differ from the number of aligned bases in the reference genome if Duplication ratio is above 1.</p>
 
-<p><span class='metric-name'># indels</span> is the number of indels in all aligned bases. Several consecutive single nucleotide indels are counted as one indel.
+<p><span class='metric-name'># indels</span> is the number of indels in all aligned bases in the assembly. Note that the number of aligned bases in the assembly may slightly differ from the number of aligned bases in the reference genome if Duplication ratio is above 1. Several consecutive single nucleotide indels are counted as one indel.
     Note: default maximum length of indel is 85 bp. All indels larger than 85 bp are considered as local misassemblies.</p>
 
 <p><span class='metric-name'># indels (&le;<span class="rhs">&nbsp;</span>5<span class="rhs">&nbsp;</span>bp)</span> is the number of indels of length <code>&le;<span class="rhs">&nbsp;</span>5<span class="rhs">&nbsp;</span>bp</code>.</p>

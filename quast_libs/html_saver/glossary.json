@@ -19,7 +19,7 @@
     "LA50"                          : "<span>is L50 where aligned blocks are counted instead of contigs. I.e., if a contig has a misassembly with respect to the reference, the contig is broken into smaller pieces. Similarly, LAx for any x between 0 and 100 could be computed.</span>",
     "LGA50"                         : "<span>is LG50 where aligned blocks are counted instead of contigs. I.e., if a contig has a misassembly with respect to the reference, the contig is broken into smaller pieces. Similarly, LGAx for any x between 0 and 100 could be computed.</span>",
 
-    "Average %IDY"                  : "<span>is the average of alignment identity percent (Nucmer measure of alignment accuracy) among all contigs.</span>",
+    "Average %IDY"                  : "<span>is the average of alignment identity percent (alignment accuracy) among all contigs.</span>",
     "# misassemblies"               : "<span>is the number of positions in the assembled contigs where the left flanking sequence aligns over 1 kbp away from the right flanking sequence on the reference (<i>relocation</i>) or they overlap on more than 1 kbp (<i>relocation</i>) or flanking sequences align on different strands (<i>inversion</i>) or different chromosomes (<i>translocation</i>).</span>",
     "# large block misassemblies"   : "<span>is the number of misassemblies between alignments with length greater than or equal to 3 kbp and with the misassembly threshold equal to 5 kbp (instead of default 1 kbp for regular misassemblies).</span>",
     "# misassembled contigs"        : "<span>is the number of contigs that contain misassembly events.</span>",
@@ -55,13 +55,13 @@
     "GC (%)"                        : "<span>is the total number of G and C nucleotides in the assembly, divided by the total length of the assembly.</span>",
     "Reference GC (%)"              : "<span>is the total number of G and C nucleotides in the reference, divided by the total length of the reference.</span>",
 
-    "# mismatches per 100 kbp"      : "<span>is the average number of mismatches per 100000 aligned bases in the reference genome.</span>",
-    "# mismatches"                  : "<span>is the number of mismatches in all aligned bases.</span>",
-    "# indels per 100 kbp"          : "<span>is the average number of indels per 100000 aligned bases in the reference genome.</span>",
-    "# indels"                      : "<span>is the number of indels in all aligned bases</span>",
-    "# indels (<= 5 bp)"            : "<span>is the number of indels of length less than or equal to 5 bp</span>",
-    "# indels (> 5 bp)"             : "<span>is the number of indels of length greater than 5 bp</span>",
-    "Indels length"                 : "<span>is the number of total bases contained in all indels</span>",
+    "# mismatches per 100 kbp"      : "<span>is the average number of mismatches per 100,000 aligned bases in the assembly.</span>",
+    "# mismatches"                  : "<span>is the number of mismatches in all aligned bases in the assembly.</span>",
+    "# indels per 100 kbp"          : "<span>is the average number of indels per 100,000 aligned bases in the assembly.</span>",
+    "# indels"                      : "<span>is the number of indels in all aligned bases in the assembly.</span>",
+    "# indels (<= 5 bp)"            : "<span>is the number of indels of length less than or equal to 5 bp.</span>",
+    "# indels (> 5 bp)"             : "<span>is the number of indels of length greater than 5 bp.</span>",
+    "Indels length"                 : "<span>is the number of total bases contained in all indels.</span>",
 
     "# genomic features"            : "<span>is the number of genomic features (genes, transcripts, CDS) in the assembly (complete and partial), based on a user-provided annotated list of gene positions in the reference genome. A feature counts as 'partially covered' if the assembly contains at least 100 bp of this feature but not the whole feature.</span>",
     "# operons"                     : "<span>is the number of operons in the assembly (complete and partial), based on a user-provided annotated list of operon positions in the reference genome. An operon counts as 'partially covered' if the assembly contains at least 100 bp of this operon but not the whole operon.</span>",
@@ -84,7 +84,7 @@
     "Avg contig read support"       : "<span>is the average coverage of contigs that have large unique alignments to the reference. Read coverage is extracted from contig names (SPAdes/Velvet naming scheme only).</span>",
 
     "# N's"                         : "<span>is the total number of uncalled bases (N's) in the assembly.</span>",
-    "# N's per 100 kbp"             : "<span>is the average number of uncalled bases (N's) per 100000 assembly bases.</span>",
+    "# N's per 100 kbp"             : "<span>is the average number of uncalled bases (N's) per 100,000 assembly bases.</span>",
 
     "# mapped"                      : "<span>is the number of reads that mapped to the assembly.</span>",
     "Mapped (%)"                    : "<span>is the percent of reads that mapped to the assembly.</span>",

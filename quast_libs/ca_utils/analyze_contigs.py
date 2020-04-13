@@ -211,13 +211,13 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         while len(top_aligns):
                             ca_output.stdout_f.write('\t\t\tAlignment: %s\n' % str(top_aligns[0]))
                             ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str(ambiguity=True) + '\n')
+                            ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + ('\n' if first_alignment else ' ambiguous\n'))
                             ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                             if first_alignment:
                                 first_alignment = False
                                 aligned_lengths.append(top_aligns[0].len2)
                                 contigs_aligned_lengths[-1] = top_aligns[0].len2
                             ambiguous_contigs_extra_bases += top_aligns[0].len2
-                            ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + ' ambiguous\n')
                             top_aligns = top_aligns[1:]
             else:
                 # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies)
@@ -258,17 +258,14 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                                 (idx + 2, cur_set.score, len(cur_set.indexes), cur_set.uncovered))
                         if too_much_best_sets:
                             ca_output.stdout_f.write('\t\t\t\tetc...\n')
-                        if len(the_best_set.indexes) < len(used_indexes):
-                            ambiguous_contigs_extra_bases -= (ctg_len - the_best_set.uncovered)
-                            ca_output.stdout_f.write('\t\t\tList of alignments used in the sets above:\n')
-                            for idx in used_indexes:
-                                align = sorted_aligns[idx]
-                                ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(align))
-                                ref_aligns.setdefault(align.ref, []).append(align)
-                                ambiguous_contigs_extra_bases += align.len2
-                                ca_output.coords_filtered_f.write(align.coords_str() + " ambiguous\n")
-                                if idx not in the_best_set.indexes:
-                                    ca_output.icarus_out_f.write(align.icarus_report_str(is_best=False) + '\n')
+                        ca_output.stdout_f.write('\t\t\tList of alignments used in the sets above but not in the best set (if any):\n')
+                        for idx in (set(used_indexes) - set(the_best_set.indexes)):
+                            align = sorted_aligns[idx]
+                            ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(align))
+                            ref_aligns.setdefault(align.ref, []).append(align)
+                            ambiguous_contigs_extra_bases += align.len2
+                            ca_output.coords_filtered_f.write(align.coords_str() + " ambiguous\n")
+                            ca_output.icarus_out_f.write(align.icarus_report_str(is_best=False) + '\n')
 
                 ca_output.stdout_f.write('\t\t\tThe best set is below. Score: %.1f, number of alignments: %d, unaligned bases: %d\n' % \
                                              (the_best_set.score, len(the_best_set.indexes), the_best_set.uncovered))

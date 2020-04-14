@@ -76,7 +76,7 @@ def print_file(all_rows, fpath, append_to_existing_file=False):
 
 
 def create_minimap_output_dir(output_dir):
-    minimap_output_dir = join(output_dir, qconfig.minimap_output_dirname)
+    minimap_output_dir = join(output_dir, qconfig.aligner_output_dirname)
     if not isdir(minimap_output_dir):
         os.mkdir(minimap_output_dir)
     if qconfig.is_combined_ref:

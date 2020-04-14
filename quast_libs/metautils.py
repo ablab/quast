@@ -228,7 +228,8 @@ def get_downloaded_refs_with_alignments(genome_info_fpath, ref_fpaths, chromosom
 
 
 def calculate_ave_read_support(combined_output_dirpath, assemblies):
-    unique_contigs_fpath = os.path.join(combined_output_dirpath, 'contigs_reports', qconfig.unique_contigs_fname_pattern)
+    unique_contigs_fpath = os.path.join(combined_output_dirpath, qconfig.detailed_contigs_reports_dirname,
+                                        qconfig.unique_contigs_fname_pattern)
     for assembly in assemblies:
         aligned_contigs_by_ref = dict()
         assembly_label = qutils.label_from_fpath(assembly.fpath)

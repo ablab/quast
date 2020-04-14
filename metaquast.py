@@ -308,7 +308,7 @@ def main(args):
 
     assemblies_by_reference, not_aligned_assemblies = partition_contigs(
         assemblies, corrected_ref_fpaths, corrected_dirpath,
-        os.path.join(combined_output_dirpath, 'contigs_reports', 'alignments_%s.tsv'), labels)
+        os.path.join(combined_output_dirpath, qconfig.detailed_contigs_reports_dirname, 'alignments_%s.tsv'), labels)
 
     output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dirname)
     if not qconfig.memory_efficient and \

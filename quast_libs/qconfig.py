@@ -116,7 +116,8 @@ transposed_report_prefix = "transposed_report"
 html_aux_dir = "report_html_aux"
 contig_report_fname_pattern = 'contigs_report_%s'
 icarus_report_fname_pattern = 'all_alignments_%s.tsv'
-minimap_output_dirname = 'minimap_output'
+detailed_contigs_reports_dirname = 'contigs_reports'
+aligner_output_dirname = 'minimap_output'
 optimal_assembly_basename = 'upper_bound_assembly'
 
 # for MetaQUAST

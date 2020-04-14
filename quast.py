@@ -162,7 +162,7 @@ def main(args):
         from quast_libs import contigs_analyzer
         is_cyclic = qconfig.prokaryote and not qconfig.check_for_fragmented_ref
         aligner_statuses, aligned_lengths_per_fpath = contigs_analyzer.do(
-            ref_fpath, contigs_fpaths, is_cyclic, os.path.join(output_dirpath, 'contigs_reports'),
+            ref_fpath, contigs_fpaths, is_cyclic, os.path.join(output_dirpath, qconfig.detailed_contigs_reports_dirname),
             old_contigs_fpaths, qconfig.bed)
         for contigs_fpath in contigs_fpaths:
             if aligner_statuses[contigs_fpath] == contigs_analyzer.AlignerStatus.OK:
@@ -176,7 +176,7 @@ def main(args):
     detailed_contigs_reports_dirpath = None
     features_containers = None
     if len(aligned_contigs_fpaths) and ref_fpath:
-        detailed_contigs_reports_dirpath = os.path.join(output_dirpath, 'contigs_reports')
+        detailed_contigs_reports_dirpath = os.path.join(output_dirpath, qconfig.detailed_contigs_reports_dirname)
 
         ########################################################################
         ### NAx and NGAx ("aligned Nx and NGx")

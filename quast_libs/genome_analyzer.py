@@ -241,7 +241,7 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
 def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, features_dict, operons_fpaths,
        detailed_contigs_reports_dirpath, genome_stats_dirpath):
 
-    coords_dirpath = os.path.join(detailed_contigs_reports_dirpath, qconfig.minimap_output_dirname)
+    coords_dirpath = os.path.join(detailed_contigs_reports_dirpath, qconfig.aligner_output_dirname)
     from quast_libs import search_references_meta
     if search_references_meta.is_quast_first_run:
         coords_dirpath = os.path.join(coords_dirpath, 'raw')

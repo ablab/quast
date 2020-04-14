@@ -108,7 +108,8 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                                                print_all_refs=True, logger=logger)
                 if metric == reporting.Fields.MISASSEMBL:
                     mis_results = []
-                    report_fname = os.path.join('contigs_reports', qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')
+                    report_fname = os.path.join(qconfig.detailed_contigs_reports_dirname,
+                                                qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')
                     if ref_names[-1] == qconfig.not_aligned_name:
                         cur_ref_names = ref_names[:-1]
                     for misassembly_metric in misassembly_metrics:

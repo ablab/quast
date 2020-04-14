@@ -268,7 +268,7 @@ def create_coverage_plot(cov_fpath, window_size, chr_lengths, output_dir):
 
 def create_mismatches_plot(assembly, window_size, ref_len, root_dir, output_dir):
     assembly_label = qutils.label_from_fpath_for_fname(assembly.fpath)
-    aligner_dirpath = join(root_dir, '..', 'contigs_reports')
+    aligner_dirpath = join(root_dir, '..', qconfig.detailed_contigs_reports_dirname)
     coords_basename = join(create_minimap_output_dir(aligner_dirpath), assembly_label)
     _, coords_filtered_fpath, _, _ = get_aux_out_fpaths(coords_basename)
     if not exists(coords_filtered_fpath) or not qconfig.show_snps:

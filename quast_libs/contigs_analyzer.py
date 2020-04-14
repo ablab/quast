@@ -164,7 +164,8 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     with open(coords_fpath) as coords_file:
         for line in coords_file:
             mapping = Mapping.from_line(line)
-            aligns.setdefault(mapping.contig, []).append(mapping)
+            if not qconfig.alignments_for_reuse_dirpath or mapping.ref in reference_chromosomes.keys():
+                aligns.setdefault(mapping.contig, []).append(mapping)
 
     # Loading the reference sequences
     log_out_f.write('Loading reference...\n') # TODO: move up

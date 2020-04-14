@@ -211,7 +211,7 @@ def wrong_test_option(logger, msg):
 def clean_metaquast_args(quast_py_args, contigs_fpaths):
     opts_with_args_to_remove = ['-o', '--output-dir', '-r', '-R', '--reference', '--max-ref-number', '-l', '--labels',
                                 '--references-list', '--blast-db']
-    opts_to_remove = ['-L', '--test', '--test-no-ref', '--unique-mapping']
+    opts_to_remove = ['-L', '--test', '--test-no-ref', '--unique-mapping', '--reuse-combined-alignments']
     for contigs_fpath in contigs_fpaths:
         if contigs_fpath in quast_py_args:
             quast_py_args.remove(contigs_fpath)
@@ -222,7 +222,7 @@ def clean_metaquast_args(quast_py_args, contigs_fpaths):
     return quast_py_args
 
 
-def prepare_regular_quast_args(quast_py_args, combined_output_dirpath):
+def prepare_regular_quast_args(quast_py_args, combined_output_dirpath, reuse_combined_alignments=False):
     opts_with_args_to_remove = ['--contig-thresholds', '--sv-bed',]
     opts_to_remove = ['-s', '--split-scaffolds', '--combined-ref']
     for opt in opts_with_args_to_remove:
@@ -251,6 +251,11 @@ def prepare_regular_quast_args(quast_py_args, combined_output_dirpath):
     if qconfig.phys_cov_fpath and is_non_empty_file(qconfig.phys_cov_fpath):
         quast_py_args += ['--phys-cov']
         quast_py_args += [qconfig.phys_cov_fpath]
+
+    alignments_for_reuse_dirpath = os.path.join(combined_output_dirpath, qconfig.detailed_contigs_reports_dirname,
+                                                qconfig.aligner_output_dirname)
+    if reuse_combined_alignments and os.path.isdir(alignments_for_reuse_dirpath):
+        quast_py_args += ['--aligns-for-reuse', alignments_for_reuse_dirpath]
 
 
 def parse_options(logger, quast_args):
@@ -423,6 +428,10 @@ def parse_options(logger, quast_args):
         (['--phys-cov'], dict(
              dest='phys_cov_fpath',
              type='file')
+         ),
+        (['--aligns-for-reuse'], dict(
+             dest='alignments_for_reuse_dirpath',
+             type='string')
          ),
         (['-l', '--labels'], dict(
              dest='labels',
@@ -716,6 +725,10 @@ def parse_options(logger, quast_args):
                  dest='unique_mapping',
                  action='store_true')
              ),
+            (['--reuse-combined-alignments'], dict(
+                 dest='reuse_combined_alignments',
+                 action='store_true')
+             ),
             (['--max-ref-number'], dict(
                  dest='max_references',
                  type='int',
@@ -747,6 +760,9 @@ def parse_options(logger, quast_args):
     if qconfig.glimmer and qconfig.gene_finding:
         logger.error("You cannot use --glimmer and " + ("--mgm" if qconfig.metagenemark else "--gene-finding") + \
                      " simultaneously!", exit_with_code=3)
+    if qconfig.use_all_alignments and qconfig.reuse_combined_alignments:
+        logger.error("You cannot use --use-all-alignments and --reuse-combined-alignments simultaneously! " + \
+                     "Reused alignments are always filtered, i.e. a subset of all alignments.", exit_with_code=3)
     if len(qconfig.forward_reads) != len(qconfig.reverse_reads):
         logger.error('Use the SAME number of files with forward and reverse reads for paired-end libraries '
                      '(-1 <filepath> -2 <filepath>).\n'

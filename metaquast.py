@@ -167,6 +167,11 @@ def main(args):
     if qconfig.min_IDY is None: # special case: user not specified min-IDY, so we need to use MetaQUAST default value
         quast_py_args += ['--min-identity', str(qconfig.META_MIN_IDY)]
 
+    if qconfig.reuse_combined_alignments:
+        reuse_combined_alignments = True
+    else:
+        reuse_combined_alignments = False
+
     downloaded_refs = False
 
     # SEARCHING REFERENCES
@@ -302,7 +307,7 @@ def main(args):
     if qconfig.calculate_read_support:
         calculate_ave_read_support(combined_output_dirpath, assemblies)
 
-    prepare_regular_quast_args(quast_py_args, combined_output_dirpath)
+    prepare_regular_quast_args(quast_py_args, combined_output_dirpath, reuse_combined_alignments)
     logger.main_info()
     logger.main_info('Partitioning contigs into bins aligned to each reference..')
 

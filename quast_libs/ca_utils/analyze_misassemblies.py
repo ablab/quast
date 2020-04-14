@@ -56,14 +56,14 @@ class Mapping(object):
     @classmethod
     def from_line(cls, line):
         # line from coords file,e.g.
-        # 4324128  4496883  |   112426   285180  |   172755   172756  |  99.9900  | gi|48994873|gb|U00096.2|	NODE_333_length_285180_cov_221082
+        # 4324128  4496883  |   112426   285180  |   172755   172756  |  99.9900  | gi|48994873|gb|U00096.2|  NODE_333_length_285180_cov_221082  | cs:Z::172755
         line = line.split()
-        assert line[2] == line[5] == line[8] == line[10] == '|', line
+        assert line[2] == line[5] == line[8] == line[10] == line[13] == '|', line
         ref = line[11]
         contig = line[12]
         s1, e1, s2, e2, len1, len2 = [int(line[i]) for i in [0, 1, 3, 4, 6, 7]]
         idy = float(line[9])
-        cigar = line[-1]
+        cigar = line[14]
         return Mapping(s1, e1, s2, e2, len1, len2, idy, ref, contig, cigar)
 
     def __str__(self):

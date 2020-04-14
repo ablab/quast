@@ -45,6 +45,8 @@ rna_gene_finding = False
 ambiguity_usage = 'one'
 ambiguity_score = 0.99
 meta_ambiguity_score = 0.9
+reuse_combined_alignments = False
+alignments_for_reuse_dirpath = None
 use_all_alignments = False
 max_threads = None
 min_alignment = None
@@ -451,6 +453,8 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
             stream.write("    --use-input-ref-order             Use provided order of references in MetaQUAST summary plots (default order: by the best average value)\n")
         stream.write("    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]\n" % contig_thresholds)
         stream.write("    --x-for-Nx <int>                  Value of 'x' for Nx, Lx, etc metrics reported in addition to N50, L50, etc (0, 100) [default: %s]\n" % x_for_additional_Nx)
+        if meta:
+            stream.write("    --reuse-combined-alignments       Reuse the alignments from the combined_reference stage on runs_per_reference stages.\n")
         stream.write("-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style.\n")
         stream.write("                                      By default, QUAST filters Minimap\'s alignments to keep only best ones\n")
         stream.write("-i  --min-alignment <int>             The minimum alignment length [default: %s]\n" % i_default)
@@ -528,10 +532,9 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
             stream.write("-j  --save-json             Save the output also in the JSON format\n")
             stream.write("-J  --save-json-to <path>   Save the JSON output to a particular path\n")
             if meta:
-                stream.write("--read-support                   Use read coverage specified in contig names (SPAdes/Velvet style) for calculating Avg contig read support\n")
-            stream.write("--cov  <filename>                File with read coverage (for Icarus alignment viewer)\n")
-            stream.write("--phys-cov  <filename>           File with physical coverage (for Icarus alignment viewer)\n")
-            stream.write("--no-icarus                      Do not create Icarus files\n")
+                stream.write("--read-support              Use read coverage specified in contig names (SPAdes/Velvet style) for calculating Avg contig read support\n")
+            stream.write("--cov  <filename>           File with read coverage (for Icarus alignment viewer)\n")
+            stream.write("--phys-cov  <filename>      File with physical coverage (for Icarus alignment viewer)\n")
 
         stream.write("\n")
         stream.write("Other:\n")

@@ -8,6 +8,7 @@
 from __future__ import with_statement
 
 import re
+import os
 from os.path import isfile
 import datetime
 
@@ -204,31 +205,43 @@ def align_contigs(output_fpath, out_basename, ref_fpath, contigs_fpath, old_cont
     successful_check_fpath = out_basename + '.sf'
     log_out_f.write('Aligning contigs to reference...\n')
 
+    # Special case: if there is a need to reuse alignments from the combined_reference stage
+    if qconfig.alignments_for_reuse_dirpath is not None and os.path.isdir(qconfig.alignments_for_reuse_dirpath):
+        _, coords_to_reuse_fname, _, _ = get_aux_out_fpaths(os.path.basename(out_basename))
+        coords_to_reuse_fpath = os.path.join(qconfig.alignments_for_reuse_dirpath, coords_to_reuse_fname)
+        if isfile(coords_to_reuse_fpath):
+            # symlink coords.filtered from combined_reference stage to coords in the current run
+            if isfile(output_fpath):
+                os.remove(output_fpath)
+            os.symlink(os.path.relpath(coords_to_reuse_fpath, os.path.dirname(output_fpath)), output_fpath)
+            log_out_f.write('\tReusing alignments from the combined_reference stage...\n')
+            logger.info('  ' + qutils.index_to_str(index) + 'Reusing alignments from the combined_reference stage... ')
+            return AlignerStatus.OK
+    qconfig.alignments_for_reuse_dirpath = None
+
     # Checking if there are existing previous alignments.
     # If they exist, using them to save time.
-    using_existing_alignments = False
     if isfile(successful_check_fpath) and isfile(output_fpath):
         if check_successful_check(successful_check_fpath, old_contigs_fpath, ref_fpath):
             log_out_f.write('\tUsing existing alignments...\n')
             logger.info('  ' + qutils.index_to_str(index) + 'Using existing alignments... ')
-            using_existing_alignments = True
+            return AlignerStatus.OK
 
-    if not using_existing_alignments:
-        log_out_f.write('\tAligning contigs to the reference\n')
-        logger.info('  ' + qutils.index_to_str(index) + 'Aligning contigs to the reference')
+    log_out_f.write('\tAligning contigs to the reference\n')
+    logger.info('  ' + qutils.index_to_str(index) + 'Aligning contigs to the reference')
 
-        tmp_output_fpath = output_fpath + '_tmp'
-        exit_code = run_minimap(tmp_output_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, threads)
-        if exit_code != 0:
-            return AlignerStatus.ERROR
+    tmp_output_fpath = output_fpath + '_tmp'
+    exit_code = run_minimap(tmp_output_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, threads)
+    if exit_code != 0:
+        return AlignerStatus.ERROR
 
-        if not isfile(tmp_output_fpath):
-            return AlignerStatus.FAILED
-        if not is_non_empty_file(tmp_output_fpath):
-            return AlignerStatus.NOT_ALIGNED
+    if not isfile(tmp_output_fpath):
+        return AlignerStatus.FAILED
+    if not is_non_empty_file(tmp_output_fpath):
+        return AlignerStatus.NOT_ALIGNED
 
-        create_successful_check(successful_check_fpath, old_contigs_fpath, ref_fpath)
-        log_out_f.write('Filtering alignments...\n')
-        parse_minimap_output(tmp_output_fpath, output_fpath)
+    create_successful_check(successful_check_fpath, old_contigs_fpath, ref_fpath)
+    log_out_f.write('Filtering alignments...\n')
+    parse_minimap_output(tmp_output_fpath, output_fpath)
     return AlignerStatus.OK
 

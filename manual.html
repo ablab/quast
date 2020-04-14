@@ -484,7 +484,7 @@ Minimum length of alignment (in bp). Alignments shorter than this value will be 
 <div class='option'>
     <a name='min_identity'></a><code><b>--min-identity</b></code> <code>&lt;float&gt;</code>
 </div>
-Minimum IDY% considered as proper alignment. Alignments with IDY% worse than this value will be filtered. Default is 95.0% for regular QUAST and 90.0% for MetaQUAST.
+Minimum IDY% considered as proper alignment. Alignments with IDY% worse than this value will be filtered. Default is 95.0% for regular QUAST and 90.0% for <a href='#sec2.4'>MetaQUAST</a>.
     Note that all alignments with IDY% less than 80.0% will be filtered regardless of this threshold.
 
 <div class='option'>
@@ -822,16 +822,22 @@ Print version and exit.
     Note that a contig may belong to several groups simultaneously if it aligns to several references.
     <br>
     MetaQUAST runs quast.py for each of the following:<br>
-    <ul>
+    <ol>
         <li>for all reference genomes in combination (simple concatenation of the FASTA files, we refer to it as "combined reference"),
-        <li>for each reference genome separately, by using corresponding group of contigs,
+        <li>for each reference genome separately, by using corresponding group of contigs ("runs per reference"),
         <li>for the rest of the contigs that were not aligned to any reference genome.
-    </ul>
+    </ol>
 
 <p>
-MetaQUAST uses <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> 'all' when running <code>quast.py</code> on
-the combined reference until <a href='#unique_mapping'><code>--unique-mapping</code></a> is specified.
-For gene prediction (<a href='#gene_finding'><code>--gene-finding</code></a>), MetaQUAST uses MetaGeneMark software.
+In contrast to regular QUAST, MetaQUAST uses a relaxed minimum identity threshold of 90% for both stages #1 and #2.
+    This value reflects the fact that metagenomic references are usually inaccurate and represent strains slightly different from the ones in the real environmental sample.
+    However, this default threshold can be easily changed with <a href='#min_identity'><code>--min-identity</code></a> option,
+    e.g. <code>--min-identity 95</code> corresponds to 95% IDY threshold as in regular QUAST.
+Also, MetaQUAST uses <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> 'all' when running <code>quast.py</code> on
+the combined reference (stage #1) until <a href='#unique_mapping'><code>--unique-mapping</code></a> is specified. Note that even with <code>--unique-mapping</code>,
+    some ambiguous contigs may produce several distinct mappings to different references (stage #2), e.g. in the case of closely-related strains.
+    To exclude this effect, one may use <a href='#reuse_combined_alignments'><code>--reuse-combined-alignments</code></a>.
+Finally, for gene prediction (<a href='#gene_finding'><code>--gene-finding</code></a>), MetaQUAST uses MetaGeneMark software unlike GeneMarkS/GeneMark-ES in QUAST.
 </p>
 
 <p>If you run MetaQUAST without providing reference genomes, the tool will try to identify genome content of the metagenome.
@@ -887,6 +893,16 @@ Maximum number of reference genomes (per each assembly) to download after search
 </div>
 Force <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a>='one' for the combined reference genome
 ('all' is used by default).
+
+<div class='option'>
+    <a name='reuse_combined_alignments'></a><code><b>--reuse-combined-alignments</b></code>
+</div>
+Reuse the alignments on the combined reference (stage #1) in the subsequent runs per separate references (stage #2).
+That is, the alignment procedure is performed only once (for all assemblies against the combined reference)
+    and does NOT executed for each subgroups of contigs against the corresponding separate reference genomes.
+    In each separate reference run, all precomputed assembly alignments for other references are simply ignored.
+The use of this option (1) speeds up the overall computation,
+    (2) may change the stage #2 results, especially when used together with <a href='#unique_mapping'><code>--unique-mapping</code></a>.
 </div>
 
 

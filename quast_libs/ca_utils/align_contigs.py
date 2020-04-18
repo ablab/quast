@@ -16,7 +16,7 @@ from quast_libs.ca_utils.analyze_misassemblies import Mapping
 from quast_libs.ca_utils.misc import minimap_fpath, parse_cs_tag
 
 from quast_libs.log import get_logger
-from quast_libs.qconfig import SHORT_INDEL_THRESHOLD
+from quast_libs.qconfig import SPLIT_ALIGN_THRESHOLD
 from quast_libs.qutils import md5, is_non_empty_file
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -150,53 +150,48 @@ def parse_minimap_output(raw_coords_fpath, coords_fpath):
 
 def split_align(coords_file, align_start, strand_direction, ref_start, ref_name, contig, cs):
     def _write_align():
-        if align_len < qconfig.min_alignment or not ref_len or not align_cs:
+        if align.len2 < qconfig.min_alignment or not align.len1 or not align.cigar:
             return
-        align_end = align_start + (align_len - 1) * strand_direction
-        ref_end = ref_start + ref_len - 1
-        align_idy = '%.2f' % (matched_bases * 100.0 / ref_len)
-        if float(align_idy) >= qconfig.min_IDY:
-            align = Mapping(s1=ref_start, e1=ref_end, s2=align_start, e2=align_end, len1=ref_len,
-                            len2=align_len, idy=align_idy, ref=ref_name, contig=contig, cigar=align_cs)
+        align.e1 = align.s1 + align.len1 - 1
+        align.e2 = align.s2 + (align.len2 - 1) * strand_direction
+        align.idy = '%.2f' % (matched_bases * 100.0 / align.len1)
+        if float(align.idy) >= qconfig.min_IDY:
             coords_file.write(align.coords_str() + '\n')
 
-    ref_len, align_len, align_end = 0, 0, 0
-    align_cs = ''
+    def _try_split(matched_bases, n_refbases, n_alignbases):
+        ## split alignment in positions of indels or stretch of mismatches to get smaller alignments with higher identity
+        if n_bases > SPLIT_ALIGN_THRESHOLD:
+            _write_align()
+            align.s1 += align.len1 + n_refbases
+            align.s2 += (align.len2 + n_alignbases) * strand_direction
+            align.len1, align.len2 = 0, 0
+            align.cigar = ''
+            matched_bases = 0
+        else:
+            align.len1 += n_refbases
+            align.len2 += n_alignbases
+            align.cigar += op
+        return matched_bases
+
     matched_bases = 0
+    align = Mapping(s1=ref_start, e1=ref_start, s2=align_start, e2=align_start, len1=0,
+                    len2=0, ref=ref_name, contig=contig, cigar='')
     for op in parse_cs_tag(cs):
         if op.startswith(':'):
             n_bases = int(op[1:])
         else:
             n_bases = len(op) - 1
         if op.startswith('*'):
-            align_cs += op
-            ref_len += 1
-            align_len += 1
-        ## split alignment in positions of indels to get smaller alignments with higher identity
+            n_bases = op.count('*')
+            matched_bases = _try_split(matched_bases, n_bases, n_bases)
         elif op.startswith('+'):
-            if n_bases > SHORT_INDEL_THRESHOLD:
-                _write_align()
-                align_start += (align_len + n_bases) * strand_direction
-                ref_start += ref_len
-                align_len, ref_len, matched_bases = 0, 0, 0
-                align_cs = ''
-            else:
-                align_cs += op
-                align_len += n_bases
+            matched_bases = _try_split(matched_bases, 0, n_bases)
         elif op.startswith('-'):
-            if n_bases > SHORT_INDEL_THRESHOLD:
-                _write_align()
-                align_start += align_len * strand_direction
-                ref_start += ref_len + n_bases
-                align_len, ref_len, matched_bases = 0, 0, 0
-                align_cs = ''
-            else:
-                align_cs += op
-                ref_len += n_bases
+            matched_bases = _try_split(matched_bases, n_bases, 0)
         else:
-            align_cs += op
-            ref_len += n_bases
-            align_len += n_bases
+            align.cigar += op
+            align.len1 += n_bases
+            align.len2 += n_bases
             matched_bases += n_bases
     _write_align()
 

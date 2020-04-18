@@ -171,6 +171,7 @@ min_similar_contig_size = 10000
 
 # indels and misassemblies
 SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
+SPLIT_ALIGN_THRESHOLD = 20 # for splitting low-identity alignments by the indels/mismatches
 MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies
 DEFAULT_EXT_MIS_SIZE = 1000
 extensive_misassembly_threshold = None  # for separating local and extensive misassemblies (relocation)

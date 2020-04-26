@@ -47,7 +47,10 @@ import re
 import sys
 
 # For formatters
-import cgi  # cgi.escape
+try:
+    from html import escape as escape_html
+except:
+    from cgi import escape as escape_html
 try:
     from urllib  import urlencode, quote_plus
 except:
@@ -555,7 +558,7 @@ def _ToString(x):
 
 
 def _HtmlAttrValue(x):
-  return cgi.escape(x, quote=True)
+  return escape_html(x, quote=True)
 
 
 def _AbsUrl(relative_url, context, unused_args):
@@ -580,7 +583,7 @@ def _AbsUrl(relative_url, context, unused_args):
 # This is a *public* constant, so that callers can use it construct their own
 # formatter lookup dictionaries, and pass them in to Template.
 _DEFAULT_FORMATTERS = {
-    'html': cgi.escape,
+    'html': escape_html,
 
     # The 'htmltag' name is deprecated.  The html-attr-value name is preferred
     # because it can be read with "as":
@@ -607,7 +610,7 @@ _DEFAULT_FORMATTERS = {
 
     # Just show a plain URL on an HTML page (without anchor text).
     'plain-url': lambda x: '<a href="%s">%s</a>' % (
-        cgi.escape(x, quote=True), cgi.escape(x)),
+        escape_html(x, quote=True), escape_html(x)),
 
     # A context formatter
     'AbsUrl': _AbsUrl,
@@ -840,7 +843,7 @@ def CompileTemplate(
 
     more_formatters:
         Something that can map format strings to formatter functions.  One of:
-          - A plain dictionary of names -> functions  e.g. {'html': cgi.escape}
+          - A plain dictionary of names -> functions  e.g. {'html': html.escape}
           - A higher-order function which takes format strings and returns
             formatter functions.  Useful for when formatters have parsed
             arguments.

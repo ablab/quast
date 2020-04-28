@@ -61,7 +61,7 @@ def get_ref_by_chromosome(chrom):
 
 
 def parse_cs_tag(cigar):
-    cs_pattern = re.compile(r':\d+|[\*acgtn]{2,}|\-[acgtn]+|\+[acgtn]+')
+    cs_pattern = re.compile(r':\d+|\*[acgtn]+|\-[acgtn]+|\+[acgtn]+')
     return cs_pattern.findall(cigar)
 
 

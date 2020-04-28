@@ -158,9 +158,9 @@ def split_align(coords_file, align_start, strand_direction, ref_start, ref_name,
         if float(align.idy) >= qconfig.min_IDY:
             coords_file.write(align.coords_str() + '\n')
 
-    def _try_split(matched_bases, n_refbases, n_alignbases):
+    def _try_split(matched_bases, prev_op, n_refbases=0, n_alignbases=0):
         ## split alignment in positions of indels or stretch of mismatches to get smaller alignments with higher identity
-        if n_bases > SPLIT_ALIGN_THRESHOLD:
+        if n_alignbases > SPLIT_ALIGN_THRESHOLD or n_refbases > SPLIT_ALIGN_THRESHOLD:
             _write_align()
             align.s1 += align.len1 + n_refbases
             align.s2 += (align.len2 + n_alignbases) * strand_direction
@@ -170,29 +170,33 @@ def split_align(coords_file, align_start, strand_direction, ref_start, ref_name,
         else:
             align.len1 += n_refbases
             align.len2 += n_alignbases
-            align.cigar += op
+            align.cigar += prev_op
         return matched_bases
 
     matched_bases = 0
     align = Mapping(s1=ref_start, e1=ref_start, s2=align_start, e2=align_start, len1=0,
                     len2=0, ref=ref_name, contig=contig, cigar='')
+    cur_mismatch_stretch = ''
     for op in parse_cs_tag(cs):
+        if op.startswith('*'):
+            cur_mismatch_stretch += op
+            continue
+        if cur_mismatch_stretch:
+            n_bases = cur_mismatch_stretch.count('*')
+            matched_bases = _try_split(matched_bases, cur_mismatch_stretch, n_bases, n_bases)
+        cur_mismatch_stretch = ''
         if op.startswith(':'):
             n_bases = int(op[1:])
-        else:
-            n_bases = len(op) - 1
-        if op.startswith('*'):
-            n_bases = op.count('*')
-            matched_bases = _try_split(matched_bases, n_bases, n_bases)
-        elif op.startswith('+'):
-            matched_bases = _try_split(matched_bases, 0, n_bases)
-        elif op.startswith('-'):
-            matched_bases = _try_split(matched_bases, n_bases, 0)
-        else:
             align.cigar += op
             align.len1 += n_bases
             align.len2 += n_bases
             matched_bases += n_bases
+        else:
+            n_bases = len(op) - 1
+            if op.startswith('+'):
+                matched_bases = _try_split(matched_bases, op, n_alignbases=n_bases)
+            elif op.startswith('-'):
+                matched_bases = _try_split(matched_bases, op, n_refbases=n_bases)
     _write_align()
 
 

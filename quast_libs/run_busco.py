@@ -22,9 +22,9 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 augustus_version = '3.2.3'
 augustus_url = 'http://bioinf.uni-greifswald.de/augustus/binaries/old/augustus-' + augustus_version + '.tar.gz'
-bacteria_db_url = 'https://busco.ezlab.org/v2/datasets/bacteria_odb9.tar.gz'
-fungi_db_url = 'https://busco.ezlab.org/v2/datasets/fungi_odb9.tar.gz'
-eukaryota_db_url = 'https://busco.ezlab.org/v2/datasets/eukaryota_odb9.tar.gz'
+bacteria_db_url = 'https://busco-archive.ezlab.org/v3/datasets/bacteria_odb9.tar.gz'
+fungi_db_url = 'https://busco-archive.ezlab.org/v3/datasets/fungi_odb9.tar.gz'
+eukaryota_db_url = 'https://busco-archive.ezlab.org/v3/datasets/eukaryota_odb9.tar.gz'
 blast_filenames = ['tblastn', 'makeblastdb']
 default_config_fname = 'config.ini.default'
 config_fname = 'config.ini'

@@ -24,22 +24,20 @@
          a contig if it covers more than 95% of a cyclic chromosome/plasmid (prokaryotes only).
 
       4. Small fixes (rare crashes or slightly incorrect results in specific cases):
-       - GC calculation;
-       - duplication ratio calculation in case of Ns stretches in misassembled contigs;
-       - HTML report heatmap colors for partial BUSCO genes;
-       - use of provided BAM files;
-       - problems with ?
+       - GC calculation (zero division due to rate side effects);
+       - duplication ratio (fractional overestimation due to Ns stretches in some contigs);
+       - HTML report heatmap colors for partial BUSCO genes (red-blue color switch);
+       - use of provided BAM files (--bam option not working properly);
+       - postprocessing of minimap2 mediocre aligments (good pairs of alignments with a
+         strecth of mismatches/indels/Ns in between were skipped due to low averageg IDY).
 
-      5. Cosmetic changes in warning/notice/error messages, pipeline steps order, etc.
-
-      PLANNED TO BE INCLUDED IN 5.1.0:
-      x. New metrics:
-       - auNx, auNAx, auNGx, auNGAx (area under Nx, NGx, etc curves).
-
-      x. Updates in embedded tools:
-       - new version of SILVA database (now: 132);
-       - new versions of BUSCO databases;
+      5. Updates in embedded tools:
+       - new version of SILVA database (138);
+       - fixed links to BUSCO databases (v3/odb9);
        - new GeneMark license files.
+
+      6. Cosmetic changes in warning/notice/error messages, pipeline steps order, etc.
+
 
 5.0.2
       1. Fixed bug with missing genome features reference stats and plot in report.html

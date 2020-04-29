@@ -37,9 +37,9 @@ socket.setdefaulttimeout(120)
 silva_pattern = re.compile(r'\S+\_(?P<taxons>\S+);(?P<seqname>\S+)', re.I)
 ncbi_pattern = re.compile(r'(?P<id>\S+\_[0-9.]+)[_ |](?P<seqname>\S+)', re.I)
 
-silva_version = 132
+silva_version = 138
 silva_db_url = 'http://www.arb-silva.de/fileadmin/silva_databases/release_' + str(silva_version) + '/Exports/'
-silva_fname = 'SILVA_' + str(silva_version) + '_SSURef_Nr99_tax_silva.fasta'
+silva_fname = 'SILVA_' + str(silva_version) + '_SSURef_NR99_tax_silva.fasta'
 silva_downloaded_fname = 'silva.' + str(silva_version) + '.db'
 
 blast_filenames = ['makeblastdb', 'blastn']

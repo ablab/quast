@@ -153,7 +153,7 @@ def split_align(coords_file, align_start, strand_direction, ref_start, ref_name,
             return
         align.e1 = align.s1 + align.len1 - 1
         align.e2 = align.s2 + (align.len2 - 1) * strand_direction
-        align.idy = '%.2f' % (matched_bases * 100.0 / align.len1)
+        align.idy = '%.2f' % (matched_bases * 100.0 / max(align.len1, align.len2))
         if float(align.idy) >= qconfig.min_IDY:
             coords_file.write(align.coords_str() + '\n')
 

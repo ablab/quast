@@ -92,6 +92,21 @@ def download_all_db(logger, only_clean=False):
 
 
 def download_augustus(logger, only_clean=False):
+    def __check_preinstalled_augustus_completeness(dirpath):
+        etraining_path = os.path.join(dirpath, 'bin', 'etraining')
+        if not os.path.isfile(etraining_path) or not os.access(etraining_path, os.X_OK):
+            return False
+        for aux_dir in ['scripts', 'config']:
+            aux_dir_path = os.path.join(dirpath, aux_dir)
+            if not os.path.isdir(aux_dir_path):
+                return False
+        return True
+
+    preinstalled_augustus = qutils.get_path_to_program('augustus')
+    if preinstalled_augustus is not None:
+        preinstalled_augustus_dirpath = os.path.dirname(os.path.dirname(preinstalled_augustus))
+        if __check_preinstalled_augustus_completeness(preinstalled_augustus_dirpath):
+            return preinstalled_augustus_dirpath
     return download_tool('augustus', augustus_version, ['bin'], logger, augustus_url, only_clean=only_clean)
 
 
@@ -132,7 +147,7 @@ def busco_main_handler(*busco_args):
         return None
 
 
-def copy_augustus_contigs(augustus_dirpath, output_dirpath):
+def copy_augustus_configs(augustus_dirpath, output_dirpath):
     input_basedir = join(augustus_dirpath, 'config')
     output_basedir = join(output_dirpath, 'config')
     if not os.path.isdir(input_basedir):
@@ -209,16 +224,18 @@ def do(contigs_fpaths, output_dir, logger):
     logger.info('Logs and results will be saved under ' + output_dir + '...')
 
     os.environ['BUSCO_CONFIG_FILE'] = config_fpath
-    os.environ['AUGUSTUS_CONFIG_PATH'] = copy_augustus_contigs(augustus_dirpath, tmp_dir)
+    os.environ['AUGUSTUS_CONFIG_PATH'] = copy_augustus_configs(augustus_dirpath, tmp_dir)
     if not os.environ['AUGUSTUS_CONFIG_PATH']:
         logger.error('Augustus configs not found, failed to run BUSCO without them.')
     busco_args = [[contigs_fpath, qutils.label_from_fpath_for_fname(contigs_fpath)] for contigs_fpath in contigs_fpaths]
     summary_fpaths = run_parallel(busco_main_handler, busco_args, qconfig.max_threads)
     if not any(fpath for fpath in summary_fpaths):
-        logger.error('Failed running BUSCO for all the assemblies. See log files in ' + output_dir + ' for information.')
+        logger.error('Failed running BUSCO for all the assemblies. See log files in ' + output_dir + ' for information '
+                     '(rerun with --debug to keep all intermediate files).')
         return
 
     # saving results
+    zero_output_for_all = True
     for i, contigs_fpath in enumerate(contigs_fpaths):
         report = reporting.get(contigs_fpath)
 
@@ -235,10 +252,22 @@ def do(contigs_fpaths, output_dir, logger):
             if total_buscos != 0:
                 report.add_field(reporting.Fields.BUSCO_COMPLETE, ('%.2f' % (float(complete_buscos) * 100.0 / total_buscos)))
                 report.add_field(reporting.Fields.BUSCO_PART, ('%.2f' % (float(part_buscos) * 100.0 / total_buscos)))
+            if complete_buscos + part_buscos > 0:
+                zero_output_for_all = False
             shutil.copy(summary_fpaths[i], output_dir)
         else:
             logger.error(
-                'Failed running BUSCO for ' + contigs_fpath + '. See the log for detailed information.')
+                'Failed running BUSCO for ' + contigs_fpath + '. See the log for detailed information'
+                                                              ' (rerun with --debug to keep all intermediate files).')
+    if zero_output_for_all:
+        logger.warning('BUSCO did not fail explicitly but found nothing for all assemblies! '
+                       'Possible reasons and workarounds:\n'
+                       '  1. Provided assemblies are so small that they do not contain even a single partial BUSCO gene. Not likely but may happen -- nothing to worry then.\n'
+                       '  2. Incorrect lineage database was used. To run with fungi DB use --fungus, to run with eukaryota DB use --eukaryote, otherwise BUSCO uses bacteria DB.\n'
+                       '  3. Problem with BUSCO dependencies, most likely Augustus. Check that the binaries in ' + augustus_dirpath + '/bin/ are working properly.\n'
+                       '     If something is wrong with Augustus, you may try to install it yourself (https://github.com/Gaius-Augustus/Augustus) and add "augustus" binary to PATH.\n'
+                       '  4. Some other problem with BUSCO. Check the logs (you may need to rerun QUAST with --debug to see all intermediate files).\n'
+                       '     If you cannot solve the problem yourself, post an issue at https://github.com/ablab/quast/issues or write to quast.support@cab.spbu.ru')
     if not qconfig.debug:
         cleanup(output_dir)
     logger.info('Done.')

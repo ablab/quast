@@ -396,8 +396,12 @@ Affects speed and accuracy. In particular, imposes <code>--eukaryote --min-conti
 <div class='option'>
     <a name='circos'></a><code><b>--circos</b></code>
 </div>
-    Plot Circos version of Icarus contig alignment viewer. Note that Circos software is not embedded in QUAST, so if
-    Circos is not installed on your machine (in the <code>PATH</code> environment variable) only Circos configuration files will be created.
+    Plot Circos version of Icarus contig alignment viewer.
+    The plot (<code>circos.png</code>), legend explaining its labels and content (<code>legend.txt</code>),
+    and Circos configuration file (<code>circos.conf</code>) will be saved in <code>&lt;quast_output_dir&gt;/circos/</code>.
+    Feel free to edit the configuration file, e.g. update label names, and regenerate the plow with <code>circos -conf &lt;quast_output_dir&gt;/circos/circos.conf</code>.
+    Note that Circos software is not embedded in QUAST, so if
+    Circos is not installed on your machine (in the <code>PATH</code> environment variable) only the legend and configuration file will be created.
 
 <div class='option'>
     <a name='gene_finding'></a><code><b>--gene-finding</b></code> (or <code>-f</code>)

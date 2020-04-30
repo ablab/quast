@@ -608,7 +608,12 @@ The default format is PDF.
 <div class='option'>
     <a name='memory_eff'></a><code><b>--memory-efficient</b></code>
 </div>
-Use one thread, separately per each assembly and each chromosome. This may significantly reduce memory consumption for large genomes. Note: this option will significantly slow down the processing as well. 
+Use one thread, separately per each assembly and each chromosome. This may significantly reduce memory consumption for large genomes.
+    Note: this option will significantly slow down the processing as well.
+    So, it makes sense to first just try to reduce the default number of threads using <a href='#threads_opt'><code>-t</code></a> option and
+    only then use <code>--memory-efficient</code> (or <code>-t 1</code>).
+    Another possible way to reduce RAM usage is to skip gene/operon annotation step (do not specify the corresponding files with <code>-g</code> and <code>-O</code>).
+    Of course the latter advice is applicable only if you are fine to get the report without such annotations.
 
 <div class='option'>
     <a name='space_eff'></a><code><b>--space-efficient</b></code>
@@ -1079,7 +1084,7 @@ changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>
 
 <p><a name='possible_te'></a><span class='metric-name'># possible TEs</span> is the number of misassemblies possibly caused by transposable elements,
     i.e. naturally occurring differences between the reference genome and the sequenced organism rather than true assembly errors
-    (computed if <a href='#sv_bedpe'><code>--large</code></a> is specified).
+    (computed if <a href='#sv_bedpe'><code>--sv-bedpe</code></a> is specified).
     Note: these misassemblies are NOT included in the <code># misassemblies</code>. See <a href="http://dx.doi.org/10.1093/bioinformatics/bty266">Mikheenko et al., 2018</a> for more details.
 </p>
 
@@ -1808,6 +1813,11 @@ Q14. I have very large assemblies and reference genome but my computational reso
     Could you recommend an optimal set of QUAST options to use?
 </b></i></p>
 <p>
+    <b>UPDATE</b>: since release v.5.0.0, you may use <a href='#large'><code>--large</code></a> option
+    (or just use <code>./quast-lg.py</code>) to run QUAST in the mode optimized for large genomes.
+
+    <br><br>
+    PREVIOUS ANSWER:
     Current QUAST version is not optimised for large genomes yet. However, we have some useful suggestions.
     You may be interested in adding the following options to your command line to reduce RAM consumption,
     disk space usage, and running time. Note that each of them have some negative effect,

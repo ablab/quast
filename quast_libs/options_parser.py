@@ -875,6 +875,10 @@ def parse_options(logger, quast_args):
             qconfig.ambiguity_usage = 'all'
             logger.warning("--ambiguity-usage was set to 'all' because not default --ambiguity-score was specified")
 
+    if qconfig.memory_efficient and (qconfig.genes or qconfig.operons or qconfig.features):
+        logger.warning("Analysis of genes and/or operons files (provided with -g and -O) requires extensive RAM usage, "
+                       "consider running QUAST without them if memory consumption is critical.")
+
     if is_metaquast:
         quast_py_args = clean_metaquast_args(quast_py_args, contigs_fpaths)
 

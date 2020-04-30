@@ -106,7 +106,7 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
 
     gene_searching_enabled = len(containers)
     if qconfig.memory_efficient and gene_searching_enabled:
-        logger.warning('Run QUAST without genes and operons files to reduce memory consumption.')
+        logger.warning('Analysis of genes and/or operons files (provided with -g and -O) requires extensive RAM usage, consider running QUAST without them if memory consumption is critical.')
     if gene_searching_enabled:
         for name in sorted_contigs_names:
             aligned_blocks_by_contig_name[name] = []

@@ -40,10 +40,10 @@ Most of those tools are usually preinstalled on Linux. MacOS, however, requires 
 the Command Line Tools for Xcode to make them available. 
 
 QUAST draws plots in two formats: HTML and PDF. If you need the PDF versions, make sure that you have installed 
-Matplotlib. We recommend to use Matplotlib version 1.1 or higher. QUAST is fully tested with Matplotlib v.1.3.1.
-Installation on Ubuntu:
+[Matplotlib](https://matplotlib.org/). We recommend to use Matplotlib version 1.1 or higher. QUAST is fully tested with Matplotlib v.1.3.1.
+Installation on Ubuntu (tested on Ubuntu 20.04):
 
-    sudo apt-get update && sudo apt-get install -y pkg-config libfreetype6-dev libpng-dev python-matplotlib
+    sudo apt-get update && sudo apt-get install -y pkg-config libfreetype6-dev libpng-dev python3-matplotlib
 
 #### Installation
 

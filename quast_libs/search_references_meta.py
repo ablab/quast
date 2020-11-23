@@ -34,7 +34,7 @@ import xml.etree.ElementTree as ET
 import socket
 socket.setdefaulttimeout(120)
 
-silva_pattern = re.compile(r'\S+\_(?P<taxons>\S+);(?P<seqname>\S+)', re.I)
+silva_pattern = re.compile(r'[a-zA-Z0-9.]+\_(?P<taxons>[A-Z]\S+)$', re.I)
 ncbi_pattern = re.compile(r'(?P<id>\S+\_[0-9.]+)[_ |](?P<seqname>\S+)', re.I)
 
 silva_version = 138
@@ -394,8 +394,7 @@ def parse_organism_id(organism_id):
             domain = taxons.split()[0]
             if domain and domain in ['Bacteria',
                                      'Archaea'] and 'Chloroplast' not in taxons and 'mitochondria' not in taxons:
-                seqname = m.group('seqname')
-                taxons += '\t' + seqname
+                seqname = taxons.split()[-1]
     elif ncbi_pattern.match(organism_id):
         m = ncbi_pattern.match(organism_id)
         if m:

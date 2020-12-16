@@ -129,6 +129,9 @@ def download_ref(organism, ref_fpath, max_ref_fragments):
         return None
     xml_tree = ET.fromstring(response)
 
+    if xml_tree.find('Count') is None or xml_tree.find('IdList') is None:
+        return None  # broken response for some undefined reason
+
     if xml_tree.find('Count').text == '0':  # Organism is not found
         return None
 

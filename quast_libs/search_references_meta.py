@@ -83,7 +83,7 @@ def try_send_request(url):
                 connection_errors += 1
                 if connection_errors >= 3:
                     logger.error('Cannot established internet connection to download reference genomes! '
-                         'Check internet connection or run MetaQUAST with option "--max-ref-number 0".', exit_with_code=404)
+                         'Check internet connection or run MetaQUAST with option "--max-ref-number 0" to disable reference search in the NCBI database.', exit_with_code=404)
                 return None
             # NCBI recommends users post no more than three URL requests per second, so adding artificial 1-sec delay
             # see more: https://github.com/ablab/quast/issues/8
@@ -126,10 +126,14 @@ def download_ref(organism, ref_fpath, max_ref_fragments):
     response = try_send_request(ncbi_url + 'esearch.fcgi?db=assembly&term=%s+[Organism]%s%s&retmax=100%s' %
                                 (organism, (isolate + '+[Isolate]') if isolate else '', (strain + '+[Strain]') if strain else '', quast_fields))
     if not response:
+        logger.warning('Empty/No response from NCBI. Could be an Internet connection issue!')
         return None
     xml_tree = ET.fromstring(response)
 
     if xml_tree.find('Count') is None or xml_tree.find('IdList') is None:
+        logger.warning('Unexpected/malformed response from NCBI. '
+                       'Please try to find out what is going wrong or contact us. '
+                       'Response: ' + response)
         return None  # broken response for some undefined reason
 
     if xml_tree.find('Count').text == '0':  # Organism is not found

@@ -18,7 +18,7 @@ There are also many more installation methods for the latest stable release of t
 all of them are discussed [here](http://quast.sf.net/install.html). For the cutting-edge version, 
 please clone our [GitHub repo](https://github.com/ablab/quast).
 
-Please refer to the [LICENSE.txt](http://quast.sf.net/docs/LICENSE.txt) file for copyrights and citing instructions.
+Please refer to the [LICENSE.txt](http://quast.sf.net/docs/LICENSE.txt) file for copyrights and citing instructions. We warmly welcome external contributions to the QUAST project. If you plan to participate, please consult with our [Contributor Covenant](CODE_OF_CONDUCT.md).
 
 #### System requirements
 

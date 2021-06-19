@@ -44,6 +44,7 @@ class Fields:
     TOTALLENS__FOR_10000_THRESHOLD = 'Total length (>= 10000 bp)'
     TOTALLENS__FOR_50000_THRESHOLD = 'Total length (>= 50000 bp)'
     N50 = 'N50'
+    auN = 'auN'
     Nx = 'N%d' % qconfig.x_for_additional_Nx
     L50 = 'L50'
     Lx = 'L%d' % qconfig.x_for_additional_Nx
@@ -197,7 +198,7 @@ class Fields:
 
     ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
     order = [NAME, CONTIGS__FOR_THRESHOLDS, TOTALLENS__FOR_THRESHOLDS, CONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
-             N50, NG50, Nx, NGx, L50, LG50, Lx, LGx,
+             N50, auN, NG50, Nx, NGx, L50, LG50, Lx, LGx,
              TOTAL_READS, LEFT_READS, RIGHT_READS,
              MAPPED_READS_PCNT, REF_MAPPED_READS_PCNT,
              PROPERLY_PAIRED_READS_PCNT, REF_PROPERLY_PAIRED_READS_PCNT,
@@ -268,7 +269,7 @@ class Fields:
                         UNCALLED_PERCENT, UNCALLED, ]),
 
         ('Statistics without reference', [CONTIGS, CONTIGS__FOR_THRESHOLDS, LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS,
-                                          N50, Nx, L50, Lx, GC,]),
+                                          N50, auN, Nx, L50, Lx, GC,]),
 
         ('K-mer-based statistics', [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH,
                                     KMER_MISASSEMBLIES, KMER_TRANSLOCATIONS, KMER_RELOCATIONS]),
@@ -310,7 +311,7 @@ class Fields:
         Quality.MORE_IS_BETTER:
             [LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS, TOTALLENS__FOR_1000_THRESHOLD, TOTALLENS__FOR_10000_THRESHOLD,
              TOTALLENS__FOR_50000_THRESHOLD, LARGALIGN, TOTAL_ALIGNED_LEN,
-             N50, NG50, Nx, NGx, NA50, NGA50, NAx, NGAx,
+             N50, auN, NG50, Nx, NGx, NA50, NGA50, NAx, NGAx,
              MAPPEDGENOME, AVE_READ_SUPPORT, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES,
              BUSCO_COMPLETE,
              MAPPED_READS, MAPPED_READS_PCNT, PROPERLY_PAIRED_READS, PROPERLY_PAIRED_READS_PCNT,

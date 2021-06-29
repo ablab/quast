@@ -5,7 +5,7 @@
 # See file LICENSE for details.
 ############################################################################
 
-def NG50(numlist, reference_length, percentage = 50.0):
+def NG50(numlist, reference_length, percentage=50.0):
     """
     Abstract: Returns the NG50 value of the passed list of numbers.
     Comments: Works for any percentage (e.g. NG60, NG70) with optional argument
@@ -24,7 +24,7 @@ def NG50(numlist, reference_length, percentage = 50.0):
     return ng50
 
 
-def LG50(numlist, reference_length, percentage = 50.0):
+def LG50(numlist, reference_length, percentage=50.0):
     """
     Abstract: Returns the LG50 value of the passed list of numbers.
     Comments: Works for any percentage (e.g. LG60, LG70) with optional argument
@@ -34,8 +34,7 @@ def LG50(numlist, reference_length, percentage = 50.0):
     return lg50
 
 
-
-def N50(numlist, percentage = 50.0):
+def N50(numlist, percentage=50.0):
     """
     Abstract: Returns the N50 value of the passed list of numbers.
     Comments: Works for any percentage (e.g. N60, N70) with optional argument
@@ -44,7 +43,7 @@ def N50(numlist, percentage = 50.0):
     return NG50(numlist, sum(numlist), percentage)
 
 
-def L50(numlist, percentage = 50.0):
+def L50(numlist, percentage=50.0):
     """
     Abstract: Returns the L50 value of the passed list of numbers.
     Comments: Works for any percentage (e.g. L60, L70) with optional argument
@@ -71,5 +70,20 @@ def NG50_and_LG50(numlist, reference_length, percentage=50.0, need_sort=False):
     return None, None
 
 
-def N50_and_L50(numlist, percentage = 50.0):
+def N50_and_L50(numlist, percentage=50.0):
     return NG50_and_LG50(numlist, sum(numlist), percentage)
+
+
+def auN(numlist, precision = 3):
+    """
+    numlist - length of contigs
+    metric explanation http://lh3.github.io/2020/04/08/a-new-metric-on-assembly-contiguity
+    """
+    try:
+        assert len(numlist) > 0, 'Empty list as input'
+        assert all([isinstance(i, (int, float, complex)) for i in numlist]), 'Non-numerical input'
+        denum = sum(numlist)
+        assert denum > 0, 'all contigs are 0'
+        return round(sum([n ** 2 for n in numlist]) / denum, precision)
+    except:
+        return None

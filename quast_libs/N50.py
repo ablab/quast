@@ -74,7 +74,7 @@ def N50_and_L50(numlist, percentage=50.0):
     return NG50_and_LG50(numlist, sum(numlist), percentage)
 
 
-def auN(numlist, precision = 3):
+def au_metric(numlist, reference_length=None):
     """
     numlist - length of contigs
     metric explanation http://lh3.github.io/2020/04/08/a-new-metric-on-assembly-contiguity
@@ -82,8 +82,11 @@ def auN(numlist, precision = 3):
     try:
         assert len(numlist) > 0, 'Empty list as input'
         assert all([isinstance(i, (int, float, complex)) for i in numlist]), 'Non-numerical input'
-        denum = sum(numlist)
-        assert denum > 0, 'all contigs are 0'
-        return round(sum([n ** 2 for n in numlist]) / denum, precision)
-    except:
+        if reference_length:
+            denum = float(reference_length)
+        else:
+            denum = float(sum(numlist))
+        assert denum > 0.0, 'all contigs are 0'
+        return float(sum([n ** 2 for n in numlist])) / denum
+    except AssertionError:
         return None

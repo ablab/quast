@@ -19,6 +19,11 @@
     "LA50"                          : "<span>is L50 where aligned blocks are counted instead of contigs. I.e., if a contig has a misassembly with respect to the reference, the contig is broken into smaller pieces. Similarly, LAx for any x between 0 and 100 could be computed.</span>",
     "LGA50"                         : "<span>is LG50 where aligned blocks are counted instead of contigs. I.e., if a contig has a misassembly with respect to the reference, the contig is broken into smaller pieces. Similarly, LGAx for any x between 0 and 100 could be computed.</span>",
 
+    "auN"                           : "<span> auN is the area under the curve Nx curve. Technically, sum of squared contig lengths divided by their sum. Idea taken from <a href=\"https://lh3.github.io/2020/04/08/a-new-metric-on-assembly-contiguity\">here</a>  </span>",
+    "auNG"                          : "<span> auNG is auN adopted for the known length,hence, the reference length is in the denominator.</span>",
+    "auNA"                          : "<span> auNA  is the area under the curve NA curve.</span>",
+    "auNGA"                         : "<span> auNGA is auNA adopted for the known length,hence, the reference length is in the denominator.</span>",
+
     "Average %IDY"                  : "<span>is the average of alignment identity percent (alignment accuracy) among all contigs.</span>",
     "# misassemblies"               : "<span>is the number of positions in the assembled contigs where the left flanking sequence aligns over 1 kbp away from the right flanking sequence on the reference (<i>relocation</i>) or they overlap on more than 1 kbp (<i>relocation</i>) or flanking sequences align on different strands (<i>inversion</i>) or different chromosomes (<i>translocation</i>).</span>",
     "# large block misassemblies"   : "<span>is the number of misassemblies between alignments with length greater than or equal to 3 kbp and with the misassembly threshold equal to 5 kbp (instead of default 1 kbp for regular misassemblies).</span>",

@@ -76,14 +76,14 @@ def analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_
                     elif op.startswith('+'):
                         indels_info.indels_list.append(n_bases)
                         indels_info.insertions += n_bases
-                        if qconfig.show_snps and n_bases < qconfig.MAX_INDEL_LENGTH:
+                        if qconfig.show_snps:
                             ref_nucl, ctg_nucl = '.', op[1:].upper()
                             used_snps_f.write('%s\t%s\t%d\t%s\t%s\t%d\n' % (chr_name, align.contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos))
                         ctg_pos += n_bases * strand_direction
                     elif op.startswith('-'):
                         indels_info.indels_list.append(n_bases)
                         indels_info.deletions += n_bases
-                        if qconfig.show_snps and n_bases < qconfig.MAX_INDEL_LENGTH:
+                        if qconfig.show_snps:
                             ref_nucl, ctg_nucl = op[1:].upper(), '.'
                             used_snps_f.write('%s\t%s\t%d\t%s\t%s\t%d\n' % (chr_name, align.contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos))
                         ref_pos += n_bases

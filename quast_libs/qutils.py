@@ -533,6 +533,10 @@ def correct_name(name, max_name_len=MAX_CONTIG_NAME):
     return re.sub(r"[\|\+\-=\/]", '_', name)
 
 
+def correct_asm_label(name, max_name_len=MAX_CONTIG_NAME):
+    return name.strip()[:max_name_len]
+
+
 def get_uniq_name(name, used_names):
     if name in used_names:
         name += '_' + str(used_names[name])
@@ -557,7 +561,7 @@ def unique_corrected_fpath(fpath):
 
 
 def rm_extentions_for_fasta_file(fname):
-    return correct_name(splitext_for_fasta_file(fname)[0])
+    return correct_asm_label(splitext_for_fasta_file(fname)[0])
 
 
 def splitext_for_fasta_file(fname):

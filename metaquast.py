@@ -25,7 +25,7 @@ from quast_libs.metautils import Assembly, correct_meta_references, correct_asse
     get_downloaded_refs_with_alignments, partition_contigs, calculate_ave_read_support
 from quast_libs.options_parser import parse_options, remove_from_quast_py_args, prepare_regular_quast_args
 
-from quast_libs import contigs_analyzer, search_references_meta, plotter_data, qutils
+from quast_libs import contigs_analyzer, search_references_meta, plotter_data, qutils, run_busco
 from quast_libs.qutils import cleanup, check_dirpath, is_python2, run_parallel
 
 from quast_libs.log import get_logger
@@ -314,6 +314,11 @@ def main(args):
     assemblies_by_reference, not_aligned_assemblies = partition_contigs(
         assemblies, corrected_ref_fpaths, corrected_dirpath,
         os.path.join(combined_output_dirpath, qconfig.detailed_contigs_reports_dirname, 'alignments_%s.tsv'), labels)
+
+    if qconfig.run_busco:
+        db_dirpath = run_busco.download_db(logger, qconfig.prokaryote, is_fungus=qconfig.is_fungus)
+        if not db_dirpath:
+            remove_from_quast_py_args(quast_py_args, '--conservative')
 
     output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dirname)
     if not qconfig.memory_efficient and \

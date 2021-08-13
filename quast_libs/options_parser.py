@@ -821,7 +821,7 @@ def parse_options(logger, quast_args):
     if qconfig.extensive_misassembly_threshold is None:
         qconfig.extensive_misassembly_threshold = \
             qconfig.LARGE_EXTENSIVE_MIS_THRESHOLD if qconfig.large_genome else qconfig.DEFAULT_EXT_MIS_SIZE
-    if opts.fragmented_max_indent:
+    if qconfig.fragmented_max_indent:
         qconfig.check_for_fragmented_ref = True
         check_fragmented_max_indent(logger)
 

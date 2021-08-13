@@ -18,11 +18,7 @@ from os.path import isfile, join, basename, abspath, isdir, dirname, exists
 from quast_libs import qconfig, qutils
 from quast_libs.ca_utils.misc import minimap_fpath, ref_labels_by_chromosomes
 from quast_libs.fastaparser import create_fai_file
-from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, sambamba_fpath, bwa_fpath, bedtools_fpath, \
-    bwa_dirpath, download_gridss, get_gridss_fpath, get_gridss_memory, \
-    paired_reads_names_are_equal, sort_bam, bwa_index, reformat_bedpe, get_correct_names_for_chroms, \
-    all_read_names_correct, clean_read_names, check_cov_file, bam_to_bed, get_safe_fpath, sambamba_view, \
-    calculate_genome_cov
+from quast_libs.ra_utils.misc import *
 from quast_libs.qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, run_parallel, \
     get_path_to_program, check_java_version, percentile, calc_median
 
@@ -121,8 +117,12 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_fpath, max_threads, bam_f
         bam_sorted_fpath = add_suffix(bam_fpath, 'sorted')
     bed_fpath = bed_fpath or join(output_dirpath, ref_name + '.bed')
     if is_non_empty_file(bed_fpath):
-        logger.info('  Using existing BED-file: ' + bed_fpath)
-        return bed_fpath
+        if not is_valid_bed(bed_fpath):
+            logger.warning('  Existing BED-file: ' + bed_fpath + ' may be corrupted. Bed file will be re-created. ')
+            bed_fpath = join(output_dir, ref_name + '.bed')
+        else:
+            logger.info('  Using existing BED-file: ' + bed_fpath)
+            return bed_fpath
 
     if not isfile(bam_sorted_fpath):
         sambamba_view(sam_fpath, bam_fpath, qconfig.max_threads, err_fpath, logger,  filter_rule='not unmapped and proper_pair')
@@ -336,26 +336,32 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
             logger.info('  Will not search Structural Variations (--fast or --no-sv is specified)')
             bed_fpath = None
         elif is_non_empty_file(bed_fpath):
-            logger.info('  Using existing BED-file: ' + bed_fpath)
+            if not is_valid_bed(bed_fpath):
+                logger.warning('  Existing BED-file: ' + bed_fpath + ' may be corrupted. Bed file will be re-created. ')
+                required_files.append(join(output_dir, ref_name + '.bed'))
+            else: logger.info('  Using existing BED-file: ' + bed_fpath)
         elif not qconfig.forward_reads and not qconfig.interlaced_reads:
             if not qconfig.reference_sam and not qconfig.reference_bam:
                 logger.info('  Will not search Structural Variations (needs paired-end reads)')
                 bed_fpath = None
                 qconfig.no_sv = True
+        else:
+            required_files.append(bed_fpath)
         if qconfig.create_icarus_html:
             if is_non_empty_file(cov_fpath):
                 is_correct_file = check_cov_file(cov_fpath)
                 if is_correct_file:
                     logger.info('  Using existing reads coverage file: ' + cov_fpath)
+                else:
+                    required_files.append(cov_fpath)
             if is_non_empty_file(physical_cov_fpath):
                 logger.info('  Using existing physical coverage file: ' + physical_cov_fpath)
+            else:
+                required_files.append(physical_cov_fpath)
         else:
             logger.info('  Will not calculate coverage (--fast or --no-html, or --no-icarus, or --space-efficient is specified)')
             cov_fpath = None
             physical_cov_fpath = None
-        if (is_non_empty_file(bed_fpath) or qconfig.no_sv) and \
-                (not qconfig.create_icarus_html or (is_non_empty_file(cov_fpath) and is_non_empty_file(physical_cov_fpath))):
-            required_files = []
 
     if not qconfig.no_read_stats:
         n_jobs = min(qconfig.max_threads, len(contigs_fpaths) + 1)

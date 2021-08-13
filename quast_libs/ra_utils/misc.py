@@ -395,3 +395,29 @@ def sambamba_view(in_fpath, out_fpath, max_threads, err_fpath, logger, filter_ru
         cmd += ['-F', filter_rule]
     cmd.append(in_fpath)
     qutils.call_subprocess(cmd, stdout=open(out_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
+
+
+def is_valid_bed(bed_fpath):
+    # check last 10 lines
+    with open(bed_fpath, 'r') as f:
+        lines_found = []
+        block_counter = -1
+        _buffer = 1024
+        while len(lines_found) < 10:
+            try:
+                f.seek(block_counter * _buffer, os.SEEK_END)
+            except IOError:
+                f.seek(0)
+                lines_found = f.readlines()
+                break
+            lines_found = f.readlines()
+        block_counter -= 1
+    for line in lines_found:
+        if not line.startswith('#'):
+            fs = line.split('\t')
+            try:
+                align1 = (int(fs[1]), int(fs[2]), correct_name(fs[0]), fs[6])
+                align2 = (int(fs[4]), int(fs[5]), correct_name(fs[3]), fs[6])
+            except IndexError:
+                return False
+    return True

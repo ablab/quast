@@ -39,10 +39,8 @@ meta_test_contigs_fpaths = [join(test_data_dir, 'meta_contigs_1.fasta'),
 
 class QuastOption(Option):
     def check_file(option, opt, value):
-        files = value.split(',')
-        for f in files:
-            assert_file_exists(f, option.dest)
-        return ','.join(abspath(f) for f in files)
+        assert_file_exists(value, option.dest)
+        return abspath(value)
     TYPES = Option.TYPES + ('file',)
     TYPE_CHECKER = copy(Option.TYPE_CHECKER)
     TYPE_CHECKER['file'] = check_file

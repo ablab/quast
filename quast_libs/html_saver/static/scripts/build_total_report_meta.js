@@ -63,7 +63,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
         return table;
     }
 
-    if (report_n > -1) {
+    if (report_n > -1 && notAlignedContigs[report_n] != null) {
         for (var not_aligned_n = 0; not_aligned_n < notAlignedContigs[report_n].length; not_aligned_n++) {
             values.splice(assembliesNames.indexOf(notAlignedContigs[report_n][not_aligned_n]), 0, '');
         }
@@ -229,10 +229,16 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     var table = '';
     table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';
     var refNames = [];
+    var missedRefs = [];
+    var nonEmptyReports = [];
     for (var report_n = 0; report_n < reports.length; report_n++) {
         var _refName = reports[report_n].referenceName;
         if (!_refName) _refName = 'not_aligned';
-        refNames.push(_refName);
+        if (!reports[report_n].report) missedRefs.push(_refName);
+        else {
+            nonEmptyReports.push(reports[report_n]);
+            refNames.push(_refName);
+        }
     }
     reports = refNames.map(function (name, report_n) {
     return {
@@ -240,7 +246,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         report: this[report_n].report,
         asmNames: this[report_n].assembliesNames
         };
-    }, reports);
+    }, nonEmptyReports);
     notAlignedContigs = {};
     for(report_n = 0; report_n < reports.length; report_n++ ) {
         notAlignedContigs[report_n] = [];
@@ -417,6 +423,15 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
                         break;
                     }
                 }
+            }
+            var emptyMetric = metric;
+            emptyMetric.values=[];
+            for(var n=0; n < assembliesNames.length; n++) {
+                emptyMetric.values.push(null);
+            }
+            for(report_n = 0; report_n < missedRefs.length; report_n++ ) {  //  add information for each reference
+                table += fillOneRow(emptyMetric, mainMetrics, group_n, order, glossary, false,
+                            missedRefs[report_n], report_n+reports.length, assembliesNames, notAlignedContigs, notExtendedMetrics);
             }
         }
         table += '</tr>';

@@ -267,6 +267,13 @@ def create_meta_report(results_dirpath, json_texts):
     meta_log.main_info('  Extended version of HTML-report (for all references and assemblies) is saved to ' + html_fpath)
 
 
+def save_empty_report(results_dirpath, min_contig, ref_fpath):
+    json_fpath = json_saver.save_empty_report(results_dirpath, min_contig, ref_fpath)
+    if json_fpath:
+        json_saver.json_text = append(results_dirpath, json_fpath, 'totalReport')
+        #log.info('  HTML version (interactive tables and plots) is saved to ' + os.path.join(results_dirpath, report_fname))
+
+
 def save_total_report(results_dirpath, min_contig, ref_fpath):
     json_fpath = json_saver.save_total_report(results_dirpath, min_contig, ref_fpath)
     if json_fpath:

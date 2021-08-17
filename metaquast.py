@@ -85,7 +85,13 @@ def _run_quast_per_ref(quast_py_args, output_dirpath_per_ref, ref_fpath, ref_ass
     ref_name = qutils.name_from_fpath(ref_fpath)
     if not ref_assemblies:
         logger.main_info('\nNo contigs were aligned to the reference ' + ref_name + ', skipping..')
-        return None, None, total_num_notifications
+        output_dirpath = os.path.join(output_dirpath_per_ref, ref_name)
+        json_text = None
+        if qconfig.html_report:
+            from quast_libs.html_saver import html_saver, json_saver
+            html_saver.save_empty_report(output_dirpath, qconfig.min_contig, ref_fpath)
+            json_text = json_saver.json_text
+        return ref_name, json_text, total_num_notifications
     else:
         output_dirpath = os.path.join(output_dirpath_per_ref, ref_name)
         run_name = 'for the contigs aligned to ' + ref_name

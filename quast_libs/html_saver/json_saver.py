@@ -60,6 +60,22 @@ def save_as_text(fpath, what):
     return fpath
 
 
+def save_empty_report(output_dirpath, min_contig, ref_fpath):
+    from quast_libs import reporting
+    t = datetime.datetime.now()
+
+    return save(join(output_dirpath, total_report_fname), {
+        'date': t.strftime('%d %B %Y, %A, %H:%M:%S'),
+        'assembliesNames': [],
+        'referenceName': qutils.name_from_fpath(ref_fpath) if ref_fpath else '',
+        'order': [],
+        'report': None,
+        'subreferences': [],
+        'subreports': [],
+        'minContig': min_contig
+    })
+
+
 def save_total_report(output_dirpath, min_contig, ref_fpath):
     from quast_libs import reporting
     asm_names = [qutils.label_from_fpath(this) for this in reporting.assembly_fpaths]

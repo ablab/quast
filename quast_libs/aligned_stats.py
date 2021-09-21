@@ -39,10 +39,12 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath,
             zip(aligned_contigs_fpaths, aligned_lengths_lists, assembly_lengths)):
         sorted_lengths = sorted(lens, reverse=True)
         na50, la50 = N50.NG50_and_LG50(sorted_lengths, assembly_len)
+        auNA = N50.au_metric(sorted_lengths, assembly_len)
         nax, lax = N50.NG50_and_LG50(sorted_lengths, assembly_len, qconfig.x_for_additional_Nx)
         if not qconfig.is_combined_ref:
             nga50, lga50 = N50.NG50_and_LG50(sorted_lengths, reference_length)
             ngax, lgax = N50.NG50_and_LG50(sorted_lengths, reference_length, qconfig.x_for_additional_Nx)
+            auNGA = N50.au_metric(sorted_lengths, reference_length)
 
         logger.info('  ' +
                     qutils.index_to_str(i) +
@@ -57,11 +59,13 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath,
         report.add_field(reporting.Fields.TOTAL_ALIGNED_LEN, sum(lens))
         report.add_field(reporting.Fields.NA50, na50)
         report.add_field(reporting.Fields.NAx, nax)
+        report.add_field(reporting.Fields.auNA, auNA)
         report.add_field(reporting.Fields.LA50, la50)
         report.add_field(reporting.Fields.LAx, lax)
         if not qconfig.is_combined_ref:
             report.add_field(reporting.Fields.NGA50, nga50)
             report.add_field(reporting.Fields.NGAx, ngax)
+            report.add_field(reporting.Fields.auNGA, auNGA)
             report.add_field(reporting.Fields.LGA50, lga50)
             report.add_field(reporting.Fields.LGAx, lgax)
 

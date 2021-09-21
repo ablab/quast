@@ -258,7 +258,7 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
         for gene in genes:
             gene.is_full = gene.start > 1 and gene.end < contig_lengths[gene.contig]
         tool_name = "genemark"
-        out_gff_fpath = os.path.join(out_dirpath, corr_assembly_label + '_' + tool_name + '_genes.gff' + ('.gz' if not qconfig.no_gzip else ''))
+        out_gff_fpath = os.path.join(out_dirpath, corr_assembly_label + '_' + tool_name + '_genes.gff')
         add_genes_to_gff(genes, out_gff_fpath, prokaryote)
         if OUTPUT_FASTA:
             out_fasta_fpath = os.path.join(out_dirpath, corr_assembly_label + '_' + tool_name + '_genes.fasta')

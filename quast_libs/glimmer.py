@@ -80,7 +80,7 @@ def glimmerHMM(tool_dir, tool_exec_fpath, fasta_fpath, out_fpath, gene_lengths, 
     if not gffs:
         return None, None, None, None, None, None
 
-    out_gff_fpath = out_fpath + '_genes.gff' + ('.gz' if not qconfig.no_gzip else '')
+    out_gff_fpath = out_fpath + '_genes.gff'
     out_gff_path = merge_gffs(gffs, out_gff_fpath)
     unique, total = set(), 0
     genes = []

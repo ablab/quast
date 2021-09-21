@@ -87,7 +87,7 @@ def get_aux_out_fpaths(fname):
     coords_fpath = fname + '.coords'
     coords_filtered_fpath = fname + '.coords.filtered'
     unaligned_fpath = fname + '.unaligned' if not qconfig.space_efficient else '/dev/null'
-    used_snps_fpath = fname + '.used_snps' + ('.gz' if not qconfig.no_gzip else '') if not qconfig.space_efficient else '/dev/null'
+    used_snps_fpath = fname + '.used_snps' if not qconfig.space_efficient else '/dev/null'
     return coords_fpath, coords_filtered_fpath, unaligned_fpath, used_snps_fpath
 
 

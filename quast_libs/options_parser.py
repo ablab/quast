@@ -627,14 +627,14 @@ def parse_options(logger, quast_args):
              dest='fast',
              action='callback',
              callback=set_multiple_variables,
-             callback_kwargs={'store_true_values': ['no_gc', 'no_sv', 'no_gzip', 'no_read_stats'],
+             callback_kwargs={'store_true_values': ['no_gc', 'no_sv', 'no_read_stats'],
                               'store_false_values': ['show_snps', 'draw_plots', 'html_report', 'create_icarus_html', 'analyze_gaps']},
              default=False)
          ),
-        (['--no-gzip'], dict(
-             dest='no_gzip',
-             action='store_true')
-         ),
+        # (['--no-gzip'], dict(
+        #      dest='no_gzip',
+        #      action='store_true')
+        #  ),
         (['--no-check'], dict(
              dest='no_check',
              action='store_true')

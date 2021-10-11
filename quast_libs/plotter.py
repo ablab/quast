@@ -6,6 +6,7 @@
 ############################################################################
 
 from __future__ import division
+import json
 
 ####################################################################################
 ###########################  CONFIGURABLE PARAMETERS  ##############################
@@ -347,7 +348,8 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, fe
 
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
-def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None):
+def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None,
+            save_coords=False):
     if can_draw_plots:
         logger.info('  Drawing ' + title + ' plot...')
 
@@ -406,6 +408,14 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
         return
 
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
+
+    if save_coords:
+        json_vals = {label_from_fpath(fpath): {'vals_x': a, 'vals_y': b}
+                     for fpath, (a, b) in zip(contigs_fpaths, zip(json_vals_x, json_vals_y))}
+        json_str = json.dumps(json_vals)
+        with open(plot_fpath + '_coords.json', 'w') as json_file:
+            json_file.write(json_str)
+
     create_plot(plot_fpath, title, plots, legend_list, x_label='x', y_label='Contig length', x_limit=[0, 100])
 
 

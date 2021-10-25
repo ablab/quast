@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import shlex
+import numpy as np
 from collections import defaultdict
 from math import sqrt
 from os.path import isfile, join, basename, abspath, isdir, dirname, exists
@@ -20,7 +21,7 @@ from quast_libs.ca_utils.misc import minimap_fpath, ref_labels_by_chromosomes
 from quast_libs.fastaparser import create_fai_file
 from quast_libs.ra_utils.misc import *
 from quast_libs.qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, run_parallel, \
-    get_path_to_program, check_java_version, percentile, calc_median
+    get_path_to_program, check_java_version
 
 from quast_libs.log import get_logger
 from quast_libs.reporting import save_reads
@@ -849,8 +850,8 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
 
 
 def get_max_min_is(insert_sizes):
-    decile_1 = percentile(insert_sizes, 10)
-    decile_9 = percentile(insert_sizes, 90)
+    decile_1 = np.percentile(insert_sizes, 10, interpolation='lower')
+    decile_9 = np.percentile(insert_sizes, 90, interpolation='lower')
     return decile_1, decile_9
 
 
@@ -883,7 +884,7 @@ def calculate_insert_size(sam_fpath, output_dir, ref_name, reads_suffix=''):
 
     if insert_sizes:
         insert_sizes.sort()
-        median_is = calc_median(insert_sizes)
+        median_is = np.percentile(insert_sizes, 50, interpolation='lower')
         if median_is <= 0:
             return None, None, None
         min_insert_size, max_insert_size = get_max_min_is(insert_sizes)

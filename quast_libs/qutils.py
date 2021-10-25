@@ -15,7 +15,6 @@ import os
 import stat
 import sys
 import re
-import scipy.stats as ss
 from collections import defaultdict
 from os.path import basename, isfile, isdir, exists, join
 

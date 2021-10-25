@@ -36,7 +36,7 @@ from quast_libs.ca_utils.save_results import print_results, save_result, save_re
 from quast_libs.fastaparser import get_genome_stats
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python2, run_parallel
+from quast_libs.qutils import run_parallel
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 

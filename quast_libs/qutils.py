@@ -206,22 +206,15 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
     return corrected_contigs_fpaths, old_contigs_fpaths
 
 
-def convert_to_unicode(value):
-    if is_python2():
-        return unicode(value)
-    else:
-        return str(value)
-
-
 def slugify(value):
     """
     Prepare string to use in file names: normalizes string,
     removes non-alpha characters, and converts spaces to hyphens.
     """
     import unicodedata
-    value = unicodedata.normalize('NFKD', convert_to_unicode(value)).encode('ascii', 'ignore').decode('utf-8')
-    value = convert_to_unicode(re.sub('[^\w\s-]', '-', value).strip())
-    value = convert_to_unicode(re.sub('[-\s]+', '-', value))
+    value = unicodedata.normalize('NFKD', str(value)).encode('ascii', 'ignore').decode('utf-8')
+    value = str(re.sub('[^\w\s-]', '-', value).strip())
+    value = str(re.sub('[-\s]+', '-', value))
     return str(value)
 
 
@@ -831,10 +824,6 @@ def safe_create(fpath, logger, is_required=False):
             logger.notice(msg)
 
 
-def is_python2():
-    return sys.version_info[0] < 3
-
-
 def fix_configure_timestamps(dirpath):
     try:
         os.utime(join(dirpath, 'aclocal.m4'), None)
@@ -1073,10 +1062,7 @@ def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):
             except TypeError:
                 pass
         except ImportError:
-            if is_python2():
-                from joblib2 import Parallel, delayed
-            else:
-                from joblib3 import Parallel, delayed
+            from joblib3 import Parallel, delayed
         results_tuples = Parallel(**parallel_args)(delayed(_fn)(*args) for args in fn_args)
     results = []
     if results_tuples:

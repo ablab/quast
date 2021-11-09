@@ -26,7 +26,7 @@ from quast_libs.metautils import Assembly, correct_meta_references, correct_asse
 from quast_libs.options_parser import parse_options, remove_from_quast_py_args, prepare_regular_quast_args
 
 from quast_libs import contigs_analyzer, search_references_meta, plotter_data, qutils, run_busco
-from quast_libs.qutils import cleanup, check_dirpath, is_python2, run_parallel
+from quast_libs.qutils import cleanup, check_dirpath, run_parallel
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)

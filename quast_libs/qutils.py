@@ -206,22 +206,15 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
     return corrected_contigs_fpaths, old_contigs_fpaths
 
 
-def convert_to_unicode(value):
-    if is_python2():
-        return unicode(value)
-    else:
-        return str(value)
-
-
 def slugify(value):
     """
     Prepare string to use in file names: normalizes string,
     removes non-alpha characters, and converts spaces to hyphens.
     """
     import unicodedata
-    value = unicodedata.normalize('NFKD', convert_to_unicode(value)).encode('ascii', 'ignore').decode('utf-8')
-    value = convert_to_unicode(re.sub('[^\w\s-]', '-', value).strip())
-    value = convert_to_unicode(re.sub('[-\s]+', '-', value))
+    value = unicodedata.normalize('NFKD', str(value)).encode('ascii', 'ignore').decode('utf-8')
+    value = str(re.sub('[^\w\s-]', '-', value).strip())
+    value = str(re.sub('[-\s]+', '-', value))
     return str(value)
 
 
@@ -831,10 +824,6 @@ def safe_create(fpath, logger, is_required=False):
             logger.notice(msg)
 
 
-def is_python2():
-    return sys.version_info[0] < 3
-
-
 def fix_configure_timestamps(dirpath):
     try:
         os.utime(join(dirpath, 'aclocal.m4'), None)
@@ -890,8 +879,18 @@ def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, 
 
 
 def check_dirpath(path, message="", exit_code=3):
-    if not is_ascii_string(path):
-        logger.error('QUAST does not support non-ASCII characters in path.\n' + message, to_stderr=True, exit_with_code=exit_code)
+    """
+        This function checks if string path is in ascii format and don't contain spaces.
+
+        :param path: string check to
+        :param message: message to log if path isn't ok
+        :param exit_code: exit code in logger error
+    """
+    try:
+        path.encode('ascii')
+    except UnicodeEncodeError:
+        logger.error('QUAST does not support non-ASCII characters in path.\n' + message, to_stderr=True,
+                     exit_with_code=exit_code)
     if ' ' in path:
         logger.error('QUAST does not support spaces in paths.\n' + message, to_stderr=True, exit_with_code=exit_code)
     return True
@@ -1063,10 +1062,7 @@ def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):
             except TypeError:
                 pass
         except ImportError:
-            if is_python2():
-                from joblib2 import Parallel, delayed
-            else:
-                from joblib3 import Parallel, delayed
+            from joblib3 import Parallel, delayed
         results_tuples = Parallel(**parallel_args)(delayed(_fn)(*args) for args in fn_args)
     results = []
     if results_tuples:
@@ -1079,18 +1075,6 @@ def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):
         else:
             results = [result for result in results_tuples if result or not filter_results]
     return results
-
-
-# based on http://stackoverflow.com/questions/196345/how-to-check-if-a-string-in-python-is-in-ascii
-def is_ascii_string(line):
-    try:
-        line.encode('ascii')
-    except UnicodeDecodeError:  # python2
-        return False
-    except UnicodeEncodeError:  # python3
-        return False
-    else:
-        return True
 
 
 def md5(fpath):
@@ -1120,18 +1104,3 @@ def verify_md5(fpath, md5_fpath=None):
     logger.warning('Failed to check md5 for %s! Either this file or its md5 file (%s) is missing or empty.' %
                    (fpath, md5_fpath))
     return False
-
-
-def percentile(values, percent):
-    import math
-    percentile_idx = int(math.ceil((len(values) * percent) / 100)) - 1
-    return values[max(0, percentile_idx)]
-
-
-def calc_median(values):
-    if len(values) % 2 == 1:  # odd number of values
-        median = values[(len(values) - 1) // 2]
-    else:  # even number of values - take the avg of central
-        median = (values[len(values) // 2] + values[len(values) // 2 - 1]) // 2
-    return median
-

@@ -1,4 +1,4 @@
-.TH minimap2 1 "20 June 2018" "minimap2-2.11 (r797)" "Bioinformatics tools"
+.TH minimap2 1 "18 December 2021" "minimap2-2.24 (r1122)" "Bioinformatics tools"
 .SH NAME
 .PP
 minimap2 - mapping and alignment between collections of DNA sequences
@@ -77,7 +77,7 @@ SAM format.
 Minimizer k-mer length [15]
 .TP
 .BI -w \ INT
-Minimizer window size [2/3 of k-mer length]. A minimizer is the smallest k-mer
+Minimizer window size [10]. A minimizer is the smallest k-mer
 in a window of w consecutive k-mers.
 .TP
 .B -H
@@ -121,6 +121,14 @@ provided as the target sequences, options
 .BR -w ,
 .B -I
 will be effectively overridden by the options stored in the index file.
+.TP
+.BI --alt \ FILE
+List of ALT contigs [null]
+.TP
+.BI --alt-drop \ FLOAT
+Drop ALT hits by
+.I FLOAT
+fraction when ranking and computing mapping quality [0.15]
 .SS Mapping options
 .TP 10
 .BI -f \ FLOAT | INT1 [, INT2 ]
@@ -137,22 +145,38 @@ or
 .B -xsr
 mode, which sets the threshold for a second round of seeding.
 .TP
-.BI --min-occ-floor \ INT
-Force minimap2 to always use k-mers occurring
+.BI -U \ INT1 [, INT2 ]
+Lower and upper bounds of k-mer occurrences [10,1000000]. The final k-mer occurrence threshold is
+.RI max{ INT1 ,\ min{ INT2 ,
+.BR -f }}.
+This option prevents excessively small or large
+.B -f
+estimated from the input reference. Available since r1034 and deprecating
+.B --min-occ-floor
+in earlier versions of minimap2.
+.TP
+.BI --q-occ-frac \ FLOAT
+Discard a query minimizer if its occurrence is higher than
+.I FLOAT
+fraction of query minimizers and than the reference occurrence threshold
+[0.01]. Set 0 to disable. Available since r1105.
+.TP
+.BI -e \ INT
+Sample a high-frequency minimizer every
 .I INT
-times or less [0]. In effect, the max occurrence threshold is set to
-the
-.RI max{ INT ,
-.BR -f }.
+basepairs [500].
 .TP
-.BI -g \ INT
+.BI -g \ NUM
 Stop chain enlongation if there are no minimizers within
-.IR INT -bp
-[10000].
+.IR NUM -bp
+[10k].
 .TP
-.BI -r \ INT
-Bandwidth used in chaining and DP-based alignment [500]. This option
-approximately controls the maximum gap size.
+.BI -r \ NUM1 [, NUM2 ]
+Bandwidth for chaining and base alignment [500,20k].
+.I NUM1
+is used for initial chaining and alignment extension;
+.I NUM2
+for RMQ-based re-chaining and closing gaps in alignments.
 .TP
 .BI -n \ INT
 Discard chains consisting of
@@ -193,7 +217,7 @@ Primarily used for all-vs-all read overlapping.
 .BI -p \ FLOAT
 Minimal secondary-to-primary score ratio to output secondary mappings [0.8].
 Between two chains overlaping over half of the shorter chain (controlled by
-.BR --mask-level ),
+.BR -M ),
 the chain with a lower score is secondary to the chain with a higher score.
 If the ratio of the scores is below
 .IR FLOAT ,
@@ -226,22 +250,43 @@ Mark as secondary a chain that overlaps with a better chain by
 .I FLOAT
 or more of the shorter chain [0.5]
 .TP
+.BR --rmq = no | yes
+Use the minigraph chaining algorithm [no]. The minigraph algorithm is better
+for aligning contigs through long INDELs.
+.TP
+.B --hard-mask-level
+Honor option
+.B -M
+and disable a heurstic to save unmapped subsequences and disables
+.BR --mask-len .
+.TP
+.BI --mask-len \ NUM
+Keep an alignment if dropping it leaves an unaligned region on query longer than
+.IR INT
+[inf]. Effective without
+.BR --hard-mask-level .
+.TP
 .BI --max-chain-skip \ INT
-A heuristics that stops chaining early [50]. Minimap2 uses dynamic programming
+A heuristics that stops chaining early [25]. Minimap2 uses dynamic programming
 for chaining. The time complexity is quadratic in the number of seeds. This
 option makes minimap2 exits the inner loop if it repeatedly sees seeds already
 on chains. Set
 .I INT
 to a large number to switch off this heurstics.
 .TP
+.BI --max-chain-iter \ INT
+Check up to
+.I INT
+partial chains during chaining [5000]. This is a heuristic to avoid quadratic
+time complexity in the worst case.
+.TP
+.BI --chain-gap-scale \ FLOAT
+Scale of gap cost during chaining [1.0]
+.TP
 .B --no-long-join
 Disable the long gap patching heuristic. When this option is applied, the
 maximum alignment gap is mostly controlled by
 .BR -r .
-.TP
-.B --lj-min-ratio \ FLOAT
-Fraction of query sequence length required to bridge a long gap [0.5]. A
-smaller value helps to recover longer gaps, at the cost of more false gaps.
 .TP
 .B --splice
 Enable the splice alignment mode.
@@ -251,6 +296,9 @@ Enable short-read alignment heuristics. In the short-read mode, minimap2
 applies a second round of chaining with a higher minimizer occurrence threshold
 if no good chain is found. In addition, minimap2 attempts to patch gaps between
 seeds with ungapped alignment.
+.TP
+.BI --split-prefix \ STR
+Prefix to create temporary files. Typically used for a multi-part index.
 .TP
 .BR --frag = no | yes
 Whether to enable the fragment mode [no]
@@ -266,6 +314,13 @@ Only map to the reverse complement strand of the reference sequences.
 .BR --heap-sort = no | yes
 If yes, sort anchors with heap merge, instead of radix sort. Heap merge is
 faster for short reads, but slower for long reads. [no]
+.TP
+.B --no-pairing
+Treat two reads in a pair as independent reads. The mate related fields in SAM
+are still properly populated.
+.TP
+.B --no-hash-name
+Produce the same alignment for identical sequences regardless of their sequence names.
 .SS Alignment options
 .TP 10
 .BI -A \ INT
@@ -346,6 +401,17 @@ on SIRV data, please add
 .B --splice-flank=no
 to the command line.
 .TP
+.BR --junc-bed \ FILE
+Gene annotations in the BED12 format (aka 12-column BED), or intron positions
+in 5-column BED. With this option, minimap2 prefers splicing in annotations.
+BED12 file can be converted from GTF/GFF3 with `paftools.js gff2bed anno.gtf'
+[].
+.TP
+.BR --junc-bonus \ INT
+Score bonus for a splice donor or acceptor found in annotation (effective with
+.BR --junc-bed )
+[9].
+.TP
 .BI --end-seed-pen \ INT
 Drop a terminal anchor if
 .IR s <log( g )+ INT ,
@@ -357,11 +423,30 @@ the length of the terminal gap in the chain. This option is only effective
 with
 .BR --splice .
 It helps to avoid tiny terminal exons. [6]
+.TP
+.B --no-end-flt
+Don't filter seeds towards the ends of chains before performing base-level
+alignment.
+.TP
+.BI --cap-sw-mem \ NUM
+Skip alignment if the DP matrix size is above
+.IR NUM .
+Set 0 to disable [100m].
+.TP
+.BI --cap-kalloc \ NUM
+Free thread-local kalloc memory reservoir if after the alignment the size of the reservoir above
+.IR NUM .
+Set 0 to disable [0].
 .SS Input/output options
 .TP 10
 .B -a
 Generate CIGAR and output alignments in the SAM format. Minimap2 outputs in PAF
 by default.
+.TP
+.BI -o \ FILE
+Output alignments to
+.I FILE
+[stdout].
 .TP
 .B -Q
 Ignore base quality in the input file.
@@ -437,6 +522,18 @@ memory.
 .BR --secondary = yes | no
 Whether to output secondary alignments [yes]
 .TP
+.BI --max-qlen \ NUM
+Filter out query sequences longer than
+.IR NUM .
+.TP
+.B --paf-no-hit
+In PAF, output unmapped queries; the strand and the reference name fields are
+set to `*'. Warning: some paftools.js commands may not work with such output
+for the moment.
+.TP
+.B --sam-hit-only
+In SAM, don't output unmapped reads.
+.TP
 .B --version
 Print version number to stdout
 .SS Preset options
@@ -450,60 +547,47 @@ Available
 .I STR
 are:
 .RS
-.TP 8
-.B map-pb
-PacBio/Oxford Nanopore read to reference mapping
-.RB ( -Hk19 )
-.TP
+.TP 10
 .B map-ont
-Slightly more sensitive for Oxford Nanopore to reference mapping
-.RB ( -k15 ).
-For PacBio reads, HPC minimizers consistently leads to faster performance and
-more sensitive results in comparison to normal minimizers. For Oxford Nanopore
-data, normal minimizers are better, though not much. The effectiveness of HPC
-is determined by the sequencing error mode.
+Align noisy long reads of ~10% error rate to a reference genome. This is the
+default mode.
+.TP
+.B map-hifi
+Align PacBio high-fidelity (HiFi) reads to a reference genome
+.RB ( -k19
+.B -w19 -U50,500 -g10k -A1 -B4 -O6,26 -E2,1
+.BR -s200 ).
+.TP
+.B map-pb
+Align older PacBio continuous long (CLR) reads to a reference genome
+.RB ( -Hk19 ).
 .TP
 .B asm5
 Long assembly to reference mapping
 .RB ( -k19
-.B -w19 -A1 -B19 -O39,81 -E3,1 -s200 -z200
-.BR --min-occ-floor=100 ).
+.B -w19 -U50,500 --rmq -r1k,100k -g10k -A1 -B19 -O39,81 -E3,1 -s200 -z200
+.BR -N50 ).
 Typically, the alignment will not extend to regions with 5% or higher sequence
 divergence. Only use this preset if the average divergence is far below 5%.
 .TP
 .B asm10
 Long assembly to reference mapping
 .RB ( -k19
-.B -w19 -A1 -B9 -O16,41 -E2,1 -s200 -z200
-.BR --min-occ-floor=100 ).
+.B -w19 -U50,500 --rmq -r1k,100k -g10k -A1 -B9 -O16,41 -E2,1 -s200 -z200
+.BR -N50 ).
 Up to 10% sequence divergence.
 .TP
 .B asm20
 Long assembly to reference mapping
 .RB ( -k19
-.B -w10 -A1 -B6 -O6,26 -E2,1 -s200 -z200
-.BR --min-occ-floor=100 ).
+.B -w10 -U50,500 --rmq -r1k,100k -g10k -A1 -B4 -O6,26 -E2,1 -s200 -z200
+.BR -N50 ).
 Up to 20% sequence divergence.
-.TP
-.B ava-pb
-PacBio all-vs-all overlap mapping
-.RB ( -Hk19
-.B -Xw5 -m100 -g10000 --max-chain-skip
-.BR 25 ).
-.TP
-.B ava-ont
-Oxford Nanopore all-vs-all overlap mapping
-.RB ( -k15
-.B -Xw5 -m100 -g10000 -r2000 --max-chain-skip
-.BR 25 ).
-Similarly, the major difference from
-.B ava-pb
-is that this preset is not using HPC minimizers.
 .TP
 .B splice
 Long-read spliced alignment
 .RB ( -k15
-.B -w5 --splice -g2000 -G200k -A1 -B2 -O2,32 -E1,0 -C9 -z200 -ub
+.B -w5 --splice -g2k -G200k -A1 -B2 -O2,32 -E1,0 -b0 -C9 -z200 -ub --junc-bonus=9 --cap-sw-mem=0
 .BR --splice-flank=yes ).
 In the splice mode, 1) long deletions are taken as introns and represented as
 the
@@ -513,12 +597,30 @@ costs are different during chaining; 4) the computation of the
 .RB ` ms '
 tag ignores introns to demote hits to pseudogenes.
 .TP
+.B splice:hq
+Long-read splice alignment for PacBio CCS reads
+.RB ( -xsplice
+.B -C5 -O6,24
+.BR -B4 ).
+.TP
 .B sr
 Short single-end reads without splicing
 .RB ( -k21
-.B -w11 --sr --frag=yes -A2 -B8 -O12,32 -E2,1 -r50 -p.5 -N20 -f1000,5000 -n2 -m20
-.B -s40 -g200 -2K50m --heap-sort=yes
+.B -w11 --sr --frag=yes -A2 -B8 -O12,32 -E2,1 -b0 -r100 -p.5 -N20 -f1000,5000 -n2 -m25
+.B -s40 -g100 -2K50m --heap-sort=yes
 .BR --secondary=no ).
+.TP
+.B ava-pb
+PacBio CLR all-vs-all overlap mapping
+.RB ( -Hk19
+.B -Xw5 -e0
+.BR -m100 ).
+.TP
+.B ava-ont
+Oxford Nanopore all-vs-all overlap mapping
+.RB ( -k15
+.B -Xw5 -e0 -m100
+.BR -r2k ).
 .RE
 .SS Miscellaneous options
 .TP 10
@@ -577,12 +679,15 @@ s2	i	Chaining score of the best secondary chain
 NM	i	Total number of mismatches and gaps in the alignment
 MD	Z	To generate the ref sequence in the alignment
 AS	i	DP alignment score
+SA	Z	List of other supplementary alignments
 ms	i	DP score of the max scoring segment in the alignment
 nn	i	Number of ambiguous bases in the alignment
 ts	A	Transcript strand (splice mode only)
 cg	Z	CIGAR string (only in PAF)
 cs	Z	Difference string
 dv	f	Approximate per-base sequence divergence
+de	f	Gap-compressed per-base sequence divergence
+rl	i	Length of query regions harboring repetitive seeds
 .TE
 
 .PP

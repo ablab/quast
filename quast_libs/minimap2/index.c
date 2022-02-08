@@ -31,6 +31,16 @@ typedef struct mm_idx_bucket_s {
 	void *h;     // hash table indexing _p_ and minimizers appearing once
 } mm_idx_bucket_t;
 
+typedef struct {
+	int32_t st, en, max; // max is not used for now
+	int32_t score:30, strand:2;
+} mm_idx_intv1_t;
+
+typedef struct mm_idx_intv_s {
+	int32_t n, m;
+	mm_idx_intv1_t *a;
+} mm_idx_intv_t;
+
 mm_idx_t *mm_idx_init(int w, int k, int b, int flag)
 {
 	mm_idx_t *mi;
@@ -48,10 +58,17 @@ void mm_idx_destroy(mm_idx_t *mi)
 	uint32_t i;
 	if (mi == 0) return;
 	if (mi->h) kh_destroy(str, (khash_t(str)*)mi->h);
-	for (i = 0; i < 1U<<mi->b; ++i) {
-		free(mi->B[i].p);
-		free(mi->B[i].a.a);
-		kh_destroy(idx, (idxhash_t*)mi->B[i].h);
+	if (mi->B) {
+		for (i = 0; i < 1U<<mi->b; ++i) {
+			free(mi->B[i].p);
+			free(mi->B[i].a.a);
+			kh_destroy(idx, (idxhash_t*)mi->B[i].h);
+		}
+	}
+	if (mi->I) {
+		for (i = 0; i < mi->n_seq; ++i)
+			free(mi->I[i].a);
+		free(mi->I);
 	}
 	if (!mi->km) {
 		for (i = 0; i < mi->n_seq; ++i)
@@ -100,8 +117,8 @@ void mm_idx_stat(const mm_idx_t *mi)
 				if (kh_key(h, k)&1) ++n1;
 			}
 	}
-	fprintf(stderr, "[M::%s::%.3f*%.2f] distinct minimizers: %d (%.2f%% are singletons); average occurrences: %.3lf; average spacing: %.3lf\n",
-			__func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0), n, 100.0*n1/n, (double)sum / n, (double)len / sum);
+	fprintf(stderr, "[M::%s::%.3f*%.2f] distinct minimizers: %d (%.2f%% are singletons); average occurrences: %.3lf; average spacing: %.3lf; total length: %ld\n",
+			__func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0), n, 100.0*n1/n, (double)sum / n, (double)len / sum, (long)len);
 }
 
 int mm_idx_index_name(mm_idx_t *mi)
@@ -142,6 +159,28 @@ int mm_idx_getseq(const mm_idx_t *mi, uint32_t rid, uint32_t st, uint32_t en, ui
 	for (i = st1; i < en1; ++i)
 		seq[i - st1] = mm_seq4_get(mi->S, i);
 	return en - st;
+}
+
+int mm_idx_getseq_rev(const mm_idx_t *mi, uint32_t rid, uint32_t st, uint32_t en, uint8_t *seq)
+{
+	uint64_t i, st1, en1;
+	const mm_idx_seq_t *s;
+	if (rid >= mi->n_seq || st >= mi->seq[rid].len) return -1;
+	s = &mi->seq[rid];
+	if (en > s->len) en = s->len;
+	st1 = s->offset + (s->len - en);
+	en1 = s->offset + (s->len - st);
+	for (i = st1; i < en1; ++i) {
+		uint8_t c = mm_seq4_get(mi->S, i);
+		seq[en1 - i - 1] = c < 4? 3 - c : c;
+	}
+	return en - st;
+}
+
+int mm_idx_getseq2(const mm_idx_t *mi, int is_rev, uint32_t rid, uint32_t st, uint32_t en, uint8_t *seq)
+{
+	if (is_rev) return mm_idx_getseq_rev(mi, rid, st, en, seq);
+	else return mm_idx_getseq(mi, rid, st, en, seq);
 }
 
 int32_t mm_idx_cal_max_occ(const mm_idx_t *mi, float f)
@@ -299,6 +338,7 @@ static void *worker_pipeline(void *shared, int step, void *in)
 				} else seq->name = 0;
 				seq->len = s->seq[i].l_seq;
 				seq->offset = p->sum_len;
+				seq->is_alt = 0;
 				// copy the sequence
 				if (!(p->mi->flag & MM_I_NO_SEQ)) {
 					for (j = 0; j < seq->len; ++j) { // TODO: this is not the fastest way, but let's first see if speed matters here
@@ -370,7 +410,9 @@ mm_idx_t *mm_idx_str(int w, int k, int is_hpc, int bucket_bits, int n, const cha
 	uint64_t sum_len = 0;
 	mm128_v a = {0,0,0};
 	mm_idx_t *mi;
+	khash_t(str) *h;
 	int i, flag = 0;
+
 	if (n <= 0) return 0;
 	for (i = 0; i < n; ++i) // get the total length
 		sum_len += strlen(seq[i]);
@@ -381,16 +423,21 @@ mm_idx_t *mm_idx_str(int w, int k, int is_hpc, int bucket_bits, int n, const cha
 	mi->n_seq = n;
 	mi->seq = (mm_idx_seq_t*)kcalloc(mi->km, n, sizeof(mm_idx_seq_t)); // ->seq is allocated from km
 	mi->S = (uint32_t*)calloc((sum_len + 7) / 8, 4);
+	mi->h = h = kh_init(str);
 	for (i = 0, sum_len = 0; i < n; ++i) {
 		const char *s = seq[i];
 		mm_idx_seq_t *p = &mi->seq[i];
 		uint32_t j;
 		if (name && name[i]) {
+			int absent;
 			p->name = (char*)kmalloc(mi->km, strlen(name[i]) + 1);
 			strcpy(p->name, name[i]);
+			kh_put(str, h, p->name, &absent);
+			assert(absent);
 		}
 		p->offset = sum_len;
 		p->len = strlen(s);
+		p->is_alt = 0;
 		for (j = 0; j < p->len; ++j) {
 			int c = seq_nt4_table[(uint8_t)s[j]];
 			uint64_t o = sum_len + j;
@@ -477,6 +524,7 @@ mm_idx_t *mm_idx_load(FILE *fp)
 		}
 		fread(&s->len, 4, 1, fp);
 		s->offset = sum_len;
+		s->is_alt = 0;
 		sum_len += s->len;
 	}
 	for (i = 0; i < 1<<mi->b; ++i) {
@@ -510,14 +558,19 @@ mm_idx_t *mm_idx_load(FILE *fp)
 int64_t mm_idx_is_idx(const char *fn)
 {
 	int fd, is_idx = 0;
-	off_t ret, off_end;
+	int64_t ret, off_end;
 	char magic[4];
 
 	if (strcmp(fn, "-") == 0) return 0; // read from pipe; not an index
 	fd = open(fn, O_RDONLY);
 	if (fd < 0) return -1; // error
+#ifdef WIN32
+	if ((off_end = _lseeki64(fd, 0, SEEK_END)) >= 4) {
+		_lseeki64(fd, 0, SEEK_SET);
+#else
 	if ((off_end = lseek(fd, 0, SEEK_END)) >= 4) {
 		lseek(fd, 0, SEEK_SET);
+#endif // WIN32
 		ret = read(fd, magic, 4);
 		if (ret == 4 && strncmp(magic, MM_IDX_MAGIC, 4) == 0)
 			is_idx = 1;
@@ -563,7 +616,7 @@ mm_idx_t *mm_idx_reader_read(mm_idx_reader_t *r, int n_threads)
 		mi = mm_idx_gen(r->fp.seq, r->opt.w, r->opt.k, r->opt.bucket_bits, r->opt.flag, r->opt.mini_batch_size, n_threads, r->opt.batch_size);
 	if (mi) {
 		if (r->fp_out) mm_idx_dump(r->fp_out, mi);
-		++r->n_parts;
+		mi->index = r->n_parts++;
 	}
 	return mi;
 }
@@ -571,4 +624,152 @@ mm_idx_t *mm_idx_reader_read(mm_idx_reader_t *r, int n_threads)
 int mm_idx_reader_eof(const mm_idx_reader_t *r) // TODO: in extremely rare cases, mm_bseq_eof() might not work
 {
 	return r->is_idx? (feof(r->fp.idx) || ftell(r->fp.idx) == r->idx_size) : mm_bseq_eof(r->fp.seq);
+}
+
+#include <ctype.h>
+#include <zlib.h>
+#include "ksort.h"
+#include "kseq.h"
+KSTREAM_DECLARE(gzFile, gzread)
+
+int mm_idx_alt_read(mm_idx_t *mi, const char *fn)
+{
+	int n_alt = 0;
+	gzFile fp;
+	kstream_t *ks;
+	kstring_t str = {0,0,0};
+	fp = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(fileno(stdin), "r");
+	if (fp == 0) return -1;
+	ks = ks_init(fp);
+	if (mi->h == 0) mm_idx_index_name(mi);
+	while (ks_getuntil(ks, KS_SEP_LINE, &str, 0) >= 0) {
+		char *p;
+		int id;
+		for (p = str.s; *p && !isspace(*p); ++p) { }
+		*p = 0;
+		id = mm_idx_name2id(mi, str.s);
+		if (id >= 0) mi->seq[id].is_alt = 1, ++n_alt;
+	}
+	mi->n_alt = n_alt;
+	if (mm_verbose >= 3)
+		fprintf(stderr, "[M::%s] found %d ALT contigs\n", __func__, n_alt);
+	return n_alt;
+}
+
+#define sort_key_bed(a) ((a).st)
+KRADIX_SORT_INIT(bed, mm_idx_intv1_t, sort_key_bed, 4)
+
+mm_idx_intv_t *mm_idx_read_bed(const mm_idx_t *mi, const char *fn, int read_junc)
+{
+	gzFile fp;
+	kstream_t *ks;
+	kstring_t str = {0,0,0};
+	mm_idx_intv_t *I;
+
+	fp = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(fileno(stdin), "r");
+	if (fp == 0) return 0;
+	I = (mm_idx_intv_t*)calloc(mi->n_seq, sizeof(*I));
+	ks = ks_init(fp);
+	while (ks_getuntil(ks, KS_SEP_LINE, &str, 0) >= 0) {
+		mm_idx_intv_t *r;
+		mm_idx_intv1_t t = {-1,-1,-1,-1,0};
+		char *p, *q, *bl, *bs;
+		int32_t i, id = -1, n_blk = 0;
+		for (p = q = str.s, i = 0;; ++p) {
+			if (*p == 0 || *p == '\t') {
+				int32_t c = *p;
+				*p = 0;
+				if (i == 0) { // chr
+					id = mm_idx_name2id(mi, q);
+					if (id < 0) break; // unknown name; TODO: throw a warning
+				} else if (i == 1) { // start
+					t.st = atol(q); // TODO: watch out integer overflow!
+					if (t.st < 0) break;
+				} else if (i == 2) { // end
+					t.en = atol(q);
+					if (t.en < 0) break;
+				} else if (i == 4) { // BED score
+					t.score = atol(q);
+				} else if (i == 5) { // strand
+					t.strand = *q == '+'? 1 : *q == '-'? -1 : 0;
+				} else if (i == 9) {
+					if (!isdigit(*q)) break;
+					n_blk = atol(q);
+				} else if (i == 10) {
+					bl = q;
+				} else if (i == 11) {
+					bs = q;
+					break;
+				}
+				if (c == 0) break;
+				++i, q = p + 1;
+			}
+		}
+		if (id < 0 || t.st < 0 || t.st >= t.en) continue;
+		r = &I[id];
+		if (i >= 11 && read_junc) { // BED12
+			int32_t st, sz, en;
+			st = strtol(bs, &bs, 10); ++bs;
+			sz = strtol(bl, &bl, 10); ++bl;
+			en = t.st + st + sz;
+			for (i = 1; i < n_blk; ++i) {
+				mm_idx_intv1_t s = t;
+				if (r->n == r->m) {
+					r->m = r->m? r->m + (r->m>>1) : 16;
+					r->a = (mm_idx_intv1_t*)realloc(r->a, sizeof(*r->a) * r->m);
+				}
+				st = strtol(bs, &bs, 10); ++bs;
+				sz = strtol(bl, &bl, 10); ++bl;
+				s.st = en, s.en = t.st + st;
+				en = t.st + st + sz;
+				if (s.en > s.st) r->a[r->n++] = s;
+			}
+		} else {
+			if (r->n == r->m) {
+				r->m = r->m? r->m + (r->m>>1) : 16;
+				r->a = (mm_idx_intv1_t*)realloc(r->a, sizeof(*r->a) * r->m);
+			}
+			r->a[r->n++] = t;
+		}
+	}
+	free(str.s);
+	ks_destroy(ks);
+	gzclose(fp);
+	return I;
+}
+
+int mm_idx_bed_read(mm_idx_t *mi, const char *fn, int read_junc)
+{
+	int32_t i;
+	if (mi->h == 0) mm_idx_index_name(mi);
+	mi->I = mm_idx_read_bed(mi, fn, read_junc);
+	if (mi->I == 0) return -1;
+	for (i = 0; i < mi->n_seq; ++i) // TODO: eliminate redundant intervals
+		radix_sort_bed(mi->I[i].a, mi->I[i].a + mi->I[i].n);
+	return 0;
+}
+
+int mm_idx_bed_junc(const mm_idx_t *mi, int32_t ctg, int32_t st, int32_t en, uint8_t *s)
+{
+	int32_t i, left, right;
+	mm_idx_intv_t *r;
+	memset(s, 0, en - st);
+	if (mi->I == 0 || ctg < 0 || ctg >= mi->n_seq) return -1;
+	r = &mi->I[ctg];
+	left = 0, right = r->n;
+	while (right > left) {
+		int32_t mid = left + ((right - left) >> 1);
+		if (r->a[mid].st >= st) right = mid;
+		else left = mid + 1;
+	}
+	for (i = left; i < r->n; ++i) {
+		if (st <= r->a[i].st && en >= r->a[i].en && r->a[i].strand != 0) {
+			if (r->a[i].strand > 0) {
+				s[r->a[i].st - st] |= 1, s[r->a[i].en - 1 - st] |= 2;
+			} else {
+				s[r->a[i].st - st] |= 8, s[r->a[i].en - 1 - st] |= 4;
+			}
+		}
+	}
+	return left;
 }

@@ -6,40 +6,61 @@ cdef extern from "minimap.h":
 	#
 	ctypedef struct mm_idxopt_t:
 		short k, w, flag, bucket_bits
-		int mini_batch_size
+		int64_t mini_batch_size
 		uint64_t batch_size
 
 	ctypedef struct mm_mapopt_t:
+		int64_t flag
 		int seed
 		int sdust_thres
-		int flag
-		int bw
+
+		int max_qlen
+
+		int bw, bw_long
 		int max_gap, max_gap_ref
 		int max_frag_len
-		int max_chain_skip
+		int max_chain_skip, max_chain_iter
 		int min_cnt
 		int min_chain_score
+		float chain_gap_scale
+		float chain_skip_scale
+		int rmq_size_cap, rmq_inner_dist
+		int rmq_rescue_size
+		float rmq_rescue_ratio
+
 		float mask_level
+		int mask_len
 		float pri_ratio
 		int best_n
-		int max_join_long, max_join_short
-		int min_join_flank_sc
-		float min_join_flank_ratio;
+
+		float alt_drop
+
 		int a, b, q, e, q2, e2
 		int sc_ambi
 		int noncan
+		int junc_bonus
 		int zdrop, zdrop_inv
 		int end_bonus
 		int min_dp_max
 		int min_ksw_len
 		int anchor_ext_len, anchor_ext_shift
 		float max_clip_ratio
+
+		int rank_min_len
+		float rank_frac
+
 		int pe_ori, pe_bonus
+
 		float mid_occ_frac
+		float q_occ_frac
 		int32_t min_mid_occ
 		int32_t mid_occ
 		int32_t max_occ
-		int mini_batch_size
+		int64_t mini_batch_size
+		int64_t max_sw_mat
+		int64_t cap_kalloc
+
+		const char *split_prefix
 
 	int mm_set_opt(char *preset, mm_idxopt_t *io, mm_mapopt_t *mo)
 	int mm_verbose
@@ -86,6 +107,9 @@ cdef extern from "minimap.h":
 
 	mm_tbuf_t *mm_tbuf_init()
 	void mm_tbuf_destroy(mm_tbuf_t *b)
+	void *mm_tbuf_get_km(mm_tbuf_t *b)
+	int mm_gen_cs(void *km, char **buf, int *max_len, const mm_idx_t *mi, const mm_reg1_t *r, const char *seq, int no_iden)
+	int mm_gen_MD(void *km, char **buf, int *max_len, const mm_idx_t *mi, const mm_reg1_t *r, const char *seq)
 
 #
 # Helper header (because it is hard to expose mm_reg1_t with Cython)
@@ -106,6 +130,7 @@ cdef extern from "cmappy.h":
 	void mm_free_reg1(mm_reg1_t *r)
 	mm_reg1_t *mm_map_aux(const mm_idx_t *mi, const char *seq1, const char *seq2, int *n_regs, mm_tbuf_t *b, const mm_mapopt_t *opt)
 	char *mappy_fetch_seq(const mm_idx_t *mi, const char *name, int st, int en, int *l)
+	mm_idx_t *mappy_idx_seq(int w, int k, int is_hpc, int bucket_bits, const char *seq, int l)
 
 	ctypedef struct kstring_t:
 		unsigned l, m

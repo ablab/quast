@@ -35,6 +35,8 @@ int main(int argc, char *argv[])
 	while ((mi = mm_idx_reader_read(r, n_threads)) != 0) { // traverse each part of the index
 		mm_mapopt_update(&mopt, mi); // this sets the maximum minimizer occurrence; TODO: set a better default in mm_mapopt_init()!
 		mm_tbuf_t *tbuf = mm_tbuf_init(); // thread buffer; for multi-threading, allocate one tbuf for each thread
+		gzrewind(f);
+		kseq_rewind(ks);
 		while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 			mm_reg1_t *reg;
 			int j, i, n_reg;
@@ -45,7 +47,7 @@ int main(int argc, char *argv[])
 				printf("%s\t%d\t%d\t%d\t%c\t", ks->name.s, ks->seq.l, r->qs, r->qe, "+-"[r->rev]);
 				printf("%s\t%d\t%d\t%d\t%d\t%d\t%d\tcg:Z:", mi->seq[r->rid].name, mi->seq[r->rid].len, r->rs, r->re, r->mlen, r->blen, r->mapq);
 				for (i = 0; i < r->p->n_cigar; ++i) // IMPORTANT: this gives the CIGAR in the aligned regions. NO soft/hard clippings!
-					printf("%d%c", r->p->cigar[i]>>4, "MIDSHN"[r->p->cigar[i]&0xf]);
+					printf("%d%c", r->p->cigar[i]>>4, MM_CIGAR_STR[r->p->cigar[i]&0xf]);
 				putchar('\n');
 				free(r->p);
 			}

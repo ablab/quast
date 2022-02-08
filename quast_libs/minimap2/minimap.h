@@ -32,6 +32,14 @@
 #define MM_F_OUT_MD        0x1000000
 #define MM_F_COPY_COMMENT  0x2000000
 #define MM_F_EQX           0x4000000 // use =/X instead of M
+#define MM_F_PAF_NO_HIT    0x8000000 // output unmapped reads to PAF
+#define MM_F_NO_END_FLT    0x10000000
+#define MM_F_HARD_MLEVEL   0x20000000
+#define MM_F_SAM_HIT_ONLY  0x40000000
+#define MM_F_RMQ           (0x80000000LL)
+#define MM_F_QSTRAND       (0x100000000LL)
+#define MM_F_NO_INV        (0x200000000LL)
+#define MM_F_NO_HASH_NAME  (0x400000000LL)
 
 #define MM_I_HPC          0x1
 #define MM_I_NO_SEQ       0x2
@@ -40,6 +48,18 @@
 #define MM_IDX_MAGIC   "MMI\2"
 
 #define MM_MAX_SEG       255
+
+#define MM_CIGAR_MATCH      0
+#define MM_CIGAR_INS        1
+#define MM_CIGAR_DEL        2
+#define MM_CIGAR_N_SKIP     3
+#define MM_CIGAR_SOFTCLIP   4
+#define MM_CIGAR_HARDCLIP   5
+#define MM_CIGAR_PADDING    6
+#define MM_CIGAR_EQ_MATCH   7
+#define MM_CIGAR_X_MISMATCH 8
+
+#define MM_CIGAR_STR  "MIDNSHP=XB"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,14 +74,18 @@ typedef struct {
 	char *name;      // name of the db sequence
 	uint64_t offset; // offset in mm_idx_t::S
 	uint32_t len;    // length
+	uint32_t is_alt;
 } mm_idx_seq_t;
 
 typedef struct {
 	int32_t b, w, k, flag;
 	uint32_t n_seq;            // number of reference sequences
+	int32_t index;
+	int32_t n_alt;
 	mm_idx_seq_t *seq;         // sequence name, length and offset
 	uint32_t *S;               // 4-bit packed sequence
 	struct mm_idx_bucket_s *B; // index (hidden)
+	struct mm_idx_intv_s *I;   // intervals (hidden)
 	void *km, *h;
 } mm_idx_t;
 
@@ -85,7 +109,7 @@ typedef struct {
 	int32_t mlen, blen;     // seeded exact match length; seeded alignment block length
 	int32_t n_sub;          // number of suboptimal mappings
 	int32_t score0;         // initial chaining score (before chain merging/spliting)
-	uint32_t mapq:8, split:2, rev:1, inv:1, sam_pri:1, proper_frag:1, pe_thru:1, seg_split:1, seg_id:8, split_inv:1, dummy:7;
+	uint32_t mapq:8, split:2, rev:1, inv:1, sam_pri:1, proper_frag:1, pe_thru:1, seg_split:1, seg_id:8, split_inv:1, is_alt:1, strand_retained:1, dummy:5;
 	uint32_t hash;
 	float div;
 	mm_extra_t *p;
@@ -94,33 +118,40 @@ typedef struct {
 // indexing and mapping options
 typedef struct {
 	short k, w, flag, bucket_bits;
-	int mini_batch_size;
+	int64_t mini_batch_size;
 	uint64_t batch_size;
 } mm_idxopt_t;
 
 typedef struct {
+	int64_t flag;    // see MM_F_* macros
 	int seed;
 	int sdust_thres; // score threshold for SDUST; 0 to disable
-	int flag;        // see MM_F_* macros
 
-	int bw;          // bandwidth
+	int max_qlen;    // max query length
+
+	int bw, bw_long; // bandwidth
 	int max_gap, max_gap_ref; // break a chain if there are no minimizers in a max_gap window
 	int max_frag_len;
-	int max_chain_skip;
+	int max_chain_skip, max_chain_iter;
 	int min_cnt;         // min number of minimizers on each chain
 	int min_chain_score; // min chaining score
+	float chain_gap_scale;
+	float chain_skip_scale;
+	int rmq_size_cap, rmq_inner_dist;
+	int rmq_rescue_size;
+	float rmq_rescue_ratio;
 
 	float mask_level;
+	int mask_len;
 	float pri_ratio;
 	int best_n;      // top best_n chains are subjected to DP alignment
 
-	int max_join_long, max_join_short;
-	int min_join_flank_sc;
-	float min_join_flank_ratio;
+	float alt_drop;
 
 	int a, b, q, e, q2, e2; // matching score, mismatch, gap-open and gap-ext penalties
 	int sc_ambi; // score when one or both bases are "N"
 	int noncan;      // cost of non-canonical splicing sites
+	int junc_bonus;
 	int zdrop, zdrop_inv;   // break alignment if alignment score drops too fast along the diagonal
 	int end_bonus;
 	int min_dp_max;  // drop an alignment if the score of the max scoring segment is below this threshold
@@ -128,13 +159,21 @@ typedef struct {
 	int anchor_ext_len, anchor_ext_shift;
 	float max_clip_ratio; // drop an alignment if BOTH ends are clipped above this ratio
 
+	int rank_min_len;
+	float rank_frac;
+
 	int pe_ori, pe_bonus;
 
 	float mid_occ_frac;  // only used by mm_mapopt_update(); see below
-	int32_t min_mid_occ;
+	float q_occ_frac;
+	int32_t min_mid_occ, max_mid_occ;
 	int32_t mid_occ;     // ignore seeds with occurrences above this threshold
-	int32_t max_occ;
-	int mini_batch_size; // size of a batch of query bases to process in parallel
+	int32_t max_occ, max_max_occ, occ_dist;
+	int64_t mini_batch_size; // size of a batch of query bases to process in parallel
+	int64_t max_sw_mat;
+	int64_t cap_kalloc;
+
+	const char *split_prefix;
 } mm_mapopt_t;
 
 // index reader
@@ -297,6 +336,8 @@ mm_tbuf_t *mm_tbuf_init(void);
  */
 void mm_tbuf_destroy(mm_tbuf_t *b);
 
+void *mm_tbuf_get_km(mm_tbuf_t *b);
+
 /**
  * Align a query sequence against an index
  *
@@ -333,10 +374,30 @@ int mm_map_file(const mm_idx_t *idx, const char *fn, const mm_mapopt_t *opt, int
 
 int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_mapopt_t *opt, int n_threads);
 
+/**
+ * Generate the cs tag (new in 2.12)
+ *
+ * @param km         memory blocks; set to NULL if unsure
+ * @param buf        buffer to write the cs/MD tag; typicall NULL on the first call
+ * @param max_len    max length of the buffer; typically set to 0 on the first call
+ * @param mi         index
+ * @param r          alignment
+ * @param seq        query sequence
+ * @param no_iden    true to use : instead of =
+ *
+ * @return the length of cs
+ */
+int mm_gen_cs(void *km, char **buf, int *max_len, const mm_idx_t *mi, const mm_reg1_t *r, const char *seq, int no_iden);
+int mm_gen_MD(void *km, char **buf, int *max_len, const mm_idx_t *mi, const mm_reg1_t *r, const char *seq);
+
 // query sequence name and sequence in the minimap2 index
 int mm_idx_index_name(mm_idx_t *mi);
 int mm_idx_name2id(const mm_idx_t *mi, const char *name);
 int mm_idx_getseq(const mm_idx_t *mi, uint32_t rid, uint32_t st, uint32_t en, uint8_t *seq);
+
+int mm_idx_alt_read(mm_idx_t *mi, const char *fn);
+int mm_idx_bed_read(mm_idx_t *mi, const char *fn, int read_junc);
+int mm_idx_bed_junc(const mm_idx_t *mi, int32_t ctg, int32_t st, int32_t en, uint8_t *s);
 
 // deprecated APIs for backward compatibility
 void mm_mapopt_init(mm_mapopt_t *opt);

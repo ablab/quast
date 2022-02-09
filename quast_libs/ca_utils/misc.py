@@ -35,7 +35,7 @@ def bin_fpath(fname):
 
 
 def minimap_fpath():
-    return get_path_to_program('minimap2', contig_aligner_dirpath, min_version='2.10')
+    return get_path_to_program('minimap2', contig_aligner_dirpath, min_version='2.19', recommend_version='2.24')
 
 
 def compile_minimap(logger, only_clean=False):

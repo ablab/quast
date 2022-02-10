@@ -51,10 +51,6 @@ def cmd_in(cmds):
     return any(c in args for c in cmds)
 
 
-if 'bdist_wheel' in sys.argv:
-    raise RuntimeError("This setup.py does not support wheels. setup.py install will be run automatically...")
-
-
 if abspath(dirname(__file__)) != abspath(os.getcwd()):
     logger.error('Please change to ' + dirname(__file__) + ' before running setup.py')
     sys.exit()

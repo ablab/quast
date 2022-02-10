@@ -32,7 +32,7 @@
          strecth of mismatches/indels/Ns in between were skipped due to low averageg IDY).
 
       5. Updates in embedded tools:
-       - new version of SILVA database (138);
+       - new version of SILVA database (138.1);
        - fixed links to BUSCO databases (v3/odb9);
        - new GeneMark license files.
 

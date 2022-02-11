@@ -9,34 +9,55 @@
        - improved no-ref mode: download the best (less fragmented, more complete) available
          assembly; search references with respect to strain and isolate; speed up downloading;
          fixed some internet connection issues; do not limit number of reference fragments
-         when --ref-list is used.
+         when --ref-list is used;
+       - preserving explicitly specified reference genomes in the reports (they were previously
+         hidden if nothing aligned to these references).
 
       2. New option:
        - "--x-for-Nx" for reporting Nx, Lx, etc metrics for specific value of 'x' in
          addition to N50, L50, etc. The default value is 90. The previous non-changeable
          default was 75.
 
-      3. New way of calculating old metrics:
+      3. New metrics:
+       - auN, auNG, auNA, auNGA (areas under the Nx/NGx/NAx/NGx curves; for more detail see
+         https://lh3.github.io/2020/04/08/a-new-metric-on-assembly-contiguity or the manual)
+
+      4. New way of calculating old metrics:
        - Num mismatches/indels per 100 kbp (now computed with respect to the total number
          of aligned bases in the _assembly_ rather than in the _reference_ as before, may be
          important when Duplication ratio is way above 1);
        - Do not report a misassembly/break between the first and last alignment block of
          a contig if it covers more than 95% of a cyclic chromosome/plasmid (prokaryotes only).
 
-      4. Small fixes (rare crashes or slightly incorrect results in specific cases):
-       - GC calculation (zero division due to rate side effects);
-       - duplication ratio (fractional overestimation due to Ns stretches in some contigs);
-       - HTML report heatmap colors for partial BUSCO genes (red-blue color switch);
-       - use of provided BAM files (--bam option not working properly);
-       - postprocessing of minimap2 mediocre aligments (good pairs of alignments with a
-         strecth of mismatches/indels/Ns in between were skipped due to low averageg IDY).
+      5. Critical fixes:
+       - Python 3.8+ support (cgi.escape replaced with html.escape)
 
-      5. Updates in embedded tools:
+      6. Major fixes:
+       - preserving assembly names in report (hyphens were changed to underscores before);
+       - use of provided BAM files ("--bam" option was not working properly);
+       - "--no-gzip" option removed (it was never used in the pipeline); incorrectly set
+         .gz extensions also removed (used_snps and gff files are not compressed by QUAST);
+       - preserving explicitly specified reference genomes in metaQuast reports
+         (were hidden if nothing aligned to these references).
+
+      7. Minor fixes (rare crashes or slightly incorrect results in specific cases):
+       - GC calculation (zero division due to rate side effects);
+       - duplication ratio (tiny overestimation due to Ns stretches in some contigs);
+       - HTML report heatmap colors for partial BUSCO genes (red-blue color switch);
+       - postprocessing of minimap2 mediocre aligments (good pairs of alignments with a
+         strecth of mismatches/indels/Ns in between were skipped due to low averageg IDY);
+       - total reads number (was incorrectly calculated in case of secondary, supplementary,
+         and duplicate reads);
+       - proper processing of filepaths with commas;
+       - check correctness of existing BED files and overwriting if corrupted.
+
+      8. Updates in embedded tools:
+       - new version of minimap2 (2.24; pre-installed version in PATH accepted if >=2.19);
        - new version of SILVA database (138.1);
        - fixed links to BUSCO databases (v3/odb9);
        - new GeneMark license files.
 
-      6. Cosmetic changes in warning/notice/error messages, pipeline steps order, etc.
+      9. Cosmetic changes in warning/notice/error messages, pipeline steps order, etc.
 
 
 5.0.2

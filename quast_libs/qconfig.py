@@ -269,6 +269,15 @@ nanopore_reads = []
 references_txt = None
 json_output_dirpath = None
 
+no_mash = False
+save_all_reports = False
+preprocess_file = None
+mash_reference = None
+quast_options = None
+download_path = None
+mash_path = None
+minimap_path = None
+download_default = False
 
 def check_python_version():
     def __next_version(version):
@@ -366,6 +375,8 @@ def print_version(mode=None):
         full_version += ' (MetaQUAST mode)'
     elif mode == 'large':
         full_version += ' (QUAST-LG mode)'
+    elif mode == 'viral':
+        full_version += ' (ViralQUAST mode)'
     sys.stdout.write(full_version + '\n')
     sys.stdout.flush()
 

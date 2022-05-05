@@ -37,6 +37,9 @@ def bin_fpath(fname):
 def minimap_fpath():
     return get_path_to_program('minimap2', contig_aligner_dirpath, min_version='2.10')
 
+#TODO: fix versions
+def mash_fpath():
+    return get_path_to_program('mash', None, min_version='2.3')
 
 def compile_minimap(logger, only_clean=False):
     if (minimap_fpath() and not only_clean) or compile_tool('Minimap2', contig_aligner_dirpath, ['minimap2'],

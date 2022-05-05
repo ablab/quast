@@ -15,7 +15,7 @@ unsigned char seq_comp_table[256] = {
 	 48,  49,  50,	51,	 52,  53,  54,	55,	 56,  57,  58,	59,	 60,  61,  62,	63,
 	 64, 'T', 'V', 'G', 'H', 'E', 'F', 'C', 'D', 'I', 'J', 'M', 'L', 'K', 'N', 'O',
 	'P', 'Q', 'Y', 'S', 'A', 'A', 'B', 'W', 'X', 'R', 'Z',	91,	 92,  93,  94,	95,
-	 64, 't', 'v', 'g', 'h', 'e', 'f', 'c', 'd', 'i', 'j', 'm', 'l', 'k', 'n', 'o',
+	 96, 't', 'v', 'g', 'h', 'e', 'f', 'c', 'd', 'i', 'j', 'm', 'l', 'k', 'n', 'o',
 	'p', 'q', 'y', 's', 'a', 'a', 'b', 'w', 'x', 'r', 'z', 123, 124, 125, 126, 127,
 	128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143,
 	144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
@@ -39,7 +39,7 @@ mm_bseq_file_t *mm_bseq_open(const char *fn)
 {
 	mm_bseq_file_t *fp;
 	gzFile f;
-	f = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(fileno(stdin), "r");
+	f = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(0, "r");
 	if (f == 0) return 0;
 	fp = (mm_bseq_file_t*)calloc(1, sizeof(mm_bseq_file_t));
 	fp->fp = f;
@@ -65,6 +65,8 @@ static inline char *kstrdup(const kstring_t *s)
 static inline void kseq2bseq(kseq_t *ks, mm_bseq1_t *s, int with_qual, int with_comment)
 {
 	int i;
+	if (ks->name.l == 0)
+		fprintf(stderr, "[WARNING]\033[1;31m empty sequence name in the input.\033[0m\n");
 	s->name = kstrdup(&ks->name);
 	s->seq = kstrdup(&ks->seq);
 	for (i = 0; i < (int)ks->seq.l; ++i) // convert U to T
@@ -75,9 +77,10 @@ static inline void kseq2bseq(kseq_t *ks, mm_bseq1_t *s, int with_qual, int with_
 	s->l_seq = ks->seq.l;
 }
 
-mm_bseq1_t *mm_bseq_read3(mm_bseq_file_t *fp, int chunk_size, int with_qual, int with_comment, int frag_mode, int *n_)
+mm_bseq1_t *mm_bseq_read3(mm_bseq_file_t *fp, int64_t chunk_size, int with_qual, int with_comment, int frag_mode, int *n_)
 {
 	int64_t size = 0;
+	int ret;
 	kvec_t(mm_bseq1_t) a = {0,0,0};
 	kseq_t *ks = fp->ks;
 	*n_ = 0;
@@ -87,7 +90,7 @@ mm_bseq1_t *mm_bseq_read3(mm_bseq_file_t *fp, int chunk_size, int with_qual, int
 		size = fp->s.l_seq;
 		memset(&fp->s, 0, sizeof(mm_bseq1_t));
 	}
-	while (kseq_read(ks) >= 0) {
+	while ((ret = kseq_read(ks)) >= 0) {
 		mm_bseq1_t *s;
 		assert(ks->seq.l <= INT32_MAX);
 		if (a.m == 0) kv_resize(mm_bseq1_t, 0, a, 256);
@@ -96,7 +99,7 @@ mm_bseq1_t *mm_bseq_read3(mm_bseq_file_t *fp, int chunk_size, int with_qual, int
 		size += s->l_seq;
 		if (size >= chunk_size) {
 			if (frag_mode && a.a[a.n-1].l_seq < CHECK_PAIR_THRES) {
-				while (kseq_read(ks) >= 0) {
+				while ((ret = kseq_read(ks)) >= 0) {
 					kseq2bseq(ks, &fp->s, with_qual, with_comment);
 					if (mm_qname_same(fp->s.name, a.a[a.n-1].name)) {
 						kv_push(mm_bseq1_t, 0, a, fp->s);
@@ -107,21 +110,25 @@ mm_bseq1_t *mm_bseq_read3(mm_bseq_file_t *fp, int chunk_size, int with_qual, int
 			break;
 		}
 	}
+	if (ret < -1) {
+		if (a.n) fprintf(stderr, "[WARNING]\033[1;31m failed to parse the FASTA/FASTQ record next to '%s'. Continue anyway.\033[0m\n", a.a[a.n-1].name);
+		else fprintf(stderr, "[WARNING]\033[1;31m failed to parse the first FASTA/FASTQ record. Continue anyway.\033[0m\n");
+	}
 	*n_ = a.n;
 	return a.a;
 }
 
-mm_bseq1_t *mm_bseq_read2(mm_bseq_file_t *fp, int chunk_size, int with_qual, int frag_mode, int *n_)
+mm_bseq1_t *mm_bseq_read2(mm_bseq_file_t *fp, int64_t chunk_size, int with_qual, int frag_mode, int *n_)
 {
 	return mm_bseq_read3(fp, chunk_size, with_qual, 0, frag_mode, n_);
 }
 
-mm_bseq1_t *mm_bseq_read(mm_bseq_file_t *fp, int chunk_size, int with_qual, int *n_)
+mm_bseq1_t *mm_bseq_read(mm_bseq_file_t *fp, int64_t chunk_size, int with_qual, int *n_)
 {
 	return mm_bseq_read2(fp, chunk_size, with_qual, 0, n_);
 }
 
-mm_bseq1_t *mm_bseq_read_frag2(int n_fp, mm_bseq_file_t **fp, int chunk_size, int with_qual, int with_comment, int *n_)
+mm_bseq1_t *mm_bseq_read_frag2(int n_fp, mm_bseq_file_t **fp, int64_t chunk_size, int with_qual, int with_comment, int *n_)
 {
 	int i;
 	int64_t size = 0;
@@ -151,7 +158,7 @@ mm_bseq1_t *mm_bseq_read_frag2(int n_fp, mm_bseq_file_t **fp, int chunk_size, in
 	return a.a;
 }
 
-mm_bseq1_t *mm_bseq_read_frag(int n_fp, mm_bseq_file_t **fp, int chunk_size, int with_qual, int *n_)
+mm_bseq1_t *mm_bseq_read_frag(int n_fp, mm_bseq_file_t **fp, int64_t chunk_size, int with_qual, int *n_)
 {
 	return mm_bseq_read_frag2(n_fp, fp, chunk_size, with_qual, 0, n_);
 }

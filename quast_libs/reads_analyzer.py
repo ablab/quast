@@ -671,6 +671,12 @@ def parse_reads_stats(stats_fpath):
             value = line.split()[0]
             if 'total' in line:
                 reads_stats['total'] = int(value)
+            elif 'secondary' in line:
+                reads_stats['total'] -= int(value)
+            elif 'supplementary' in line:
+                reads_stats['total'] -= int(value)
+            elif 'duplicates' in line:
+                reads_stats['total'] -= int(value)
             elif 'read1' in line:
                 reads_stats['right'] = value
             elif 'read2' in line:

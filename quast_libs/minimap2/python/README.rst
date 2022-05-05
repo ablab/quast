@@ -43,20 +43,24 @@ The following Python script demonstrates the key functionality of mappy:
 APIs
 ----
 
-Mappy implements two classes and one global function.
+Mappy implements two classes and two global function.
 
 Class mappy.Aligner
 ~~~~~~~~~~~~~~~~~~~
 
 .. code:: python
 
-	mappy.Aligner(fn_idx_in, preset=None, ...)
+	mappy.Aligner(fn_idx_in=None, preset=None, ...)
 
 This constructor accepts the following arguments:
 
 * **fn_idx_in**: index or sequence file name. Minimap2 automatically tests the
   file type. If a sequence file is provided, minimap2 builds an index. The
-  sequence file can be optionally gzip'd.
+  sequence file can be optionally gzip'd. This option has no effect if **seq**
+  is set.
+
+* **seq**: a single sequence to index. The sequence name will be set to
+  :code:`N/A`.
 
 * **preset**: minimap2 preset. Currently, minimap2 supports the following
   presets: **sr** for single-end short reads; **map-pb** for PacBio
@@ -79,17 +83,28 @@ This constructor accepts the following arguments:
 
 * **n_threads**: number of indexing threads; 3 by default
 
-* **fn_idx_out**: name of file to which the index is written
+* **extra_flags**: additional flags defined in minimap.h
+
+* **fn_idx_out**: name of file to which the index is written. This parameter
+  has no effect if **seq** is set.
+
+* **scoring**: scoring system. It is a tuple/list consisting of 4, 6 or 7
+  positive integers. The first 4 elements specify match scoring, mismatch
+  penalty, gap open and gap extension penalty. The 5th and 6th elements, if
+  present, set long-gap open and long-gap extension penalty. The 7th sets a
+  mismatch penalty involving ambiguous bases.
 
 .. code:: python
 
-	mappy.Aligner.map(seq, seq2=None)
+	mappy.Aligner.map(seq, seq2=None, cs=False, MD=False)
 
 This method aligns :code:`seq` against the index. It is a generator, *yielding*
 a series of :code:`mappy.Alignment` objects. If :code:`seq2` is present, mappy
 performs paired-end alignment, assuming the two ends are in the FR orientation.
 Alignments of the two ends can be distinguished by the :code:`read_num` field
-(see Class mappy.Alignment below).
+(see Class mappy.Alignment below). Argument :code:`cs` asks mappy to generate
+the :code:`cs` tag; :code:`MD` is similar. These two arguments might slightly
+degrade performance and are not enabled by default.
 
 .. code:: python
 
@@ -98,6 +113,12 @@ Alignments of the two ends can be distinguished by the :code:`read_num` field
 This method retrieves a (sub)sequence from the index and returns it as a Python
 string. :code:`None` is returned if :code:`name` is not present in the index or
 the start/end coordinates are invalid.
+
+.. code:: python
+
+	mappy.Aligner.seq_names
+
+This property gives the array of sequence names in the index.
 
 Class mappy.Alignment
 ~~~~~~~~~~~~~~~~~~~~~
@@ -123,7 +144,7 @@ properties:
 * **mlen**: length of the matching bases in the alignment, excluding ambiguous
   base matches.
 
-* **NM**: number of mismatches, gaps and ambiguous poistions in the alignment
+* **NM**: number of mismatches, gaps and ambiguous positions in the alignment
 
 * **trans_strand**: transcript strand. +1 if on the forward strand; -1 if on the
   reverse strand; 0 if unknown
@@ -138,6 +159,11 @@ properties:
 
 * **cigar**: CIGAR returned as an array of shape :code:`(n_cigar,2)`. The two
   numbers give the length and the operator of each CIGAR operation.
+
+* **MD**: the :code:`MD` tag as in the SAM format. It is an empty string unless
+  the :code:`MD` argument is applied when calling :code:`mappy.Aligner.map()`.
+
+* **cs**: the :code:`cs` tag.
 
 An :code:`Alignment` object can be converted to a string with :code:`str()` in
 the following format:

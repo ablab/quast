@@ -116,8 +116,7 @@ long peakrss(void)
 double realtime(void)
 {
 	struct timeval tp;
-	struct timezone tzp;
-	gettimeofday(&tp, &tzp);
+	gettimeofday(&tp, NULL);
 	return tp.tv_sec + tp.tv_usec * 1e-6;
 }
 
@@ -126,7 +125,27 @@ void mm_err_puts(const char *str)
 	int ret;
 	ret = puts(str);
 	if (ret == EOF) {
-		fprintf(stderr, "[ERROR] failed to write the results\n");
+		perror("[ERROR] failed to write the results");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void mm_err_fwrite(const void *p, size_t size, size_t nitems, FILE *fp)
+{
+	int ret;
+	ret = fwrite(p, size, nitems, fp);
+	if (ret == EOF) {
+		perror("[ERROR] failed to write data");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void mm_err_fread(void *p, size_t size, size_t nitems, FILE *fp)
+{
+	int ret;
+	ret = fread(p, size, nitems, fp);
+	if (ret == EOF) {
+		perror("[ERROR] failed to read data");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -140,3 +159,4 @@ KRADIX_SORT_INIT(128x, mm128_t, sort_key_128x, 8)
 KRADIX_SORT_INIT(64, uint64_t, sort_key_64, 8)
 
 KSORT_INIT_GENERIC(uint32_t)
+KSORT_INIT_GENERIC(uint64_t)

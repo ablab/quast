@@ -1,3 +1,394 @@
+Release 2.24-r1122 (26 December 2021)
+-------------------------------------
+
+This release improves alignment around long poorly aligned regions. Older
+minimap2 may chain through such regions in rare cases which may result in
+missing alignments later. The issue has become worse since the the change of
+the chaining algorithm in v2.19. v2.23 implements an incomplete remedy. This
+release provides a better solution with a X-drop-like heuristic and by enabling
+two-bandwidth chaining in the assembly mode.
+
+(2.24: 26 December 2021, r1122)
+
+
+
+Release 2.23-r1111 (18 November 2021)
+-------------------------------------
+
+Notable changes:
+
+ * Bugfix: fixed missing alignments around long inversions (#806 and #816).
+   This bug affected v2.19 through v2.22.
+
+ * Improvement: avoid extremely long mapping time for pathologic reads with
+   highly repeated k-mers not in the reference (#771). Use --q-occ-frac=0
+   to disable the new heuristic.
+
+ * Change: use --cap-kalloc=1g by default.
+
+(2.23: 18 November 2021, r1111)
+
+
+
+Release 2.22-r1101 (7 August 2021)
+----------------------------------
+
+When choosing the best alignment, this release uses logarithm gap penalty and
+query-specific mismatch penalty. It improves the sensitivity to long INDELs in
+repetitive regions.
+
+Other notable changes:
+
+ * Bugfix: fixed an indirect memory leak that may waste a large amount of
+   memory given highly repetitive reference such as a 16S RNA database (#749).
+   All versions of minimap2 have this issue.
+
+ * New feature: added --cap-kalloc to reduce the peak memory. This option is
+   not enabled by default but may become the default in future releases.
+
+Known issue:
+
+ * Minimap2 may take a long time to map a read (#771). So far it is not clear
+   if this happens to v2.18 and earlier versions.
+
+(2.22: 7 August 2021, r1101)
+
+
+
+Release 2.21-r1071 (6 July 2021)
+--------------------------------
+
+This release fixed a regression in short-read mapping introduced in v2.19
+(#776). It also fixed invalid comparisons of uninitialized variables, though
+these are harmless (#752). Long-read alignment should be identical to v2.20.
+
+(2.21: 6 July 2021, r1071)
+
+
+
+Release 2.20-r1061 (27 May 2021)
+--------------------------------
+
+This release fixed a bug in the Python module and improves the command-line
+compatibiliity with v2.18. In v2.19, if `-r` is specified with an `asm*` preset,
+users would get alignments more fragmented than v2.18. This could be an issue
+for existing pipelines specifying `-r`. This release resolves this issue.
+
+(2.20: 27 May 2021, r1061)
+
+
+
+Release 2.19-r1057 (26 May 2021)
+--------------------------------
+
+This release includes a few important improvements backported from unimap:
+
+ * Improvement: more contiguous alignment through long INDELs. This is enabled
+   by the minigraph chaining algorithm. All `asm*` presets now use the new
+   algorithm. They can find INDELs up to 100kb and may be faster for
+   chromosome-long contigs. The default mode and `map*` presets use this
+   algorithm to replace the long-join heuristic.
+
+ * Improvement: better alignment in highly repetitive regions by rescuing
+   high-occurrence seeds. If the distance between two adjacent seeds is too
+   large, attempt to choose a fraction of high-occurrence seeds in-between.
+   Minimap2 now produces fewer clippings and alignment break points in long
+   satellite regions.
+
+ * Improvement: allow to specify an interval of k-mer occurrences with `-U`.
+   For repeat-rich genomes, the automatic k-mer occurrence threshold determined
+   by `-f` may be too large and makes alignment impractically slow. The new
+   option protects against such cases. Enabled for `asm*` and `map-hifi`.
+
+ * New feature: added the `map-hifi` preset for maping PacBio High-Fidelity
+   (HiFi) reads.
+
+ * Change to the default: apply `--cap-sw-mem=100m` for genomic alignment.
+
+ * Bugfix: minimap2 could not generate an index file with `-xsr` (#734).
+
+This release represents the most signficant algorithmic change since v2.1 in
+2017. With features backported from unimap, minimap2 now has similar power to
+unimap for contig alignment. Unimap will remain an experimental project and is
+no longer recommended over minimap2. Sorry for reverting the recommendation in
+short time.
+
+(2.19: 26 May 2021, r1057)
+
+
+
+Release 2.18-r1015 (9 April 2021)
+---------------------------------
+
+This release fixes multiple rare bugs in minimap2 and adds additional
+functionality to paftools.js.
+
+Changes to minimap2:
+
+ * Bugfix: a rare segfault caused by an off-by-one error (#489)
+
+ * Bugfix: minimap2 segfaulted due to an uninitilized variable (#622 and #625).
+
+ * Bugfix: minimap2 parsed spaces as field separators in BED (#721). This led
+   to issues when the BED name column contains spaces.
+
+ * Bugfix: minimap2 `--split-prefix` did not work with long reference names
+   (#394).
+
+ * Bugfix: option `--junc-bonus` didn't work (#513)
+
+ * Bugfix: minimap2 didn't return 1 on I/O errors (#532)
+
+ * Bugfix: the `de:f` tag (sequence divergence) could be negative if there were
+   ambiguous bases
+
+ * Bugfix: fixed two undefined behaviors caused by calling memcpy() on
+   zero-length blocks (#443)
+
+ * Bugfix: there were duplicated SAM @SQ lines if option `--split-prefix` is in
+   use (#400 and #527)
+
+ * Bugfix: option -K had to be smaller than 2 billion (#491). This was caused
+   by a 32-bit integer overflow.
+
+ * Improvement: optionally compile against SIMDe (#597). Minimap2 should work
+   with IBM POWER CPUs, though this has not been tested. To compile with SIMDe,
+   please use `make -f Makefile.simde`.
+
+ * Improvement: more informative error message for I/O errors (#454) and for
+   FASTQ parsing errors (#510)
+
+ * Improvement: abort given malformatted RG line (#541)
+
+ * Improvement: better formula to estimate the `dv:f` tag (approximate sequence
+   divergence). See DOI:10.1101/2021.01.15.426881.
+
+ * New feature: added the `--mask-len` option to fine control the removal of
+   redundant hits (#659). The default behavior is unchanged.
+
+Changes to mappy:
+
+ * Bugfix: mappy caused segmentation fault if the reference index is not
+   present (#413).
+
+ * Bugfix: fixed a memory leak via 238b6bb3
+
+ * Change: always require Cython to compile the mappy module (#723). Older
+   mappy packages at PyPI bundled the C source code generated by Cython such
+   that end users did not need to install Cython to compile mappy. However, as
+   Python 3.9 is breaking backward compatibility, older mappy does not work
+   with Python 3.9 anymore. We have to add this Cython dependency as a
+   workaround.
+
+Changes to paftools.js:
+
+ * Bugfix: the "part10-" line from asmgene was wrong (#581)
+
+ * Improvement: compatibility with GTF files from GenBank (#422)
+
+ * New feature: asmgene also checks missing multi-copy genes
+
+ * New feature: added the misjoin command to evaluate large-scale misjoins and
+   megabase-long inversions.
+
+Although given the many bug fixes and minor improvements, the core algorithm
+stays the same. This version of minimap2 produces nearly identical alignments
+to v2.17 except very rare corner cases.
+
+Now unimap is recommended over minimap2 for aligning long contigs against a
+reference genome. It often takes less wall-clock time and is much more
+sensitive to long insertions and deletions.
+
+(2.18: 9 April 2021, r1015)
+
+
+
+Release 2.17-r941 (4 May 2019)
+------------------------------
+
+Changes since the last release:
+
+ * Fixed flawed CIGARs like `5I6D7I` (#392).
+
+ * Bugfix: TLEN should be 0 when either end is unmapped (#373 and #365).
+
+ * Bugfix: mappy is unable to write index (#372).
+
+ * Added option `--junc-bed` to load known gene annotations in the BED12
+   format. Minimap2 prefers annotated junctions over novel junctions (#197 and
+   #348). GTF can be converted to BED12 with `paftools.js gff2bed`.
+
+ * Added option `--sam-hit-only` to suppress unmapped hits in SAM (#377).
+
+ * Added preset `splice:hq` for high-quality CCS or mRNA sequences. It applies
+   better scoring and improves the sensitivity to small exons. This preset may
+   introduce false small introns, but the overall accuracy should be higher.
+
+This version produces nearly identical alignments to v2.16, except for CIGARs
+affected by the bug mentioned above.
+
+(2.17: 5 May 2019, r941)
+
+
+
+Release 2.16-r922 (28 February 2019)
+------------------------------------
+
+This release is 50% faster for mapping ultra-long nanopore reads at comparable
+accuracy. For short-read mapping, long-read overlapping and ordinary long-read
+mapping, the performance and accuracy remain similar. This speedup is achieved
+with a new heuristic to limit the number of chaining iterations (#324). Users
+can disable the heuristic by increasing a new option `--max-chain-iter` to a
+huge number.
+
+Other changes to minimap2:
+
+ * Implemented option `--paf-no-hit` to output unmapped query sequences in PAF.
+   The strand and reference name columns are both `*` at an unmapped line. The
+   hidden option is available in earlier minimap2 but had a different 2-column
+   output format instead of PAF.
+
+ * Fixed a bug that leads to wrongly calculated `de` tags when ambiguous bases
+   are involved (#309). This bug only affects v2.15.
+
+ * Fixed a bug when parsing command-line option `--splice` (#344). This bug was
+   introduced in v2.13.
+
+ * Fixed two division-by-zero cases (#326). They don't affect final alignments
+   because the results of the divisions are not used in both case.
+
+ * Added an option `-o` to output alignments to a specified file. It is still
+   recommended to use UNIX pipes for on-the-fly conversion or compression.
+
+ * Output a new `rl` tag to give the length of query regions harboring
+   repetitive seeds.
+
+Changes to paftool.js:
+
+ * Added a new option to convert the MD tag to the long form of the cs tag.
+
+Changes to mappy:
+
+ * Added the `mappy.Aligner.seq_names` method to return sequence names (#312).
+
+For NA12878 ultra-long reads, this release changes the alignments of <0.1% of
+reads in comparison to v2.15. All these reads have highly fragmented alignments
+and are likely to be problematic anyway. For shorter or well aligned reads,
+this release should produce mostly identical alignments to v2.15.
+
+(2.16: 28 February 2019, r922)
+
+
+
+Release 2.15-r905 (10 January 2019)
+-----------------------------------
+
+Changes to minimap2:
+
+ * Fixed a rare segmentation fault when option -H is in use (#307). This may
+   happen when there are very long homopolymers towards the 5'-end of a read.
+
+ * Fixed wrong CIGARs when option --eqx is used (#266).
+
+ * Fixed a typo in the base encoding table (#264). This should have no
+   practical effect.
+
+ * Fixed a typo in the example code (#265).
+
+ * Improved the C++ compatibility by removing "register" (#261). However,
+   minimap2 still can't be compiled in the pedantic C++ mode (#306).
+
+ * Output a new "de" tag for gap-compressed sequence divergence.
+
+Changes to paftools.js:
+
+ * Added "asmgene" to evaluate the completeness of an assembly by measuring the
+   uniquely mapped single-copy genes. This command learns the idea of BUSCO.
+
+ * Added "vcfpair" to call a phased VCF from phased whole-genome assemblies. An
+   earlier version of this script is used to produce the ground truth for the
+   syndip benchmark [PMID:30013044].
+
+This release produces identical alignment coordinates and CIGARs in comparison
+to v2.14. Users are advised to upgrade due to the several bug fixes.
+
+(2.15: 10 Janurary 2019, r905)
+
+
+
+Release 2.14-r883 (5 November 2018)
+-----------------------------------
+
+Notable changes:
+
+ * Fixed two minor bugs caused by typos (#254 and #266).
+
+ * Fixed a bug that made minimap2 abort when --eqx was used together with --MD
+   or --cs (#257).
+
+ * Added --cap-sw-mem to cap the size of DP matrices (#259). Base alignment may
+   take a lot of memory in the splicing mode. This may lead to issues when we
+   run minimap2 on a cluster with a hard memory limit. The new option avoids
+   unlimited memory usage at the cost of missing a few long introns.
+
+ * Conforming to C99 and C11 when possible (#261).
+
+ * Warn about malformatted FASTA or FASTQ (#252 and #255).
+
+This release occasionally produces base alignments different from v2.13. The
+overall alignment accuracy remain similar.
+
+(2.14: 5 November 2018, r883)
+
+
+
+Release 2.13-r850 (11 October 2018)
+-----------------------------------
+
+Changes to minimap2:
+
+ * Fixed wrongly formatted SAM when -L is in use (#231 and #233).
+
+ * Fixed an integer overflow in rare cases.
+
+ * Added --hard-mask-level to fine control split alignments (#244).
+
+ * Made --MD work with spliced alignment (#139).
+
+ * Replaced musl's getopt with ketopt for portability.
+
+ * Log peak memory usage on exit.
+
+This release should produce alignments identical to v2.12 and v2.11.
+
+(2.13: 11 October 2018, r850)
+
+
+
+Release 2.12-r827 (6 August 2018)
+---------------------------------
+
+Changes to minimap2:
+
+ * Added option --split-prefix to write proper alignments (correct mapping
+   quality and clustered query sequences) given a multi-part index (#141 and
+   #189; mostly by @hasindu2008).
+
+ * Fixed a memory leak when option -y is in use.
+
+Changes to mappy:
+
+ * Support the MD/cs tag (#183 and #203).
+
+ * Allow mappy to index a single sequence, to add extra flags and to change the
+   scoring system.
+
+Minimap2 should produce alignments identical to v2.11.
+
+(2.12: 6 August 2018, r827)
+
+
+
 Release 2.11-r797 (20 June 2018)
 --------------------------------
 

@@ -7,25 +7,21 @@ import shutil
 
 from Bio import SeqIO
 from quast_libs import qconfig
+from typing import List, Tuple
 
-def run_mash(task):
-    if qconfig.mash_path is None:
-        mash_path = mash_fpath()
-    else:
-        mash_path = qconfig.mash_path
-    if mash_path is None:
-        raise Exception('Can not find mash executable')
-    idx = task[0]
-    tasks = task[1]
+def run_mash(task: Tuple[int, List[Tuple[str, str]]]):
+    idx: int = task[0]
+    tasks: List[str] = task[1][0]
+    mash_path: str = task[1][1]
     for t in tasks:
-        subprocess.run([mash_path, "sketch", "-o", "ref{}".format(idx), "ref{}.msh".format(idx), t])
+        subprocess.run([mash_path, 'sketch', '-o', 'ref{}'.format(idx), 'ref{}.msh'.format(idx), t])
 
-def cut_sample(task):
-    k, v = task
-    v2 = sorted(v, key=lambda x: x.name.replace('|', '_').replace('/', '_'))
-    filename = "cutted/{}.fasta".format(v2[0].name.replace('|', '_').replace('/', '_'))
-    with open(filename, "w") as f:
-        SeqIO.write(v2, f, "fasta")
+def cut_sample(task: Tuple[str, List[str]]) -> str:
+    _, seqs = task
+    seqs = sorted(seqs, key=lambda x: x.name.replace('|', '_').replace('/', '_'))
+    filename = 'cutted/{}.fasta'.format(seqs[0].name.replace('|', '_').replace('/', '_'))
+    with open(filename, 'w') as f:
+        SeqIO.write(seqs, f, "fasta")
     return filename
 
 def preprocess(option, opt_str, value, logger, threads=4):
@@ -34,52 +30,54 @@ def preprocess(option, opt_str, value, logger, threads=4):
 
     reference_path = value
 
-    logger.info("Starting preprocessing\n")
+    logger.info('Starting preprocessing\n')
 
-    d = {}
+    descrs_to_seqs = {}
     fasta_sequences = SeqIO.parse(gzip.open(reference_path, 'rt'), 'fasta')
     for seq in fasta_sequences:
         try:
-            name = seq.description.split(" (")[1].split(") ")[0]
+            name = seq.description.split(' (')[1].split(') ')[0]
         except:
             continue
-        if name not in d:
-            d[name] = [seq]
+        if name not in descrs_to_seqs:
+            descrs_to_seqs[name] = [seq]
         else:
-            d[name].append(seq)
+            descrs_to_seqs[name].append(seq)
 
     try:
-        os.mkdir("cutted")
+        os.mkdir('cutted')
     except:
-        pass
+        shutil.rmtree('cutted')
+        os.mkdir('cutted')
 
     with multiprocessing.Pool(parts_count) as p:
-        filenames = p.map(cut_sample, d.items())
+        filenames = p.map(cut_sample, descrs_to_seqs.items())
 
     if qconfig.mash_path is None:
         mash_path = mash_fpath()
     else:
         mash_path = qconfig.mash_path
+    if mash_path is None:
+        raise Exception('Can not find mash executable')
 
-    subprocess.run([mash_path, "sketch", "-o", "ref", filenames[0]])
+    subprocess.run([mash_path, 'sketch', '-o', 'ref', filenames[0]])
 
     for i in range(1, min(len(filenames), parts_count + 1)):
-        subprocess.run([mash_path, "sketch", "-o", "ref{}".format(i), filenames[i]])
+        subprocess.run([mash_path, 'sketch', '-o', 'ref{}'.format(i), filenames[i]])
 
     tasks = {i: [] for i in range(1, parts_count + 1)}
     for i, filename in enumerate(filenames[parts_count + 1:]):
-        tasks[i % parts_count + 1].append(filename)
+        tasks[i % parts_count + 1].append((filename, mash_path))
 
     with multiprocessing.Pool(parts_count) as p:
-        # TODO: change
         p.map(run_mash, tasks.items())
 
     for i in range(parts_count):
-        subprocess.run([mash_path, "sketch", "-o", "ref", "ref.msh", "ref{}.msh".format(i + 1)])
-        os.remove("ref{}.msh".format(i + 1))
+        subprocess.run([mash_path, 'sketch', '-o', 'ref', 'ref.msh', 'ref{}.msh'.format(i + 1)])
+        os.remove('ref{}.msh'.format(i + 1))
 
-    shutil.rmtree("cutted")
-    new_path = '/'.join(reference_path.split('/')[:-1]) + '/' + reference_path.split('/')[-1].split('.')[0] + '.msh'
+    shutil.rmtree('cutted')
+    new_path: str = '/'.join(reference_path.split('/')[:-1]) + '/' + reference_path.split('/')[-1].split('.')[0] + '.msh'
     shutil.move('ref.msh', new_path)
-    logger.info("Preprocessing done! New reference path: {}".format(new_path))
+    logger.info('Preprocessing done! New reference path: {}'.format(new_path))
     return new_path

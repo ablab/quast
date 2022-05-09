@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import shutil
 import sys
@@ -8,6 +10,7 @@ from quast_libs.qutils import cleanup, check_dirpath, check_reads_fpaths
 from quast_libs.options_parser import QuastOption, OptionParser, check_output_dir, check_arg_value
 from quast_libs.viralquast.preprocess import preprocess
 from quast_libs.viralquast.mash_finder import MashReferenceFinder, MinimapReferenceFinder
+from typing import Optional, Tuple
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -51,11 +54,13 @@ options:
     --quast-options "parameters"        parameters for internal quast runs
     
     --update-reference                  downloads newest reference and preprocess it
+    
+    --test                              run in test mode
 '''
 
 
 
-def my_parse_options(logger, quast_args):
+def parse_args(logger, quast_args):
 
     if '-h' in quast_args or '--help' in quast_args or '--help-hidden' in quast_args:
         stream = sys.stdout
@@ -158,8 +163,8 @@ def my_parse_options(logger, quast_args):
     return quast_py_args, contigs_fpaths
 
 
-def check_reference():
-    path = os.sep.join(['quast_libs', 'viralquast', 'references'])
+def check_reference() -> Tuple[str, str]:
+    path = os.sep.join([os.path.abspath(os.curdir), 'quast_libs', 'viralquast', 'references'])
     alternative_path = os.sep.join(['~', '.quast', 'viralquast', 'references'])
     mash_reference_path = None
     if qconfig.no_mash is False:
@@ -180,7 +185,7 @@ def check_reference():
 
 
 
-def check_path(path, filename):
+def check_path(path: str, filename: str) -> bool:
     reference_path = os.sep.join([path, filename])
     if os.path.exists(reference_path):
         logger.info('Reference already exists, skipping...')
@@ -191,9 +196,16 @@ def check_path(path, filename):
         return False
     return True
 
-def get_reference(link, filename='reference.fasta.gz', path=None, replace=False):
+def symlink_force(target, link_name):
+    try:
+        os.symlink(target, link_name)
+    except:
+        os.remove(link_name)
+        os.symlink(target, link_name)
+
+def get_reference(link: str, filename: str='reference.fasta.gz', path: str=None, replace: bool=False) -> Optional[str]:
     if path is None:
-        path = os.sep.join(['quast_libs', 'viralquast', 'references'])
+        path = os.sep.join([os.path.abspath(os.curdir), 'quast_libs', 'viralquast', 'references'])
         check = check_path(path, filename)
         if check is None and replace is False:
             return
@@ -211,15 +223,12 @@ def get_reference(link, filename='reference.fasta.gz', path=None, replace=False)
     logger.info('Reference would be downloaded to {}'.format(path))
     logger.info('Starting download...')
 
-    # link = 'https://rvdb.dbi.udel.edu/download/U-RVDBv22.0.fasta.gz'
-    downloaded_filename = wget.download(link, path)
+    downloaded_path = wget.download(link, path)
 
-    downloaded_path = os.sep.join([path, downloaded_filename])
-
-    os.symlink(downloaded_path, reference_path)
+    symlink_force(downloaded_path, reference_path)
 
     logger.info('Download complete')
-    return
+    return downloaded_path
 
 
 def get_default_references():
@@ -228,9 +237,19 @@ def get_default_references():
 
 
 def update_reference(option, opt_str, value, parser, logger):
-    reference_path = get_reference('https://rvdb.dbi.udel.edu/download/U-RVDBvCurrent.fasta.gz', 'reference.fasta.gz',
+    downloaded_path = get_reference('https://rvdb.dbi.udel.edu/download/U-RVDBvCurrent.fasta.gz', 'reference.fasta.gz',
                                    path=None, replace=True)
-    preprocess(None, None, reference_path, logger, threads=qconfig.max_threads)
+    new_path = preprocess(None, None, downloaded_path, logger, threads=qconfig.max_threads)
+    path = os.sep.join([os.path.abspath(os.curdir), 'quast_libs', 'viralquast', 'references'])
+    check = check_path(path, filename)
+    if check is False:
+        path = os.sep.join(['~', '.quast', 'viralquast', 'references', filename])
+        check = check_path(path, filename)
+    if check is False:
+        logger.error('Can not access default directories, error')
+        return
+    reference_path = os.sep.join([path, 'reference.msh'])
+    symlink_force(new_path, reference_path)
 
 
 def main(args):
@@ -257,7 +276,7 @@ def main(args):
         except Exception:
             print('Python locale settings can\'t be changed')
     quast_path = [__file__]
-    quast_py_args, contigs_fpaths = my_parse_options(logger, quast_path + args)
+    quast_py_args, contigs_fpaths = parse_args(logger, quast_path + args)
 
     if qconfig.test:
         qconfig.mash_reference = os.sep.join(['quast_libs', 'viralquast', 'references', 'test_reference.msh'])
@@ -296,7 +315,8 @@ def main(args):
             sys.exit(1)
         finder.find_reference(contigs_fpaths[0], mash_reference_path)
 
-    logger.info('Finished!!!!!')
+    logger.info('Finished!')
+
 
 if __name__ == "__main__":
     try:

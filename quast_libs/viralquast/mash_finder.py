@@ -10,6 +10,7 @@ from quast_libs.ca_utils.misc import minimap_fpath, get_path_to_program, mash_fp
 from Bio import SeqIO
 from quast_libs.viralquast.quast_ranger import QuastRanger
 from quast_libs.viralquast.minimap_parser import MinimapParser
+from typing import List
 
 class ReferenceFinder:
     def __init__(self, logger, ref_path):
@@ -47,7 +48,7 @@ class MashReferenceFinder(ReferenceFinder):
             raise Exception('Can not find mash, try to run "sudo apt update & sudo apt install mash" command in terminal,'
                             'or install it manually from https://github.com/marbl/Mash')
 
-    def check_reference(self, contigs_fpath, mash_reference_fpath):
+    def check_reference(self, contigs_fpath: str, mash_reference_fpath: str) -> bool:
         res = subprocess.check_output([self.mash_path, 'dist', mash_reference_fpath, contigs_fpath], universal_newlines=True)
         res = res.split('\n')[:-1]
         name = res[0].split()[0].split('/')[-1].split('.fasta')[0]
@@ -58,32 +59,32 @@ class MashReferenceFinder(ReferenceFinder):
                 return True
         return False
 
-    def find_reference(self, contigs_fpath, mash_reference_fpath):
+    def find_reference(self, contigs_fpath: str, mash_reference_fpath: str):
         save_all_reports = qconfig.save_all_reports
         if not self.check_reference(contigs_fpath, mash_reference_fpath):
             raise Exception('Looks like references do not match, exiting')
 
-        res = subprocess.check_output([self.mash_path, 'dist', mash_reference_fpath, contigs_fpath], universal_newlines=True)
-        res = res.split('\n')[:-1]
-        res = list(sorted(res, key=lambda x: float(x.split('\t')[2])))
+        mash_output = subprocess.check_output([self.mash_path, 'dist', mash_reference_fpath, contigs_fpath], universal_newlines=True)
+        mash_output = mash_output.split('\n')[:-1]
+        mash_output = list(sorted(mash_output, key=lambda x: float(x.split('\t')[2])))
         names = []
-        for line in res[:30]:
+        for line in mash_output[:30]:
             name = line.split()[0].split('/')[-1].split('.fasta')[0]
             names.append(name)
         samples_paths = self.cut_samples(names)
         ranger = QuastRanger()
         quast_files_names = ranger.run_quast(contigs_fpath, samples_paths)
-        res = ranger.parse_reports(quast_files_names)
-        shutil.move('{}/cutted_tmp/{}.fasta'.format(self.output_dir, res[0]),
+        mash_output = ranger.parse_reports(quast_files_names)
+        shutil.move('{}/cutted_tmp/{}.fasta'.format(self.output_dir, mash_output[0]),
                     '{}/cutted_result.fasta'.format(self.output_dir))
-        shutil.move('{}/quast_all_reports/{}'.format(self.output_dir, res[0]),
+        shutil.move('{}/quast_all_reports/{}'.format(self.output_dir, mash_output[0]),
                     '{}/quast_best_results'.format(self.output_dir))
         shutil.rmtree('{}/cutted_tmp'.format(self.output_dir))
         if save_all_reports is False:
             shutil.rmtree('{}/quast_all_reports'.format(self.output_dir))
 
 
-    def cut_samples(self, names):
+    def cut_samples(self, names: List[str]) -> List[str]:
         fasta_sequences = SeqIO.parse(gzip.open(self.ref_path, 'rt'), 'fasta')
         seqs = {n: [] for n in names}
         seqs_descrs = {}
@@ -106,13 +107,13 @@ class MashReferenceFinder(ReferenceFinder):
         except:
             shutil.rmtree('{}/cutted_tmp'.format(self.output_dir))
             os.mkdir('{}/cutted_tmp'.format(self.output_dir))
-        ret = []
+        cutted_filenames_paths = []
         for name in names[:10]:
             seqs_ = map(lambda x: x[1], sorted(seqs[name], key=lambda x:x[0]))
             fixed_name = name.replace('|', '_')
             SeqIO.write(seqs_, '{}/cutted_tmp/{}.fasta'.format(self.output_dir, fixed_name), 'fasta')
-            ret.append('{}/cutted_tmp/{}.fasta'.format(self.output_dir, fixed_name))
-        return ret
+            cutted_filenames_paths.append('{}/cutted_tmp/{}.fasta'.format(self.output_dir, fixed_name))
+        return cutted_filenames_paths
 
 
 class MinimapReferenceFinder(ReferenceFinder):
@@ -122,16 +123,15 @@ class MinimapReferenceFinder(ReferenceFinder):
         if qconfig.minimap_path is None:
             self.minimap_path = minimap_fpath()
         else:
-            # minimap_path = 'quast_libs/minimap2/minimap2'
             self.minimap_path = qconfig.minimap_path
         if self.minimap_path is None:
             raise Exception('Can not find minimap, exiting')
 
-    def find_reference(self, contigs_fpath):  #, reference_fpath):
-        save_all_reports = qconfig.save_all_reports
-        reference_fpath = self.ref_path
-        fixed = self.run_minimap(contigs_fpath, reference_fpath)
-        expanded = MinimapParser().expand_and_cut(fixed, reference_fpath)
+    def find_reference(self, contigs_fpath: str):
+        save_all_reports: bool = qconfig.save_all_reports
+        fixed_output = self.run_minimap(contigs_fpath, self.ref_path)
+        expanded = MinimapParser().expand_and_cut(fixed_output, self.ref_path)
+
         if not os.path.exists('{}/cutted_tmp'.format(self.output_dir)):
             os.mkdir('{}/cutted_tmp'.format(self.output_dir))
         files = []
@@ -144,7 +144,7 @@ class MinimapReferenceFinder(ReferenceFinder):
             minimap_results.append(self.run_minimap(contigs_fpath, file))
         ref_nodes, scores, d_back, allignings = self.parse_input_nodes(minimap_results)
         allignings = self.fix_allignings(allignings)
-        ref_nodes_positions, back_mapping, descrs, lengths = self.find_positions(ref_nodes, reference_fpath)
+        ref_nodes_positions, back_mapping, descrs, lengths = self.find_positions(ref_nodes, self.ref_path)
         sorted_positions = list(sorted(ref_nodes_positions.items(), key=lambda x: x[1]))
         subsegments = self.find_subsegments(sorted_positions)
         best_seqs = self.find_seqs(subsegments, descrs, allignings, lengths)
@@ -180,7 +180,7 @@ class MinimapReferenceFinder(ReferenceFinder):
         if save_all_reports is False:
             shutil.rmtree('{}/quast_all_reports'.format(self.output_dir))
 
-    def run_minimap(self, contigs_fpath, reference_fpath):
+    def run_minimap(self, contigs_fpath: str, reference_fpath: str) -> List[str]:
         threads = qconfig.max_threads if qconfig.max_threads is not None else 1
         minimap_res = subprocess.check_output(
             [self.minimap_path, '-c', '-x', 'asm10', '-B5', '-O4,16', '-r', '85', '-N',

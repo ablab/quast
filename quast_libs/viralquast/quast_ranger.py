@@ -1,7 +1,9 @@
 import shutil
 import os
 import quast_libs.viralquast.quast_functions as quast_functions
+
 from quast_libs import qconfig
+from typing import List, Tuple, Dict, Union
 
 
 class QuastRanger:
@@ -11,7 +13,7 @@ class QuastRanger:
         else:
             self.output_dir = qconfig.output_dirpath
 
-    def run_quast(self, contigs_fpath, samples_paths):
+    def run_quast(self, contigs_fpath: str, samples_paths: List[str]) -> List[str]:
         tmp_dirname = '{}/quast_all_reports'.format(self.output_dir)
         threads = qconfig.max_threads if qconfig.max_threads is not None else 1
         try:
@@ -33,10 +35,10 @@ class QuastRanger:
             args = ['-R', sample_path, contigs_fpath, '-o', '{}/quast_all_reports/{}'.format(self.output_dir, sample_name),
                     '-t', str(threads)]
             args += quast_args
-            quast_functions.my_main(args)
+            quast_functions.run_quast_funcs(args)
         return names
 
-    def fix_args(self, args):
+    def fix_args(self, args: List[str]) -> List[str]:
         R_pos = -1
         o_pos = -1
         for i, arg in enumerate(args):
@@ -54,7 +56,7 @@ class QuastRanger:
         return args
 
 
-    def parse_reports(self, names):
+    def parse_reports(self, names: List[str]) -> List[Tuple[str, Dict[str, Union[int, str]]]]:
         results = {}
         for sample_name in names:
             results[sample_name] = {}

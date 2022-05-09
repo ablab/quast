@@ -12,7 +12,7 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 logger.set_up_console_handler()
 
 
-def my_main(args):
+def run_quast_funcs(args):
     check_dirpath(qconfig.QUAST_HOME, 'You are trying to run it from ' + str(qconfig.QUAST_HOME) + '\n.' +
                   'Please, put QUAST in a different directory, then try again.\n', exit_code=3)
 
@@ -59,12 +59,8 @@ def my_main(args):
             shutil.rmtree(corrected_dirpath)
         os.mkdir(corrected_dirpath)
 
-    # qconfig.set_max_threads(logger)
-    # check_reads_fpaths(logger)
     # PROCESSING REFERENCE
     if ref_fpath:
-        # logger.main_info()
-        # logger.main_info('Reference:')
         original_ref_fpath = ref_fpath
         ref_fpath = qutils.correct_reference(ref_fpath, corrected_dirpath)
         is_cyclic = qconfig.prokaryote and not qconfig.check_for_fragmented_ref
@@ -83,10 +79,6 @@ def my_main(args):
                     labels = qutils.process_labels(contigs_fpaths, labels)
     else:
         ref_fpath = ''
-
-    # PROCESSING CONTIGS
-    # logger.main_info()
-    # logger.main_info('Contigs:')
 
     contigs_fpaths, old_contigs_fpaths = qutils.correct_contigs(contigs_fpaths, corrected_dirpath, labels,
                                                                 reporting)

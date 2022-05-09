@@ -2,6 +2,7 @@ import re
 import gzip
 
 from Bio import SeqIO
+from typing import List, Dict, Tuple, Set, Any, Union
 
 class Mapping(object):
     def __init__(self, s1, e1, s2=None, e2=None, len1=None, len2=None, idy=None, ref=None, contig=None,
@@ -62,7 +63,7 @@ class Mapping(object):
 class MinimapParser():
 
     @staticmethod
-    def parse_minimap(lines):
+    def parse_minimap(lines: List[str]) -> List[str]:
         cigar_pattern = re.compile(r'(\d+[M=XIDNSH])')
         out = []
         for line in lines:
@@ -114,37 +115,26 @@ class MinimapParser():
                     out.append(align.coords_str())
         return out
 
-    def parse_input_nodes(self, fixed_lines):
-        nodes_to_referene = {}
-        reference_to_nodes = {}
-        scores = {}
+    def parse_input_nodes(self, fixed_lines: List[str]) -> Set[str]:
         ref_nodes = set()
         for line in fixed_lines:
             line = line.split()
             ref_node, node = line[11], line[12]
-            if node not in nodes_to_referene:
-                nodes_to_referene[node] = [ref_node]
-            else:
-                nodes_to_referene[node].append(ref_node)
-            reference_to_nodes[ref_node] = node
-            scores[ref_node] = int(line[6]) * float(line[9]) / 100
             ref_nodes.add(ref_node)
-        return ref_nodes, scores, reference_to_nodes
+        return ref_nodes
 
-    def find_positions(self, ref_nodes, reference_fpath):
+    def find_positions(self, ref_nodes: Set[str], reference_fpath: str) -> Dict[str, int]:
         cnt = 0
         ref_nodes_positions = {}
-        back_mapping = {}
         fasta_sequences = SeqIO.parse(gzip.open(reference_fpath, 'rt'), 'fasta')
         for seq in fasta_sequences:
             name = seq.name
             if name in ref_nodes:
                 ref_nodes_positions[name] = cnt
-                back_mapping[cnt] = name
             cnt += 1
-        return ref_nodes_positions, back_mapping
+        return ref_nodes_positions
 
-    def find_subsegments(self, sorted_positions, thresh=3):
+    def find_subsegments(self, sorted_positions: List[Tuple[str, int]], thresh: int=3) -> List[List[Tuple[str, int]]]:
         subsegments = []
         i = 0
         while i < len(sorted_positions) - 1:
@@ -158,9 +148,9 @@ class MinimapParser():
             i += 1
         return subsegments
 
-    def expand_subsegments(self, subsegments, reference_fpath, expand_len=8):
+    def expand_subsegments(self, subsegments: List[List[Tuple[str, int]]], reference_fpath: str,
+                           expand_len: int=8) -> List[Tuple[str, str]]:
         cnt = 0
-        fasta_sequences = SeqIO.parse(gzip.open(reference_fpath, 'rt'), 'fasta')
         starts = set()
         ends = set()
         merged = True
@@ -176,6 +166,7 @@ class MinimapParser():
             ends.add(sub[-1][1])
         new_seqs = []
         l, r = None, None
+        fasta_sequences = SeqIO.parse(gzip.open(reference_fpath, 'rt'), 'fasta')
         for seq in fasta_sequences:
             if cnt + expand_len in starts:
                 l = seq.name
@@ -185,7 +176,7 @@ class MinimapParser():
             cnt += 1
         return new_seqs
 
-    def cut_expanded(self, new_seqs, reference_fpath):
+    def cut_expanded(self, new_seqs: List[Tuple[str, str]], reference_fpath: str) -> List[List[Union[str, List[Any]]]]:
         starts, ends = set(), set()
         for start, end in new_seqs:
             starts.add(start)
@@ -197,15 +188,15 @@ class MinimapParser():
             if seq.name in starts:
                 cur_seq = [seq.name.replace('|', '_'), []]
             if cur_seq is not None:
-                cur_seq[1] += [seq]
+                cur_seq[1].append(seq)
             if seq.name in ends:
                 cutted.append(cur_seq)
                 cur_seq = None
         return cutted
 
-    def expand_and_cut(self, fixed_lines, reference_fpath):
-        ref_nodes, scores, d_back = self.parse_input_nodes(fixed_lines)
-        ref_nodes_positions, back_mapping = self.find_positions(ref_nodes, reference_fpath)
+    def expand_and_cut(self, fixed_lines: List[str], reference_fpath: str) -> List[List[Union[str, List[Any]]]]:
+        ref_nodes = self.parse_input_nodes(fixed_lines)
+        ref_nodes_positions = self.find_positions(ref_nodes, reference_fpath)
         sorted_positions = list(sorted(ref_nodes_positions.items(), key=lambda x: x[1]))
         subsegments = self.find_subsegments(sorted_positions)
         new_seqs = self.expand_subsegments(subsegments, reference_fpath)

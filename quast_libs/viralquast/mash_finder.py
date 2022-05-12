@@ -10,7 +10,7 @@ from quast_libs.ca_utils.misc import minimap_fpath, get_path_to_program, mash_fp
 from Bio import SeqIO
 from quast_libs.viralquast.quast_ranger import QuastRanger
 from quast_libs.viralquast.minimap_parser import MinimapParser
-from typing import List
+from typing import List, Tuple, Dict, Set
 
 class ReferenceFinder:
     def __init__(self, logger, ref_path):
@@ -130,7 +130,8 @@ class MinimapReferenceFinder(ReferenceFinder):
     def find_reference(self, contigs_fpath: str):
         save_all_reports: bool = qconfig.save_all_reports
         fixed_output = self.run_minimap(contigs_fpath, self.ref_path)
-        expanded = MinimapParser().expand_and_cut(fixed_output, self.ref_path)
+        minimap_parser = MinimapParser()
+        expanded = minimap_parser.expand_and_cut(fixed_output, self.ref_path)
 
         if not os.path.exists('{}/cutted_tmp'.format(self.output_dir)):
             os.mkdir('{}/cutted_tmp'.format(self.output_dir))
@@ -139,14 +140,16 @@ class MinimapReferenceFinder(ReferenceFinder):
             with open('{}/cutted_tmp/{}'.format(self.output_dir, name), 'w') as f:
                 SeqIO.write(seqs, f, 'fasta')
                 files.append('{}/cutted_tmp/{}'.format(self.output_dir, name))
+
         minimap_results = []
         for file in files:
             minimap_results.append(self.run_minimap(contigs_fpath, file))
-        ref_nodes, scores, d_back, allignings = self.parse_input_nodes(minimap_results)
+
+        ref_nodes, allignings = self.parse_input_nodes(minimap_results)
         allignings = self.fix_allignings(allignings)
-        ref_nodes_positions, back_mapping, descrs, lengths = self.find_positions(ref_nodes, self.ref_path)
+        ref_nodes_positions, descrs, lengths = self.find_positions(ref_nodes, self.ref_path)
         sorted_positions = list(sorted(ref_nodes_positions.items(), key=lambda x: x[1]))
-        subsegments = self.find_subsegments(sorted_positions)
+        subsegments = minimap_parser.find_subsegments(sorted_positions)
         best_seqs = self.find_seqs(subsegments, descrs, allignings, lengths)
 
         sorted_best_seqs = list(sorted(best_seqs, key=lambda x: -x[1][0]))[:50]
@@ -172,6 +175,7 @@ class MinimapReferenceFinder(ReferenceFinder):
         ranger = QuastRanger()
         names = ranger.run_quast(contigs_fpath, samples_paths)
         res = ranger.parse_reports(names)
+
         shutil.move('{}/cutted_tmp/{}.fasta'.format(self.output_dir, res[0]),
                     '{}/cutted_result.fasta'.format(self.output_dir))
         shutil.move('{}/quast_all_reports/{}'.format(self.output_dir, res[0]),
@@ -191,33 +195,21 @@ class MinimapReferenceFinder(ReferenceFinder):
         fixed = MinimapParser.parse_minimap(minimap_res)
         return fixed
 
-    def parse_input_nodes(self, minimap_results):
-        nodes_to_reference = {}
-        reference_to_nodes = {}
-        scores = {}
+    def parse_input_nodes(self, minimap_results: List[List[str]]) -> Tuple[Set[str], Dict[str, List[Tuple[int, int]]]]:
         allignings = {}
         ref_nodes = set()
         for sample in minimap_results:
             for line in sample:
                 line = line.split()
                 ref_node, node = line[11], line[12]
-                if node not in nodes_to_reference:
-                    nodes_to_reference[node] = [ref_node]
-                else:
-                    nodes_to_reference[node].append(ref_node)
-                if ref_node not in reference_to_nodes:
-                    reference_to_nodes[ref_node] = {node}
-                else:
-                    reference_to_nodes[ref_node].add(node)
-                scores[(ref_node, node)] = int(line[6]) * float(line[9]) / 100  # - (1 - float(line[9]) / 100) * 10000
                 if ref_node not in allignings:
                     allignings[ref_node] = [tuple(sorted((int(line[0]), int(line[1]))))]
                 else:
                     allignings[ref_node] += [tuple(sorted((int(line[0]), int(line[1]))))]
                 ref_nodes.add(ref_node)
-        return ref_nodes, scores, reference_to_nodes, allignings
+        return ref_nodes, allignings
 
-    def fix_allignings(self, allignings):
+    def fix_allignings(self, allignings: Dict[str, List[Tuple[int, int]]]) -> Dict[str, List[Tuple[int, int]]]:
         allignings_fixed = {}
         for k in allignings.keys():
             l = list(sorted(allignings[k], key=lambda x: x[0]))
@@ -238,10 +230,9 @@ class MinimapReferenceFinder(ReferenceFinder):
             allignings_fixed[k] = ans
         return allignings_fixed
 
-    def find_positions(self, ref_nodes, reference_fpath):
+    def find_positions(self, ref_nodes: Set[str], reference_fpath: str) -> Tuple[Dict[str, int], Dict[str, str], Dict[str, int]]:
         cnt = 0
         ref_nodes_positions = {}
-        back_mapping = {}
         fasta_sequences = SeqIO.parse(gzip.open(reference_fpath, 'rt'), 'fasta')
         descrs = {}
         lengths = {}
@@ -255,27 +246,26 @@ class MinimapReferenceFinder(ReferenceFinder):
                 except:
                     descrs[name] = None
                 ref_nodes_positions[name] = cnt
-                back_mapping[cnt] = name
             cnt += 1
-        return ref_nodes_positions, back_mapping, descrs, lengths
+        return ref_nodes_positions, descrs, lengths
 
-    def find_subsegments(self, sorted_positions, thresh=3):
-        subsegments = []
-        i = 0
-        while i < len(sorted_positions) - 1:
-            subsegment = []
-            while i + 1 < len(sorted_positions) and sorted_positions[i + 1][1] - sorted_positions[i][1] < thresh:
-                subsegment.append(sorted_positions[i])
-                i += 1
-            if len(subsegment) > 3:
-                subsegment.append(sorted_positions[i])
-                subsegments.append(subsegment)
-            i += 1
-        return subsegments
+    # def find_subsegments(self, sorted_positions: List[Tuple[str, int]], thresh: int=3):
+    #     subsegments = []
+    #     i = 0
+    #     while i < len(sorted_positions) - 1:
+    #         subsegment = []
+    #         while i + 1 < len(sorted_positions) and sorted_positions[i + 1][1] - sorted_positions[i][1] < thresh:
+    #             subsegment.append(sorted_positions[i])
+    #             i += 1
+    #         if len(subsegment) > 3:
+    #             subsegment.append(sorted_positions[i])
+    #             subsegments.append(subsegment)
+    #         i += 1
+    #     return subsegments
 
-    def find_seqs(self, subsegments,
-                  # reference_to_nodes, scores,
-                  descrs, allignings, lengths):
+    def find_seqs(self, subsegments: List[List[Tuple[str, int]]], descrs: Dict[str, str],
+                  allignings: Dict[str, List[Tuple[int, int]]],
+                  lengths: Dict[str, int]) -> List[Tuple[List[Tuple[str, int]], Tuple[int, float]]]:
         best_seqs = []
         for subsegment in subsegments:
             descrs_to_segments = {}
@@ -294,7 +284,7 @@ class MinimapReferenceFinder(ReferenceFinder):
                 best_seqs.append((subsegments, (score_, cov)))
         return best_seqs
 
-    def cut_samples(self, names):
+    def cut_samples(self, names: List[str]) -> List[str]:
         fasta_sequences = SeqIO.parse(gzip.open(self.ref_path, 'rt'), 'fasta')
         seqs = {n: [] for n in names}
         seqs_descrs = {}

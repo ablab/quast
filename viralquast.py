@@ -279,9 +279,9 @@ def main(args):
     quast_py_args, contigs_fpaths = parse_args(logger, quast_path + args)
 
     if qconfig.test:
-        qconfig.mash_reference = os.sep.join(['quast_libs', 'viralquast', 'references', 'test_reference.msh'])
-        qconfig.reference = os.sep.join(['quast_libs', 'viralquast', 'references', 'test_reference.fasta.gz'])
-        contigs_fpaths = [os.sep.join(['quast_libs', 'viralquast', 'references', 'test_scaffolds.fasta'])]
+        qconfig.mash_reference = os.sep.join(['test_data', 'viralquast', 'test_reference.msh'])
+        qconfig.reference = os.sep.join(['test_data', 'viralquast', 'test_reference.fasta.gz'])
+        contigs_fpaths = [os.sep.join(['test_data', 'viralquast', 'test_scaffolds.fasta'])]
         qconfig.output_dirpath = 'viralquast_test_output'
 
     if qconfig.preprocess_file is not None:

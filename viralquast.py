@@ -9,7 +9,8 @@ from quast_libs import contigs_analyzer, qutils, qconfig, reporting
 from quast_libs.qutils import cleanup, check_dirpath, check_reads_fpaths
 from quast_libs.options_parser import QuastOption, OptionParser, check_output_dir, check_arg_value
 from quast_libs.viralquast.preprocess import preprocess
-from quast_libs.viralquast.mash_finder import MashReferenceFinder, MinimapReferenceFinder
+from quast_libs.viralquast.mash_finder import MashReferenceFinder
+from quast_libs.viralquast.minimap_finder import MinimapReferenceFinder
 from typing import Optional, Tuple
 
 from quast_libs.log import get_logger

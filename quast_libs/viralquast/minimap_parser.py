@@ -186,7 +186,7 @@ class MinimapParser():
         cutted = []
         for seq in fasta_sequences:
             if seq.name in starts:
-                cur_seq = [seq.name.replace('|', '_'), []]
+                cur_seq = [seq.name.replace('|', '_').replace('/', '_'), []]
             if cur_seq is not None:
                 cur_seq[1].append(seq)
             if seq.name in ends:

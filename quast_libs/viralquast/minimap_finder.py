@@ -63,11 +63,14 @@ class MinimapReferenceFinder(ReferenceFinder):
         if len(best_seqs) == 0:
             exit(0)
         names = []
-        for seqs, _ in sorted_best_seqs[:5]:
+        for seqs, _ in sorted_best_seqs[:20]:
             seqs = map(lambda x: x[0], sorted(seqs, key=lambda x: x[1]))
             names.append(list(seqs)[0])
-
+        if len(names) == 0:
+            print('len names 0')
+            exit(0)
         samples_paths = self.cut_samples(names)
+        print(samples_paths)
 
         ranger = QuastRanger()
         names = ranger.run_quast(contigs_fpath, samples_paths)
@@ -138,11 +141,11 @@ class MinimapReferenceFinder(ReferenceFinder):
             if name in ref_nodes:
                 try:
                     description = seq.description.split(' (')[1].split(') ')[0]
-                    descrs[name] = description
                     lengths[name] = len(seq.seq)
+                    descrs[name] = description
+                    ref_nodes_positions[name] = cnt
                 except:
-                    descrs[name] = None
-                ref_nodes_positions[name] = cnt
+                    pass
             cnt += 1
         return ref_nodes_positions, descrs, lengths
 
@@ -152,19 +155,19 @@ class MinimapReferenceFinder(ReferenceFinder):
         best_seqs = []
         for subsegment in subsegments:
             descrs_to_segments = {}
-            for subsegment in subsegment:
-                descr = descrs[subsegment[0]]
+            for sub in subsegment:
+                descr = descrs[sub[0]]
                 if descr in descrs_to_segments:
-                    descrs_to_segments[descr].append(subsegment)
+                    descrs_to_segments[descr].append(sub)
                 else:
-                    descrs_to_segments[descr] = [subsegment]
-            for _, subsegments in descrs_to_segments.items():
+                    descrs_to_segments[descr] = [sub]
+            for _, subs in descrs_to_segments.items():
                 score_ = 0
-                for subsegment in subsegments:
-                    score_ += sum(map(lambda x: x[1] - x[0], allignings[subsegment[0]]))
-                total_len = sum(map(lambda x: lengths[x[0]], subsegments))
+                for sub in subs:
+                    score_ += sum(map(lambda x: x[1] - x[0], allignings[sub[0]]))
+                total_len = sum(map(lambda x: lengths[x[0]], subs))
                 cov = score_ / total_len
-                best_seqs.append((subsegments, (score_, cov)))
+                best_seqs.append((subs, (score_, cov)))
         return best_seqs
 
     def cut_samples(self, names: List[str]) -> List[str]:
@@ -191,9 +194,15 @@ class MinimapReferenceFinder(ReferenceFinder):
             shutil.rmtree('{}/cutted_tmp'.format(self.output_dir))
             os.mkdir('{}/cutted_tmp'.format(self.output_dir))
         ret = []
-        for name in names[:10]:
-            seqs_ = map(lambda x: x[1], sorted(seqs[name], key=lambda x: x[0]))
-            fixed_name = name.replace('|', '_')
+        cnt = 0
+        for name in names:
+            if cnt == 5:
+                break
+            seqs_ = list(map(lambda x: x[1], sorted(seqs[name], key=lambda x: x[0])))
+            if len(seqs_) == 0:
+                continue
+            fixed_name = name.replace('|', '_').replace('/', '_')
             SeqIO.write(seqs_, '{}/cutted_tmp/{}.fasta'.format(self.output_dir, fixed_name), 'fasta')
             ret.append('{}/cutted_tmp/{}.fasta'.format(self.output_dir, fixed_name))
+            cnt += 1
         return ret

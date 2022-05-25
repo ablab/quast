@@ -7,14 +7,15 @@ import shutil
 
 from Bio import SeqIO
 from quast_libs import qconfig
+from quast_libs.ca_utils.misc import mash_fpath
 from typing import List, Tuple
 
 def run_mash(task: Tuple[int, List[Tuple[str, str]]]):
     idx: int = task[0]
-    tasks: List[str] = task[1][0]
-    mash_path: str = task[1][1]
+    tasks: List[str] = task[1]
+    mash_path: str = tasks[0][1]
     for t in tasks:
-        subprocess.run([mash_path, 'sketch', '-o', 'ref{}'.format(idx), 'ref{}.msh'.format(idx), t])
+        subprocess.run([mash_path, 'sketch', '-o', 'ref{}'.format(idx), 'ref{}.msh'.format(idx), t[0]])
 
 def cut_sample(task: Tuple[str, List[str]]) -> str:
     _, seqs = task

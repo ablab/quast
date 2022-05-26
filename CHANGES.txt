@@ -33,6 +33,7 @@
        - Python 3.8+ support (cgi.escape replaced with html.escape)
 
       6. Major fixes:
+       - substantial speed up of the BSS algorithm (important for large genomes or MetaQUAST);
        - preserving assembly names in report (hyphens were changed to underscores before);
        - use of provided BAM files ("--bam" option was not working properly);
        - "--no-gzip" option removed (it was never used in the pipeline); incorrectly set

@@ -301,7 +301,10 @@ def check_repeats_instances(coords_fpath, repeats_fpath, use_long_reads=False):
             align_start += 1
             ref_start += 1
             matched_bases, bases_in_mapping = map(int, (fs[9], fs[10]))
-            if matched_bases > qconfig.optimal_assembly_insert_size:
+            optimal_insert_size = qconfig.optimal_assembly_insert_size
+            if optimal_insert_size == 'auto' or not optimal_insert_size:
+                optimal_insert_size = qconfig.optimal_assembly_default_IS
+            if matched_bases > optimal_insert_size:
                 query_instances[contig].append((align_start, align_end))
     repeats_regions = defaultdict(list)
     filtered_repeats_fpath = add_suffix(repeats_fpath, 'filtered')
@@ -426,6 +429,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
                        '(failed to install/download third-party repeat finding tool [Red]), skipping...')
         return None
 
+    logger.main_info("qconfig.optimal_assembly_insert_size: " + qconfig.optimal_assembly_insert_size)
     insert_size = qconfig.optimal_assembly_insert_size
     if insert_size == 'auto' or not insert_size:
         insert_size = qconfig.optimal_assembly_default_IS

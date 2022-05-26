@@ -23,6 +23,8 @@ except ImportError:
 
 from quast_libs import qconfig
 from quast_libs.qutils import compile_tool, val_to_str, get_path_to_program
+from quast_libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'minimap2')
 ref_labels_by_chromosomes = OrderedDict()
@@ -34,13 +36,20 @@ def bin_fpath(fname):
     return join(contig_aligner_dirpath, fname)
 
 
-def minimap_fpath():
-    return get_path_to_program('minimap2', contig_aligner_dirpath, min_version='2.19', recommend_version='2.24')
+def minimap_fpath(just_check=False):
+    minimap_fpath = get_path_to_program('minimap2', contig_aligner_dirpath, min_version='2.19', recommend_version='2.24')
+    if not minimap_fpath and not just_check:
+        logger.error("Critical! Tried to use minimap2, but it was unavailable despite QUAST's sincere expectations! E.g., the binary file is present but corrupted.\n"
+                     "Possible workarounds:\n"
+                     "1. Remove the minimap2 binary and restart QUAST (it will automatically try to recompile it): rm -f <quast_installation_dir>/quast_libs/minimap2/minimap2\n"
+                     "2. Go to <quast_installation_dir>/quast_libs/minimap2/ and recompile minimap2 manually\n"
+                     "3. Install a proper version of minimap2 and add it to your PATH environment variable", exit_with_code=1)
+    return minimap_fpath
 
 
 def compile_minimap(logger, only_clean=False):
-    if (minimap_fpath() and not only_clean) or compile_tool('Minimap2', contig_aligner_dirpath, ['minimap2'],
-                                                            just_notice=False, logger=logger, only_clean=only_clean):
+    if (minimap_fpath(just_check=True) and not only_clean) or \
+            compile_tool('Minimap2', contig_aligner_dirpath, ['minimap2'], just_notice=False, logger=logger, only_clean=only_clean):
         return True
     return False
 

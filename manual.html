@@ -107,7 +107,13 @@
 
 <h2>Contents</h2>
 <ol>
-  <li><a href="#sec1">Installation</a></li> 
+  <li><a href="#sec1">Installation</a></li>
+    <ol>
+      <li><a href="#sec1.1">Prerequisites</a></li>
+      <li><a href="#sec1.2">Installation from tarball</a></li>
+      <li><a href="#sec1.3">Installation via package managers</a></li>
+      <li><a href="#sec1.4">Getting the cutting edge version</a></li>
+    </ol>
   <li><a href="#sec2">Running QUAST</a> 
     <ol>
       <li><a href="#sec2.1">For impatient people</a></li>
@@ -139,10 +145,10 @@
 <a name="sec1"></a>
 <h2>1. Installation</h2>
 
-<p>
+<a name="sec1.1"></a>
+<h3>1.1 Prerequisites</h3><br>
     QUAST can be run on 64-bit Linux or macOS (slightly limited functionality: BUSCO is not working there).
     It <i>might</i> work on 32-bit Linux with slightly limited functionality (it worked in the past, but the current release was not tested on such platforms!)
-</p>
 <p>
     Its default pipeline requires:
 </p>
@@ -170,50 +176,63 @@ In particular, it is pre installed on macOS and it can be simply installed on Ub
 MacOS, however, initially misses <code>make</code>, <code>gcc</code> and <code>ar</code>, so you will have to install
 <a href='https://developer.apple.com/xcode/'>Xcode</a> to make them available.
 <br>
-<br>
 QUAST draws plots in two formats: HTML and PDF. If you need the PDF versions, make sure that you have installed <a href="http://matplotlib.sourceforge.net/">Matplotlib</a> Python library. We recommend to use Matplotlib version 1.1 or higher. QUAST is fully tested with Matplotlib v.1.3.1.
 Installation on Ubuntu:
 <pre class="code">
     sudo apt-get install -y pkg-config libfreetype6-dev libpng-dev python-matplotlib
 </pre>
-<br>
-<!--
-To download the <a href="https://downloads.sourceforge.net/project/quast/quast-5.1.0.tar.gz">QUAST source code tarball</a> and extract it, type:
+
+<a name="sec1.2"></a>
+<h3>1.2 Installation from tarball</h3><br>
+To download the <a href="https://github.com/ablab/quast/releases/download/quast_5.1.0/quast-5.1.0.tar.gz">QUAST source code tarball</a> and extract it, type:
 <pre class="code">
-    wget https://downloads.sourceforge.net/project/quast/quast-5.1.0.tar.gz
+    wget https://github.com/ablab/quast/releases/download/quast_5.1.0/quast-5.1.0.tar.gz
     tar -xzf quast-5.1.0.tar.gz
     cd quast-5.1.0
 </pre>
--->
-To download the <a href="https://github.com/ablab/quast/releases/download/quast_5.1.0rc1/quast-5.1.0rc1.tar.gz">QUAST source code tarball</a> and extract it, type:
-<pre class="code">
-    wget https://github.com/ablab/quast/releases/download/quast_5.1.0rc1/quast-5.1.0rc1.tar.gz
-    tar -xzf quast-5.1.0rc1.tar.gz
-    cd quast-5.1.0rc1
-</pre>
 
-<br>
-<p>
 QUAST automatically compiles all its sub-parts when needed (on the first use). 
 Thus, installation is not required. However, if you want to precompile everything and add quast.py to your <code>PATH</code>, you may choose either:
-<p>
+<br>
 Basic installation (about 120 MB):
+
 <pre class="code">
     ./setup.py install
 </pre>
-</p>
-or
-<p>
+
+or <br>
 Full installation (about 540 MB, additionally includes (1) tools for SV detection based on read pairs, which is used for more precise misassembly detection, and (2) tools/data for reference genome detection in metagenomic datasets):
+
 <pre class="code">
     ./setup.py install_full
 </pre>
-</p>
+
 The default installation location is <code>/usr/local/bin/</code> for the executable scripts, and <code>/usr/local/lib/</code> for the python modules and auxiliary files.
 If you are getting a permission error during the installation, consider running <code>setup.py</code> with <code>sudo</code>,
 or creating a virtual python environment and <a href="http://docs.python-guide.org/en/latest/dev/virtualenvs/">install into it</a>.
 Alternatively, you may use old-style installation scripts (<code>./install.sh</code> or <code>./install_full.sh</code>), which build QUAST package inplace.
-</p>
+
+<a name="sec1.3"></a>
+<h3>1.3 Installation via package managers</h3><br>
+
+Soon after the release date, the updated QUAST version becomes available in popular package managers, namely <a href="https://pypi.org/project/pip/">pip</a>, <a href="https://github.com/brewsci/homebrew-bio">Brewsci/bio</a>, and <a href="https://bioconda.github.io/">Bioconda</a>.
+To install it from there, make sure that the corresponding package manager is properly installed and configured on your machine and execute one of the following commands, respectively:
+
+<pre class="code">
+    pip install quast
+    brew install quast
+    conda install -c bioconda quast
+</pre>
+
+<a name="sec1.4"></a>
+<h3>1.4 Getting the cutting edge version</h3><br>
+
+You can enjoy the latest development version of QUAST by clonning our <a href="https://github.com/ablab/quast">GitHub repository</a>:
+<pre class="code">
+    git clone git@github.com:ablab/quast.git
+    cd quast
+</pre>
+Then, just start using QUAST or follow the same Basic/Full installation instructions <a href="#sec1.2">as above</a>.
 
 <a name="sec2"></a>
 <h2 style='margin-bottom: -40px;'>2. Running QUAST</h2>

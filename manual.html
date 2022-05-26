@@ -1156,6 +1156,10 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
     the corresponding metrics without "A", but in this case aligned blocks instead of contigs are considered.<br>
     Aligned blocks are obtained by breaking contigs at misassembly events and removing all unaligned bases.</p>
 
+<p><a name='auN'></a><span class='metric-name'>auN, auNG, auNA, auNGA</span> are the areas under the Nx, NGx, NAx, NGAx curves, respectively.
+    This metric was proposed and justified by Heng Li in <a href="https://lh3.github.io/2020/04/08/a-new-metric-on-assembly-contiguity">his blog</a>.
+    <br> If you want to summarize assembly contiguity with a single number, auN (auNG, etc) is a better choice than N50 (NG50, etc). It is more stable, less affected by big jumps in contig lengths and considers the entire Nx (NGx, etc) curve.</p>
+
 <p><span class='metric-name'>K-mer-based compl. (%)</span> is the percent of the reference unique k-mers found in the assembly.
     See the description of <a href='#k_mer_stats'><code>--k-mer-stats</code></a> option and
     <a href="http://dx.doi.org/10.1093/bioinformatics/bty266">Mikheenko et al., 2018</a> for more details. </p>

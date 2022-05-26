@@ -19,10 +19,10 @@
     "LA50"                          : "<span>is L50 where aligned blocks are counted instead of contigs. I.e., if a contig has a misassembly with respect to the reference, the contig is broken into smaller pieces. Similarly, LAx for any x between 0 and 100 could be computed.</span>",
     "LGA50"                         : "<span>is LG50 where aligned blocks are counted instead of contigs. I.e., if a contig has a misassembly with respect to the reference, the contig is broken into smaller pieces. Similarly, LGAx for any x between 0 and 100 could be computed.</span>",
 
-    "auN"                           : "<span>is the area under the Nx curve. Technically, it is the sum of squared contig lengths divided by their sum. Idea taken from Heng Li's blog.</span>",
-    "auNG"                          : "<span>is auN where the reference length (instead of contig lengths) is in the denominator.</span>",
-    "auNA"                          : "<span>is the area under the NAx curve. Technically, it is the sum of squared aligned blocks divided by their sum.</span>",
-    "auNGA"                         : "<span>is auNA where the reference length (instead of the lengths of aligned blocks) is in the denominator.</span>",
+    "auN"                           : "<span>is the area under the Nx curve.</span>",
+    "auNG"                          : "<span>is the area under the NGx curve.</span>",
+    "auNA"                          : "<span>is the area under the NAx curve.</span>",
+    "auNGA"                         : "<span>is the area under the NGAx curve.</span>",
 
     "Average %IDY"                  : "<span>is the average of alignment identity percent (alignment accuracy) among all contigs.</span>",
     "# misassemblies"               : "<span>is the number of positions in the assembled contigs where the left flanking sequence aligns over 1 kbp away from the right flanking sequence on the reference (<i>relocation</i>) or they overlap on more than 1 kbp (<i>relocation</i>) or flanking sequences align on different strands (<i>inversion</i>) or different chromosomes (<i>translocation</i>).</span>",

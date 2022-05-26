@@ -295,18 +295,18 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
                     qutils.label_from_fpath(contigs_fpath) + \
                     ', N50 = ' + str(n50) + \
                     ', L50 = ' + str(l50) + \
-                    ', auN = ' + str(auN) + \
+                    ', auN = ' + ('%.1f' % auN if auN is not None else None) + \
                     ', Total length = ' + str(total_length) + \
                     ', GC % = ' + ('%.2f' % total_GC if total_GC is not None else 'undefined') + \
                     ', # N\'s per 100 kbp = ' + ' %.2f' % (float(number_of_Ns) * 100000.0 / float(total_length)) if total_length != 0 else 'undefined')
         
         report.add_field(reporting.Fields.N50, n50)
         report.add_field(reporting.Fields.L50, l50)
-        report.add_field(reporting.Fields.auN, auN)
+        report.add_field(reporting.Fields.auN, ('%.1f' % auN if auN is not None else None))
         if reference_length and not qconfig.is_combined_ref:
             report.add_field(reporting.Fields.NG50, ng50)
             report.add_field(reporting.Fields.LG50, lg50)
-            report.add_field(reporting.Fields.auNG, auNG)
+            report.add_field(reporting.Fields.auNG, ('%.1f' % auNG if auNG is not None else None))
         report.add_field(reporting.Fields.Nx, nx)
         report.add_field(reporting.Fields.Lx, lx)
         if reference_length and not qconfig.is_combined_ref:

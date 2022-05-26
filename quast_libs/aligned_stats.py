@@ -59,13 +59,13 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath,
         report.add_field(reporting.Fields.TOTAL_ALIGNED_LEN, sum(lens))
         report.add_field(reporting.Fields.NA50, na50)
         report.add_field(reporting.Fields.NAx, nax)
-        report.add_field(reporting.Fields.auNA, auNA)
+        report.add_field(reporting.Fields.auNA, ('%.1f' % auNA if auNA is not None else None))
         report.add_field(reporting.Fields.LA50, la50)
         report.add_field(reporting.Fields.LAx, lax)
         if not qconfig.is_combined_ref:
             report.add_field(reporting.Fields.NGA50, nga50)
             report.add_field(reporting.Fields.NGAx, ngax)
-            report.add_field(reporting.Fields.auNGA, auNGA)
+            report.add_field(reporting.Fields.auNGA, ('%.1f' % auNGA if auNGA is not None else None))
             report.add_field(reporting.Fields.LGA50, lga50)
             report.add_field(reporting.Fields.LGAx, lgax)
 

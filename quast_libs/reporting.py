@@ -273,7 +273,7 @@ class Fields:
                         UNCALLED_PERCENT, UNCALLED, ]),
 
         ('Statistics without reference', [CONTIGS, CONTIGS__FOR_THRESHOLDS, LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS,
-                                          N50, auN, Nx, L50, Lx, GC,]),
+                                          N50, Nx, auN, L50, Lx, GC,]),
 
         ('K-mer-based statistics', [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH,
                                     KMER_MISASSEMBLIES, KMER_TRANSLOCATIONS, KMER_RELOCATIONS]),
@@ -409,6 +409,7 @@ class Report(object):
         self.d = {}
         self.add_field(Fields.NAME, name)
 
+    # TODO: associate floating fields with the default number of decimal points and format them automatically here
     def add_field(self, field, value):
         try:
             assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field

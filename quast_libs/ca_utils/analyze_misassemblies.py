@@ -37,6 +37,8 @@ class Misassembly:
 
 
 class StructuralVariations(object):
+    __slots__ = ("inversions", "relocations", "translocations")
+
     def __init__(self):
         self.inversions = []
         self.relocations = []
@@ -47,6 +49,8 @@ class StructuralVariations(object):
 
 
 class Mapping(object):
+    __slots__ = ("s1", "e1", "s2", "e2", "len1", "len2", "idy", "ref", "contig", "cigar", "ns_pos", "sv_type")
+
     def __init__(self, s1, e1, s2=None, e2=None, len1=None, len2=None, idy=None, ref=None, contig=None, cigar=None, ns_pos=None, sv_type=None):
         self.s1, self.e1, self.s2, self.e2, self.len1, self.len2, self.idy, self.ref, self.contig = s1, e1, s2, e2, len1, len2, idy, ref, contig
         self.cigar = cigar
@@ -97,6 +101,8 @@ class Mapping(object):
 
 
 class IndelsInfo(object):
+    __slots__ = ("mismatches", "insertions", "deletions", "indels_list")
+
     def __init__(self):
         self.mismatches = 0
         self.insertions = 0

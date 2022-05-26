@@ -1501,6 +1501,7 @@ multiple misassemblies within one contig?</a></li>
     <li><a href="#faq_q16">Q16. I evaluated multiple assemblies against the reference genome and opened Icarus Contig Alignment Viewer.
     Color scheme is almost self explanatory but could you explain the meaning of "similar correct contigs" (colored blue)
     and "similar misassembled blocks" (colored orange)? How do you define the similarity?</a></li>
+    <li><a href="#faq_q17">Q17. QUAST seems to be stuck (or processing is too slow). Could you recommend something?</a></li>
 </ul>
 </p>
 
@@ -1895,6 +1896,17 @@ Q16. I evaluated multiple assemblies against the reference genome and opened Ica
     Blocks A and B meet all requirements and are marked similar.
     Blocks C and D are not marked similar because their starting positions are too distant. Blocks E and F are too short to be marked
     similar. Blocks G and H have different type, and thus not marked similar.
+</p>
+
+<a name="faq_q17"></a>
+<p><b><i>
+Q17. QUAST seems to be stuck (or processing is too slow). Could you recommend something?
+</b></i></p>
+<p>
+    You can try <a href="https://www.pypy.org/">PyPy</a> instead of the default Python interpreter.
+    In our benchmarks, it demonstrated 3x speed up in some cases, e.g., large MetaQUAST runs.
+    <br><br>
+    Also, please take a look at <a href="#faq_q14">Q14</a> above.
 </p>
 
 <br>

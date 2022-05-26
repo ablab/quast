@@ -429,7 +429,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
                        '(failed to install/download third-party repeat finding tool [Red]), skipping...')
         return None
 
-    logger.main_info("qconfig.optimal_assembly_insert_size: " + qconfig.optimal_assembly_insert_size)
+    logger.main_info("  Insert size, which will be used for Upper Bound Assembly: " + str(qconfig.optimal_assembly_insert_size))
     insert_size = qconfig.optimal_assembly_insert_size
     if insert_size == 'auto' or not insert_size:
         insert_size = qconfig.optimal_assembly_default_IS

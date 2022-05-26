@@ -55,7 +55,7 @@
       8. Updates in embedded tools:
        - new version of minimap2 (2.24; pre-installed version in PATH accepted if >=2.19);
        - new version of SILVA database (138.1);
-       - fixed links to BUSCO databases (v3/odb9);
+       - fixed links to BUSCO databases (v3/odb9), updated augustus dependency to 3.3.3;
        - new GeneMark license files.
 
       9. Cosmetic changes in warning/notice/error messages, pipeline steps order, etc.

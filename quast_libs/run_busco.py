@@ -20,7 +20,7 @@ from quast_libs.qutils import download_blast_binaries, run_parallel, compile_too
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
-augustus_version = '3.2.3'
+augustus_version = '3.3.3'
 augustus_url = 'http://bioinf.uni-greifswald.de/augustus/binaries/old/augustus-' + augustus_version + '.tar.gz'
 bacteria_db_url = 'https://busco-archive.ezlab.org/v3/datasets/bacteria_odb9.tar.gz'
 fungi_db_url = 'https://busco-archive.ezlab.org/v3/datasets/fungi_odb9.tar.gz'
@@ -91,16 +91,30 @@ def download_all_db(logger, only_clean=False):
     return bacteria_db and eukaryota_db and fungi_db
 
 
+def get_augustus_config_dir(core_dirpath):
+    expected_path = os.path.join(core_dirpath, 'config')
+    if os.path.isfile(os.path.join(expected_path, 'cgp', 'log_reg_parameters_default.cfg')):
+        return expected_path
+    return None
+
+
+def get_augustus_scripts_dir(core_dirpath):
+    expected_options = ['scripts', 'bin']
+    for opt in expected_options:
+        expected_path = os.path.join(core_dirpath, opt)
+        if os.path.isfile(os.path.join(expected_path, 'augustus2browser.pl')):
+            return expected_path
+    return None
+
+
 def download_augustus(logger, only_clean=False):
     def __check_preinstalled_augustus_completeness(dirpath):
         etraining_path = os.path.join(dirpath, 'bin', 'etraining')
         if not os.path.isfile(etraining_path) or not os.access(etraining_path, os.X_OK):
             return False
-        for aux_dir in ['scripts', 'config']:
-            aux_dir_path = os.path.join(dirpath, aux_dir)
-            if not os.path.isdir(aux_dir_path):
-                return False
-        return True
+        if get_augustus_config_dir(dirpath) and get_augustus_scripts_dir(dirpath):
+            return True
+        return False
 
     preinstalled_augustus = qutils.get_path_to_program('augustus')
     if preinstalled_augustus is not None:
@@ -122,7 +136,7 @@ def make_config(output_dirpath, tmp_dirpath, threads, clade_dirpath, augustus_di
               'makeblastdb_path': dirname(get_blast_fpath('makeblastdb')),
               'augustus_path': join(augustus_dirpath, 'bin'),
               'etraining_path': join(augustus_dirpath, 'bin'),
-              'augustus_scripts_path': join(augustus_dirpath, 'scripts'),
+              'augustus_scripts_path': get_augustus_scripts_dir(augustus_dirpath),
               'hmmsearch_path': busco_dirpath
     }
     default_config_fpath = join(busco_dirpath, default_config_fname)
@@ -148,9 +162,9 @@ def busco_main_handler(*busco_args):
 
 
 def copy_augustus_configs(augustus_dirpath, output_dirpath):
-    input_basedir = join(augustus_dirpath, 'config')
+    input_basedir = get_augustus_config_dir(augustus_dirpath)
     output_basedir = join(output_dirpath, 'config')
-    if not os.path.isdir(input_basedir):
+    if not input_basedir or not os.path.isdir(input_basedir):
         return None
     if not os.path.isdir(output_basedir):
         os.makedirs(output_basedir)
@@ -265,7 +279,8 @@ def do(contigs_fpaths, output_dir, logger):
                        '  1. Provided assemblies are so small that they do not contain even a single partial BUSCO gene. Not likely but may happen -- nothing to worry then.\n'
                        '  2. Incorrect lineage database was used. To run with fungi DB use --fungus, to run with eukaryota DB use --eukaryote, otherwise BUSCO uses bacteria DB.\n'
                        '  3. Problem with BUSCO dependencies, most likely Augustus. Check that the binaries in ' + augustus_dirpath + '/bin/ are working properly.\n'
-                       '     If something is wrong with Augustus, you may try to install it yourself (https://github.com/Gaius-Augustus/Augustus) and add "augustus" binary to PATH.\n'
+                       '     If something is wrong with Augustus, you may try to install it yourself '
+                             '(https://github.com/Gaius-Augustus/Augustus or `conda install -c bioconda augustus`) and make sure "augustus" binary is in PATH.\n'
                        '  4. Some other problem with BUSCO. Check the logs (you may need to rerun QUAST with --debug to see all intermediate files).\n'
                        '     If you cannot solve the problem yourself, post an issue at https://github.com/ablab/quast/issues or write to quast.support@cab.spbu.ru')
     if not qconfig.debug:

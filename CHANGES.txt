@@ -2,10 +2,11 @@
 
 5.2.0
       1. Core alignment changes (might affect all alignment-based metrics!):
-       - new version of minimap2 (2.24; pre-installed minimap2 in PATH accepted if >=2.19),
-       - default bandwidth for chaining and base alignment (minimap2's "-r" option) increased
+       - new version of minimap2 (2.24; pre-installed minimap2 in PATH accepted if >=2.19);
+       - default bandwidth for chaining and base alignment (minimap2's '-r' option) increased
          from 85 to 200 (now it is controlled via QUAST's "--local-mis-size" option unless
-         "--large" is specified, in the latter case the default minimap2 value is used)
+         "--large" is specified, in the latter case the default minimap2 value is used);
+       - 'asm10' preset is used instead of 'asm5' for "--min-identity" in range [95.0, 99.0).
 
       2. New metrics:
        - auN, auNG, auNA, auNGA (areas under the Nx/NGx/NAx/NGx curves; for more detail see

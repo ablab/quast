@@ -63,12 +63,18 @@ def run_minimap(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_t
     if qconfig.is_agb_mode:
         return run_minimap_agb(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_threads)
 
+    # NOTE: the difference between presets is in options -w, -B, -O, -E:
+    # asm5:  -w19 -B19 -O39,81 -E3,1   (Only use this preset if the average divergence is far below 5%)
+    # asm10: -w19 -B9  -O16,41 -E2,1
+    # asm20: -w10 -B4   -O6,26 -E2,1
+    # BUT we use our own settings for -B and -O unless "--large" (QUAST-LG) is used: '-B5', '-O4,16' (see below)
     if qconfig.min_IDY < 90:
         preset = 'asm20'
-    elif qconfig.min_IDY < 95:
+    elif qconfig.min_IDY < 99:
         preset = 'asm10'
     else:
         preset = 'asm5'
+
     # -s -- min CIGAR score, -z -- affects how often to stop alignment extension, -B -- mismatch penalty
     # -O -- gap penalty, -r -- max gap size
     mask_level = '1' if qconfig.is_combined_ref else '0.9'

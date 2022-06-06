@@ -11,6 +11,6 @@ run_quast(name, contigs=['scaffolds_with_many_repeats.fa.gz'], params=' -R ref_w
 
 assert_metric(name, '# misassemblies', ['5'], 'report.tsv')
 assert_metric(name, '# scaffold gap ext. mis.', ['12'], 'report.tsv')
-assert_metric(name, '# scaffold gap loc. mis.', ['177'], 'report.tsv')
-assert_metric(name, '# local misassemblies', ['5'], 'report.tsv')
+assert_metric(name, '# scaffold gap loc. mis.', ['172'], 'report.tsv')
+assert_metric(name, '# local misassemblies', ['4'], 'report.tsv')
 assert_metric(name, '# misassembled contigs', ['4'], 'report.tsv')

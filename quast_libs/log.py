@@ -200,11 +200,29 @@ class QLogger(object):
             self._num_nf_errors += 1
 
     def exception(self, e, exit_code=0):
+        # FIXME: special case: handling the known bug of macOS & Python3.8+ & joblib
+        # see: https://github.com/ablab/quast/issues/175
+        extra_message = ''
+        if type(e) == TypeError and 'NoneType' in str(e) and 'int' in str(e):
+            if qconfig.max_threads and qconfig.max_threads > 1 and qconfig.platform_name == 'macosx' and \
+                    sys.version_info.major == 3 and sys.version_info.minor >= 8:
+                extra_message = '\n\nThis seems to be a known bug when using multi-threading in Python 3.8+ on macOS!\n' \
+                                'The current workarounds are\n' \
+                                '  to switch to single-thread execution (-t 1)\n' \
+                                'or\n' \
+                                '  to downgrade your Python to 3.7 or below.\n' \
+                                'Sorry for the inconvenience!\n' \
+                                'Please find more details in https://github.com/ablab/quast/issues/175\n'
+
         if self._logger.handlers:
             self._logger.error('')
             self._logger.exception(e)
+            if extra_message:
+                self._logger.info(extra_message)
         else:
             sys.stderr.write(str(e) + '\n')
+            if extra_message:
+                sys.stderr.write(extra_message + '\n')
 
         if exit_code:
             exit(exit_code)

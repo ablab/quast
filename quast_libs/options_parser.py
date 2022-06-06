@@ -73,9 +73,23 @@ def check_output_dir(option, opt_str, value, parser, logger):
 
 
 def set_extensive_mis_size(option, opt_str, value, parser, logger):
-    if value <= qconfig.MAX_INDEL_LENGTH:
-        logger.error("--extensive-mis-size should be greater than maximum indel length (%d)!"
-                     % qconfig.MAX_INDEL_LENGTH, to_stderr=True, exit_with_code=2)
+    if value < qconfig.local_misassembly_min_length:
+        logger.error("--extensive-mis-size should be equal to or greater than minimal local misassembly length (%d)!"
+                     % qconfig.local_misassembly_min_length, to_stderr=True, exit_with_code=2)
+    setattr(qconfig, option.dest, value)
+
+
+def get_current_extensive_misassembly_threshold():
+    if qconfig.extensive_misassembly_threshold is None:
+        return qconfig.LARGE_EXTENSIVE_MIS_THRESHOLD if qconfig.large_genome else qconfig.DEFAULT_EXT_MIS_SIZE
+    return qconfig.extensive_misassembly_threshold
+
+
+def set_local_mis_size(option, opt_str, value, parser, logger):
+    if value <= qconfig.SHORT_INDEL_THRESHOLD or value > get_current_extensive_misassembly_threshold():
+        logger.error("--local-mis-size should be between short indel size (>%d) and --extensive-mis-size (<=%d)!"
+                     % (qconfig.SHORT_INDEL_THRESHOLD, get_current_extensive_misassembly_threshold()),
+                     to_stderr=True, exit_with_code=2)
     setattr(qconfig, option.dest, value)
 
 
@@ -523,6 +537,14 @@ def parse_options(logger, quast_args):
              callback=set_extensive_mis_size,
              callback_args=(logger,))
          ),
+        (['--local-mis-size'], dict(
+            dest='local_misassembly_min_length',
+            type='int',
+            default=qconfig.local_misassembly_min_length,
+            action='callback',
+            callback=set_local_mis_size,
+            callback_args=(logger,))
+         ),
         (['--scaffold-gap-max-size'], dict(
              dest='scaffolds_gap_threshold',
              type=int)
@@ -816,9 +838,7 @@ def parse_options(logger, quast_args):
     if qconfig.large_genome:
         set_large_genome_parameters()
 
-    if qconfig.extensive_misassembly_threshold is None:
-        qconfig.extensive_misassembly_threshold = \
-            qconfig.LARGE_EXTENSIVE_MIS_THRESHOLD if qconfig.large_genome else qconfig.DEFAULT_EXT_MIS_SIZE
+    qconfig.extensive_misassembly_threshold = get_current_extensive_misassembly_threshold()
     if qconfig.fragmented_max_indent:
         # TODO: write a warning message if --fragmented-max-indent is used while --fragmented is not set
         # or set it automatically, but not in the way as commented out below, since we did this ALL THE TIME

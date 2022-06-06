@@ -250,7 +250,8 @@ class QLogger(object):
                    ('split scaffolds', qconfig.split_scaffolds), ('min contig length', qconfig.min_contig),
                    ('min alignment length', qconfig.min_alignment), ('min alignment IDY', qconfig.min_IDY),
                    ('ambiguity', qconfig.ambiguity_usage), ('use all alignments', qconfig.use_all_alignments),
-                   ('threshold for extensive misassembly size', qconfig.extensive_misassembly_threshold)]
+                   ('min local misassembly length', qconfig.local_misassembly_min_length),
+                   ('min extensive misassembly length', qconfig.extensive_misassembly_threshold)]
         for i, (option, value) in enumerate(options):
             if value is not False:
                 line += option + ': ' + str(value).lower()

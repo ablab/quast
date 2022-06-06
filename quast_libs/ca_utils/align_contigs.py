@@ -73,7 +73,7 @@ def run_minimap(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_t
     # -O -- gap penalty, -r -- max gap size
     mask_level = '1' if qconfig.is_combined_ref else '0.9'
     num_alignments = '100' if qconfig.is_combined_ref else '50'
-    additional_options = ['-B5', '-O4,16', '--no-long-join', '-r', str(qconfig.MAX_INDEL_LENGTH),
+    additional_options = ['-B5', '-O4,16', '--no-long-join', '-r', str(qconfig.local_misassembly_min_length),
                           '-N', num_alignments, '-s', str(qconfig.min_alignment), '-z', '200']
     cmdline = [minimap_fpath(), '-c', '-x', preset] + (additional_options if not qconfig.large_genome else []) + \
               ['--mask-level', mask_level, '--min-occ', '200', '-g', '2500', '--score-N', '2', '--cs', '-t', str(max_threads), ref_fpath, contigs_fpath]

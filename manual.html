@@ -550,7 +550,14 @@ Break contigs at every misassembly event (including local ones) to compute <span
 </div>
 Lower threshold for the relocation size (gap or overlap size between left and right flanking sequence, see <a href="#sec3.1.2">section 3.1.2</a> for details).
 Shorter relocations are considered as local misassemblies. It does not affect other types of extensive misassemblies (inversions and translocations).
-The default value is 1000 bp. Note that the threshold should be greater than maximum indel length which is 85 bp.
+The default value is 1000 bp for regular QUAST and 7000 bp for QUAST-LG. Note that the threshold should be equal to or greater than minimal local misassembly length, which is 200 bp by default.
+
+<div class='option'>
+    <a name='local_mis_size'></a><code><b>--local-mis-size</b></code> <code>&lt;int&gt;</code>
+</div>
+Lower threshold for the local misassembly size (gap or overlap size between left and right flanking sequence with inconsistency below <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>, see <a href="#sec3.1.2">section 3.1.2</a> for details).
+Shorter inconsistencies are considered as (long) indels.
+The default value is 200 bp. Note that the threshold should be equal to or lower than minimal extensive misassembly size, which is 1000 bp by default.
 
 <div class='option'>
     <a name='scaffold_gap_size'></a><code><b>--scaffold-gap-max-size</b></code> <code>&lt;int&gt;</code>
@@ -1066,8 +1073,9 @@ Note:
     <li>flanking sequences align to different strands or different chromosomes; 
     <li>flanking sequences align on different reference genomes (MetaQUAST only).
     </ul>
-    This metric requires a reference genome. Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
-changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.
+    This metric requires a reference genome.
+    Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp is increased to 7<span class="rhs">&nbsp;</span>kbp in QUAST-LG.
+    In either case, it can be changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.
 See more details about misassemblies in <a href="#sec3.1.2">section 3.1.2</a>.
 Important note: this metric does <b>not</b> sum up <code># local misassemblies, # scaffold gap size misassemblies,
 # structural variations</code>, and <code># unaligned mis. contigs</code> described below.</p>
@@ -1079,11 +1087,12 @@ Important note: this metric does <b>not</b> sum up <code># local misassemblies, 
 
 <p><span class='metric-name'># local misassemblies</span> is the number of positions in the contigs (breakpoints) that satisfy the following conditions: 
 <ol class='my_ol' style='margin-top: -24px;'>
-<li>The gap or overlap between left and right flanking sequences is less than 1<span class="rhs">&nbsp;</span>kbp, and larger than the maximum indel length (85 bp).</li>
+<li>The gap or overlap between left and right flanking sequences is less than 1<span class="rhs">&nbsp;</span>kbp, and larger than 200 bp (the maximum indel length).</li>
 <li>The left and right flanking sequences both are on the same strand of the same chromosome of the reference genome.</li>
 </ol>
-Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
-changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.
+Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp is increased to 7<span class="rhs">&nbsp;</span>kbp in QUAST-LG.
+    In either case, it can be changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.
+    The default threshold of 200<span class="rhs">&nbsp;</span>bp can be changed with <a href='#local_mis_size'><code>--local-mis-size</code></a>.
 </p>
 
 <p><a name='scaffold_misassembly'></a><span class='metric-name'># scaffold gap ext. mis.</span> is the number of positions in the scaffolds (breakpoints)
@@ -1263,7 +1272,7 @@ Note that all these metrics are excluded from <code>#&nbsp;misassemblies</code> 
 <p><span class='metric-name'># mismatches</span> is the number of mismatches in all aligned bases in the assembly. Note that the number of aligned bases in the assembly may slightly differ from the number of aligned bases in the reference genome if Duplication ratio is above 1.</p>
 
 <p><span class='metric-name'># indels</span> is the number of indels in all aligned bases in the assembly. Note that the number of aligned bases in the assembly may slightly differ from the number of aligned bases in the reference genome if Duplication ratio is above 1. Several consecutive single nucleotide indels are counted as one indel.
-    Note: default maximum length of indel is 85 bp. Indels larger than 85 bp are typically considered as local misassemblies.</p>
+    Note: default maximum length of indel is 200 bp. Indels equal to or larger than 200 bp are typically considered as local misassemblies. The default threshold can be changed via <a href='#local_mis_size'><code>--local-mis-size</code></a>.</p>
 
 <p><span class='metric-name'># indels (&le;<span class="rhs">&nbsp;</span>5<span class="rhs">&nbsp;</span>bp)</span> is the number of indels of length <code>&le;<span class="rhs">&nbsp;</span>5<span class="rhs">&nbsp;</span>bp</code>.</p>
 

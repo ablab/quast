@@ -175,10 +175,10 @@ min_similar_contig_size = 10000
 # indels and misassemblies
 SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
 SPLIT_ALIGN_THRESHOLD = 20 # for splitting low-identity alignments by the indels/mismatches
-MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies
+local_misassembly_min_length = 200  # for separating indels and local misassemblies (former MAX_INDEL_LENGTH)
 DEFAULT_EXT_MIS_SIZE = 1000
 extensive_misassembly_threshold = None  # for separating local and extensive misassemblies (relocation)
-fragmented_max_indent = MAX_INDEL_LENGTH # for fake translocation in fragmented reference
+fragmented_max_indent = local_misassembly_min_length # for fake translocation in fragmented reference
 
 # large genome params
 LARGE_EXTENSIVE_MIS_THRESHOLD = 7000
@@ -470,6 +470,8 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)\n")
         stream.write("-x  --extensive-mis-size  <int>       Lower threshold for extensive misassembly size. All relocations with inconsistency\n")
         stream.write("                                      less than extensive-mis-size are counted as local misassemblies [default: %s]\n" % x_default)
+        stream.write("    --local-mis-size  <int>           Lower threshold on local misassembly size. Local misassemblies with inconsistency\n")
+        stream.write("                                      less than local-mis-size are counted as (long) indels [default: %s]\n" % local_misassembly_min_length)
         stream.write("    --scaffold-gap-max-size  <int>    Max allowed scaffold gap length difference. All relocations with inconsistency\n")
         stream.write("                                      less than scaffold-gap-size are counted as scaffold gap misassemblies [default: %s]\n" % scaffolds_gap_threshold)
         stream.write("    --unaligned-part-size  <int>      Lower threshold for detecting partially unaligned contigs. Such contig should have\n")
@@ -478,7 +480,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("                                      By default, QUAST does not count misassemblies in them\n")
         stream.write("    --fragmented                      Reference genome may be fragmented into small pieces (e.g. scaffolded reference) \n")
         stream.write("    --fragmented-max-indent  <int>    Mark translocation as fake if both alignments are located no further than N bases \n")
-        stream.write("                                      from the ends of the reference fragments [default: %s]\n" % MAX_INDEL_LENGTH)
+        stream.write("                                      from the ends of the reference fragments [default: %s]\n" % local_misassembly_min_length)
         stream.write("                                      Requires --fragmented option\n")
         stream.write("    --upper-bound-assembly            Simulate upper bound assembly based on the reference genome and reads\n")
         stream.write("    --upper-bound-min-con  <int>      Minimal number of 'connecting reads' needed for joining upper bound contigs into a scaffold\n")

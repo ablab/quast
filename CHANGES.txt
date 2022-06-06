@@ -2,17 +2,23 @@
 
 5.2.0
       1. Core alignment changes (might affect all alignment-based metrics!):
-       - new version of minimap2 (2.24; pre-installed minimap2 in PATH accepted if >=2.19).
+       - new version of minimap2 (2.24; pre-installed minimap2 in PATH accepted if >=2.19),
+       - default bandwidth for chaining and base alignment (minimap2's "-r" option) increased
+         from 85 to 200 (now it is controlled via QUAST's "--local-mis-size" option unless
+         "--large" is specified, in the latter case the default minimap2 value is used)
 
       2. New metrics:
        - auN, auNG, auNA, auNGA (areas under the Nx/NGx/NAx/NGx curves; for more detail see
          https://lh3.github.io/2020/04/08/a-new-metric-on-assembly-contiguity or the manual).
 
-      3. MetaQUAST change:
+      3. New option:
+       - "--local-mis-size" for setting minimal local misassembly size (default is 200, was 86).
+
+      4. MetaQUAST change:
        - preserving explicitly specified reference genomes in the reports (they were previously
          hidden if nothing aligned to these references).
 
-      4. Major fixes:
+      5. Major fixes:
        - substantial speed up of the BSS algorithm (important for large genomes or MetaQUAST);
        - preserving assembly names in reports (hyphens were changed to underscores before);
        - "--no-gzip" option removed (it was never used in the pipeline); incorrectly set
@@ -20,17 +26,17 @@
        - preserving explicitly specified reference genomes in metaQuast reports
          (were hidden if nothing aligned to these references).
 
-      5. Minor fixes (rare crashes or slightly incorrect results in specific cases):
+      6. Minor fixes (rare crashes or slightly incorrect results in specific cases):
        - total reads number (was incorrectly calculated in case of secondary, supplementary,
          and duplicate reads);
        - proper processing of filepaths with commas;
        - check correctness of existing BED files and overwriting if corrupted.
 
-      6. Updates in embedded tools:
+      7. Updates in embedded tools:
        - updated Augustus (BUSCO dependency) to 3.3.3;
        - new GeneMark license files.
 
-      7. Cosmetic changes in warning/notice/error messages.
+      8. Cosmetic changes in warning/notice/error messages.
 
 
 5.1.0rc1 (remained as a release candidate)

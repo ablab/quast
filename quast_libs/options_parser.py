@@ -820,7 +820,10 @@ def parse_options(logger, quast_args):
         qconfig.extensive_misassembly_threshold = \
             qconfig.LARGE_EXTENSIVE_MIS_THRESHOLD if qconfig.large_genome else qconfig.DEFAULT_EXT_MIS_SIZE
     if qconfig.fragmented_max_indent:
-        qconfig.check_for_fragmented_ref = True
+        # TODO: write a warning message if --fragmented-max-indent is used while --fragmented is not set
+        # or set it automatically, but not in the way as commented out below, since we did this ALL THE TIME
+        # because qconfig.fragmented_max_indent is always True (there is the default value for it)
+        # qconfig.check_for_fragmented_ref = True
         check_fragmented_max_indent(logger)
 
     if qconfig.min_contig is None:

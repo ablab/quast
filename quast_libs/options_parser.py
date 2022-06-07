@@ -790,8 +790,8 @@ def parse_options(logger, quast_args):
     if len(qconfig.forward_reads) != len(qconfig.reverse_reads):
         logger.error('Use the SAME number of files with forward and reverse reads for paired-end libraries '
                      '(-1 <filepath> -2 <filepath>).\n'
-                     'Use --12 option to specify a file with interlaced forward and reverse paired-end reads.\n'
-                     'Use -s option to specify a file with unpaired (single-end) reads.', exit_with_code=3)
+                     'Use --pe12 option to specify a file with interlaced forward and reverse paired-end reads.\n'
+                     'Use --single option to specify a file with unpaired (single-end) reads.', exit_with_code=3)
     if len(qconfig.mp_forward_reads) != len(qconfig.mp_reverse_reads):
         logger.error('Use the SAME number of files with forward and reverse reads for mate-pair libraries '
                      '(--mp1 <filepath> --mp2 <filepath>).\n'

@@ -20,7 +20,8 @@ from quast_libs.qutils import download_blast_binaries, run_parallel, compile_too
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
-augustus_version = '3.3.3'
+augustus_version = '3.2.3'
+augustus_max_allowed_version = '3.3'
 augustus_url = 'http://bioinf.uni-greifswald.de/augustus/binaries/old/augustus-' + augustus_version + '.tar.gz'
 bacteria_db_url = 'https://busco-archive.ezlab.org/v3/datasets/bacteria_odb9.tar.gz'
 fungi_db_url = 'https://busco-archive.ezlab.org/v3/datasets/fungi_odb9.tar.gz'
@@ -116,7 +117,9 @@ def download_augustus(logger, only_clean=False):
             return True
         return False
 
-    preinstalled_augustus = qutils.get_path_to_program('augustus')
+    preinstalled_augustus = qutils.get_path_to_program('augustus', min_version=augustus_version,
+                                                       recommend_version=augustus_version,
+                                                       max_allowed_version=augustus_max_allowed_version)
     if preinstalled_augustus is not None:
         preinstalled_augustus_dirpath = os.path.dirname(os.path.dirname(preinstalled_augustus))
         if __check_preinstalled_augustus_completeness(preinstalled_augustus_dirpath):
@@ -235,6 +238,7 @@ def do(contigs_fpaths, output_dir, logger):
         return
 
     config_fpath = make_config(output_dir, tmp_dir, busco_threads, clade_dirpath, augustus_dirpath)
+    logger.info('  running BUSCO with augustus from ' + augustus_dirpath)
     logger.info('Logs and results will be saved under ' + output_dir + '...')
 
     os.environ['BUSCO_CONFIG_FILE'] = config_fpath
@@ -281,6 +285,8 @@ def do(contigs_fpaths, output_dir, logger):
                        '  3. Problem with BUSCO dependencies, most likely Augustus. Check that the binaries in ' + augustus_dirpath + '/bin/ are working properly.\n'
                        '     If something is wrong with Augustus, you may try to install it yourself '
                              '(https://github.com/Gaius-Augustus/Augustus or `conda install -c bioconda augustus`) and make sure "augustus" binary is in PATH.\n'
+                       '     Please install the PROPER VERSION of Augustus, we tested BUSCO with augustus-' + augustus_version +
+                             ', it may also work with augustus-' + augustus_max_allowed_version + ', the newer/older versions are not supported.\n'
                        '  4. Some other problem with BUSCO. Check the logs (you may need to rerun QUAST with --debug to see all intermediate files).\n'
                        '     If you cannot solve the problem yourself, post an issue at https://github.com/ablab/quast/issues or write to quast.support@cab.spbu.ru')
     if not qconfig.debug:

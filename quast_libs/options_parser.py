@@ -625,6 +625,10 @@ def parse_options(logger, quast_args):
              callback_kwargs={'min_value': qconfig.optimal_assembly_min_IS,
                               'max_value': qconfig.optimal_assembly_max_IS})
          ),
+        (['--report-all-metrics'], dict(
+            dest='report_all_metrics',
+            action='store_true')
+         ),
         (['--plots-format'], dict(
              dest='plot_extension',
              type='string',

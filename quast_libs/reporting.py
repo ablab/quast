@@ -457,6 +457,10 @@ def table(order=Fields.order, ref_name=None):
     required_fields = []
 
     def define_required_fields():
+        if qconfig.report_all_metrics:
+            required_fields.extend(Fields.order)
+            return
+
         # if a reference is specified, keep the same number of Nx/Lx-like genome-based metrics in different reports
         # (no matter what percent of the genome was assembled)
         report = get(assembly_fpaths[0], ref_name=ref_name)

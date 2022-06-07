@@ -12,8 +12,10 @@
        - auN, auNG, auNA, auNGA (areas under the Nx/NGx/NAx/NGx curves; for more detail see
          https://lh3.github.io/2020/04/08/a-new-metric-on-assembly-contiguity or the manual).
 
-      3. New option:
-       - "--local-mis-size" for setting minimal local misassembly size (default is 200, was 86).
+      3. New options:
+       - "--local-mis-size" for setting minimal local misassembly size (default is 200, was 86);
+       - "--report-all-metrics" for keeping the same content (list of metrics) in the main report
+         independently of inputs/options.
 
       4. MetaQUAST change:
        - preserving explicitly specified reference genomes in the reports (they were previously

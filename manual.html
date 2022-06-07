@@ -627,6 +627,15 @@ Note: requires <a href='#fragmented'><code>--fragmented</code></a> option.
     If no paired-end reads are provided, 255 is used as the default value.
 
 <div class='option'>
+<code><b>--report-all-metrics</b></code>
+</div>
+Keep all quality metrics in the main report. Usually, all not-relevant metrics are not included in the report, e.g., reference-based metrics in the no-reference mode.
+Also, if metric values are undefined ('-') for all input assemblies, the metric is removed from the report.
+    The only exception from the latter rule is NG/NGA/LG/LGA-like metrics that explicitly contain '-' if reference was specified but (the aligned parts of) all assemblies are too small to reach, e.g., NG50 (NGA50).
+    <br>
+    The <code>--report-all-metrics</code> option changes this behaviour and forces QUAST (metaQUAST) to keep all metrics that can be reported in principle in the report. In this case, the number of rows in the main report is always the same independently of inputs and running mode/options, which simplifies automatic parsing of the report.
+
+<div class='option'>
 <code><b>--plots-format</b></code>  <code>&lt;format&gt;</code>
 </div>
 File format for plots. Supported formats: emf, eps, pdf, png, ps, raw, rgba, svg, svgz.

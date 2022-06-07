@@ -84,6 +84,7 @@ all_labels_from_dirs = False
 run_busco = False
 large_genome = False
 use_kmc = False
+report_all_metrics = False
 
 # ideal assembly section
 optimal_assembly = False
@@ -486,6 +487,8 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("    --upper-bound-min-con  <int>      Minimal number of 'connecting reads' needed for joining upper bound contigs into a scaffold\n")
         stream.write("                                      [default: %d for mate-pairs and %d for long reads]\n" % (MIN_CONNECT_MP, MIN_CONNECT_LR))
         stream.write("    --est-insert-size  <int>          Use provided insert size in upper bound assembly simulation [default: auto detect from reads or %d]\n" % optimal_assembly_default_IS)
+        stream.write("    --report-all-metrics              Keep all quality metrics in the main report even if their values are '-' for all assemblies or \n"
+                     "                                      if they are not applicable (e.g., reference-based metrics in the no-reference mode)\n")
         stream.write("    --plots-format  <str>             Save plots in specified format [default: %s].\n" % plot_extension)
         stream.write("                                      Supported formats: %s\n" % ', '.join(supported_plot_extensions))
         stream.write("    --memory-efficient                Run everything using one thread, separately per each assembly.\n")
@@ -506,7 +509,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("    --sam     <filename,filename,...> Comma-separated list of SAM alignment files obtained by aligning reads to assemblies\n"
                          "                                      (use the same order as for files with contigs)\n")
         stream.write("    --bam     <filename,filename,...> Comma-separated list of BAM alignment files obtained by aligning reads to assemblies\n"
-                         "                                      (use the same order as for files with contigs)\n")
+                     "                                      (use the same order as for files with contigs)\n")
         stream.write("                                      Reads (or SAM/BAM file) are used for structural variation detection and\n")
         stream.write("                                      coverage histogram building in Icarus\n")
         stream.write("    --sv-bedpe  <filename>            File with structural variations (in BEDPE format)\n")

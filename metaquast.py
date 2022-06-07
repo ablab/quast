@@ -86,6 +86,8 @@ def _run_quast_per_ref(quast_py_args, output_dirpath_per_ref, ref_fpath, ref_ass
     if not ref_assemblies:
         logger.main_info('\nNo contigs were aligned to the reference ' + ref_name + ', skipping..')
         output_dirpath = os.path.join(output_dirpath_per_ref, ref_name)
+        if not os.path.isdir(output_dirpath):
+            os.makedirs(output_dirpath)
         json_text = None
         if qconfig.html_report:
             from quast_libs.html_saver import html_saver, json_saver

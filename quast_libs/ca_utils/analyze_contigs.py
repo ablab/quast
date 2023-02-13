@@ -202,6 +202,18 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         top_aligns = top_aligns[1:]
                         for align in top_aligns:
                             ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
+                    # This is a template for future "ploid" ambiguity-usage flag, need to change it later:
+                    elif qconfig.ambiguity_usage == "ploid":
+                        ca_output.stdout_f.write('\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):\n')
+                        ca_output.stdout_f.write('\t\t\tAlignment: %s\n' % str(top_aligns[0]))
+                        ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
+                        ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
+                        aligned_lengths.append(top_aligns[0].len2)
+                        contigs_aligned_lengths[-1] = top_aligns[0].len2
+                        ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + '\n')
+                        top_aligns = top_aligns[1:]
+                        for align in top_aligns:
+                            ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
                     elif qconfig.ambiguity_usage == "all":
                         ca_output.stdout_f.write('\t\tUsing all these alignments (option --ambiguity-usage is set to "all"):\n')
                         # we count only extra bases, so we shouldn't include bases in the first alignment
@@ -243,6 +255,15 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                             ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(sorted_aligns[idx]) + '\n')
                         continue
                     elif qconfig.ambiguity_usage == "one":
+                        ambiguous_contigs_extra_bases += 0
+                        ca_output.stdout_f.write('\t\tUsing only the very best set (option --ambiguity-usage is set to "one").\n')
+                        if len(the_best_set.indexes) < len(used_indexes):
+                            ca_output.stdout_f.write('\t\tSo, skipping alignments from other sets:\n')
+                            for idx in used_indexes:
+                                if idx not in the_best_set.indexes:
+                                    ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(sorted_aligns[idx]) + '\n')
+                    # This is a template for future "ploid" ambiguity-usage flag, need to change it later:
+                    elif qconfig.ambiguity_usage == "ploid":
                         ambiguous_contigs_extra_bases += 0
                         ca_output.stdout_f.write('\t\tUsing only the very best set (option --ambiguity-usage is set to "one").\n')
                         if len(the_best_set.indexes) < len(used_indexes):

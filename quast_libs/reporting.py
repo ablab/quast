@@ -172,6 +172,8 @@ class Fields:
 
     # Reference statistics
     REFLEN = 'Reference length'
+    REFLEN_HAPLOTYPE1 = 'Reference length of haplotype 1'
+    REFLEN_HAPLOTYPE2 = 'Reference length of haplotype 2'
     ESTREFLEN = 'Estimated reference length'
     REF_FRAGMENTS = 'Reference fragments'
     REFGC = 'Reference GC (%)'
@@ -200,7 +202,7 @@ class Fields:
     SIMILAR_MIS_BLOCKS = '# similar misassembled blocks'
 
     ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
-    order = [NAME, CONTIGS__FOR_THRESHOLDS, TOTALLENS__FOR_THRESHOLDS, CONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
+    order = [NAME, CONTIGS__FOR_THRESHOLDS, TOTALLENS__FOR_THRESHOLDS, CONTIGS, LARGCONTIG, TOTALLEN, REFLEN, REFLEN_HAPLOTYPE1, REFLEN_HAPLOTYPE2, ESTREFLEN, GC, REFGC,
              N50, NG50, Nx, NGx, auN, auNG, L50, LG50, Lx, LGx,
              TOTAL_READS, LEFT_READS, RIGHT_READS,
              MAPPED_READS_PCNT, REF_MAPPED_READS_PCNT,

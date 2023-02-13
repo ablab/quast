@@ -14,6 +14,8 @@ from os.path import join
 from quast_libs import fastaparser, qconfig, qutils, reporting, plotter
 from quast_libs.circos import set_window_size
 from quast_libs.log import get_logger
+from quast_libs.diputils import DipQuastAnalyzer
+
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 MIN_HISTOGRAM_POINTS = 5
 MIN_GC_WINDOW_SIZE = qconfig.GC_window_size // 2
@@ -323,6 +325,11 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
             report.add_field(reporting.Fields.UNCALLED_PERCENT, ('%.2f' % (float(number_of_Ns) * 100000.0 / float(total_length))))
         if ref_fpath:
             report.add_field(reporting.Fields.REFLEN, int(reference_length))
+
+            dipquast = DipQuastAnalyzer()
+            _, genome_size_by_haplotypes = dipquast.fill_dip_dict_by_chromosomes(ref_fpath)
+            report.add_field(reporting.Fields.REFLEN_HAPLOTYPE1, int(genome_size_by_haplotypes['haplotype1']))
+            report.add_field(reporting.Fields.REFLEN_HAPLOTYPE2, int(genome_size_by_haplotypes['haplotype2']))
             report.add_field(reporting.Fields.REF_FRAGMENTS, reference_fragments)
             if not qconfig.is_combined_ref:
                 report.add_field(reporting.Fields.REFGC, ('%.2f' % reference_GC if reference_GC is not None else None))

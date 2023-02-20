@@ -85,6 +85,7 @@ run_busco = False
 large_genome = False
 use_kmc = False
 report_all_metrics = False
+var_haplotypes = [1,2,3,4,5,6,7,8]
 
 # ideal assembly section
 optimal_assembly = False

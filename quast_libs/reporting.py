@@ -134,6 +134,7 @@ class Fields:
     UNCALLED_PERCENT = "# N's per 100 kbp"
 
     # Genome statistics
+    MAPPEDGENOME_BY_HAPLOTYPES = ('Genome fraction (%%) of haplotype %d', tuple(qconfig.var_haplotypes))
     MAPPEDGENOME = 'Genome fraction (%)'
     DUPLICATION_RATIO = 'Duplication ratio'
     AVE_READ_SUPPORT = 'Avg contig read support'
@@ -172,8 +173,7 @@ class Fields:
 
     # Reference statistics
     REFLEN = 'Reference length'
-    REFLEN_HAPLOTYPE1 = 'Reference length of haplotype 1'
-    REFLEN_HAPLOTYPE2 = 'Reference length of haplotype 2'
+    REFLEN_HAPLOTYPES = ('Reference length of haplotype %d', tuple(qconfig.var_haplotypes))
     ESTREFLEN = 'Estimated reference length'
     REF_FRAGMENTS = 'Reference fragments'
     REFGC = 'Reference GC (%)'
@@ -202,7 +202,7 @@ class Fields:
     SIMILAR_MIS_BLOCKS = '# similar misassembled blocks'
 
     ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
-    order = [NAME, CONTIGS__FOR_THRESHOLDS, TOTALLENS__FOR_THRESHOLDS, CONTIGS, LARGCONTIG, TOTALLEN, REFLEN, REFLEN_HAPLOTYPE1, REFLEN_HAPLOTYPE2, ESTREFLEN, GC, REFGC,
+    order = [NAME, CONTIGS__FOR_THRESHOLDS, TOTALLENS__FOR_THRESHOLDS, CONTIGS, LARGCONTIG, TOTALLEN, REFLEN, REFLEN_HAPLOTYPES, ESTREFLEN, GC, REFGC,
              N50, NG50, Nx, NGx, auN, auNG, L50, LG50, Lx, LGx,
              TOTAL_READS, LEFT_READS, RIGHT_READS,
              MAPPED_READS_PCNT, REF_MAPPED_READS_PCNT,
@@ -211,7 +211,7 @@ class Fields:
              LARGE_MIS_EXTENSIVE, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
              MISLOCAL, MIS_SCAFFOLDS_GAP, MIS_LOCAL_SCAFFOLDS_GAP,
              STRUCT_VARIATIONS, POTENTIAL_MGE, UNALIGNED_MISASSEMBLED_CTGS,
-             UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT,
+             UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, MAPPEDGENOME_BY_HAPLOTYPES, DUPLICATION_RATIO, AVE_READ_SUPPORT,
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS,
              BUSCO_COMPLETE, BUSCO_PART,
              PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES,
@@ -250,7 +250,7 @@ class Fields:
 
     ### Grouping of metrics and set of main metrics for HTML version of main report
     grouped_order = [
-        ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT, GENES, OPERONS,
+        ('Genome statistics', [MAPPEDGENOME, MAPPEDGENOME_BY_HAPLOTYPES, DUPLICATION_RATIO, AVE_READ_SUPPORT, GENES, OPERONS,
                                LARGALIGN, TOTAL_ALIGNED_LEN,
                                NG50, NGx, auNG, NA50, NAx, auNA, NGA50, NGAx, auNGA,
                                LG50, LGx, LA50, LAx, LGA50, LGAx, BUSCO_COMPLETE, BUSCO_PART]),
@@ -296,7 +296,7 @@ class Fields:
                     TOTALLENS__FOR_1000_THRESHOLD, TOTALLENS__FOR_10000_THRESHOLD, TOTALLENS__FOR_50000_THRESHOLD,
                     LARGE_MIS_EXTENSIVE, MIS_ALL_EXTENSIVE, MIS_EXTENSIVE_BASES,
                     SUBSERROR, INDELSERROR, UNCALLED_PERCENT,
-                    MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT,
+                    MAPPEDGENOME, MAPPEDGENOME_BY_HAPLOTYPES, DUPLICATION_RATIO, AVE_READ_SUPPORT,
                     MAPPED_READS_PCNT, PROPERLY_PAIRED_READS_PCNT, SINGLETONS_PCNT, MISJOINT_READS_PCNT,
                     GENES, OPERONS,
                     BUSCO_COMPLETE, BUSCO_PART,

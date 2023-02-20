@@ -1,26 +1,36 @@
-from quast_libs.fastaparser import read_fasta
+from collections import OrderedDict
+import re
+
+from quast_libs.fastaparser import read_fasta, get_chr_lengths_from_fastafile
 
 class DipQuastAnalyzer:
+    ploid_aligned = {}
     def __init__(self):
-        self.dip_genome_by_chr = {}
-        self.dip_genome_by_chr_len = {}
-        self.genome_size_by_haplotypes = {}
-        self.__remember_haplotypes = []
+        self._dip_genome_by_chr = OrderedDict()
+        self._length_of_haplotypes = OrderedDict()
+
     def fill_dip_dict_by_chromosomes(self, fasta_fpath):
-        for name, seq in read_fasta(fasta_fpath):
-            chr_name, haplotype = name.strip('\n').split('_')
-            chr_len = len(seq)
-            if haplotype not in self.dip_genome_by_chr_len.keys():
-                self.dip_genome_by_chr_len[haplotype] = {}
-                self.dip_genome_by_chr[haplotype] = {}
-                self.__remember_haplotypes.append(haplotype)
-            self.dip_genome_by_chr_len[haplotype][chr_name] = chr_len
-            self.dip_genome_by_chr[haplotype][chr_name] = seq
+        for name, _ in read_fasta(fasta_fpath):
+            haplotype = re.findall(r'(haplotype\d+)', name)[0]
+            if haplotype not in self._dip_genome_by_chr.keys():
+                self._dip_genome_by_chr[haplotype] = []
+            self._dip_genome_by_chr[haplotype].append(name)
 
-        for haplotype_n in self.__remember_haplotypes:
-            self.genome_size_by_haplotypes[haplotype_n] = sum(self.dip_genome_by_chr_len[haplotype_n].values())
+        return self._dip_genome_by_chr
 
-        return self.dip_genome_by_chr, self.genome_size_by_haplotypes
+    def get_haplotypes_len(self, fpath):
+        chr_len_d = get_chr_lengths_from_fastafile(fpath)
+        for key, val in self._dip_genome_by_chr.items():
+            for chrom in val:
+                self._length_of_haplotypes[key] = self._length_of_haplotypes.get(key, 0) + chr_len_d[chrom]
+
+        return self._length_of_haplotypes
+
+
+
+
+
+
 
 
 

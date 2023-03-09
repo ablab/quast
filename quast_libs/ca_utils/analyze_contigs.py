@@ -10,7 +10,7 @@ from quast_libs import fastaparser, qconfig
 from quast_libs.ca_utils.analyze_misassemblies import process_misassembled_contig, IndelsInfo, find_all_sv, Misassembly
 from quast_libs.ca_utils.best_set_selection import get_best_aligns_sets, get_used_indexes, score_single_align
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
-from quast_libs.diputils import DipQuastAnalyzer
+from quast_libs.diputils import dip_genome_by_chr
 
 
 def add_potential_misassembly(ref, misassemblies_by_ref, refs_with_translocations):
@@ -204,15 +204,14 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         for align in top_aligns:
                             ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
                     elif qconfig.ambiguity_usage == "ploid":
-                        dip_dict_haplotypes = DipQuastAnalyzer().fill_dip_dict_by_chromosomes(qconfig.reference) # MOVE HIGHER!
-                        ploidy = len(dip_dict_haplotypes)
+                        ploidy = len(dip_genome_by_chr)
                         ca_output.stdout_f.write(f'\t\tThere are {ploidy} haplotypes. Using no more than one alignment for each haplotype\n')
                         used_haplotypes = []
                         skipped_aligns = []
                         while len(top_aligns):
                             if len(used_haplotypes) == ploidy:
                                 break
-                            for key, value in dip_dict_haplotypes.items(): # Create method for this later!
+                            for key, value in dip_genome_by_chr.items(): # Create method for this later!
                                 if top_aligns[0].ref in value:
                                     haplotype = key
                             if haplotype not in used_haplotypes:
@@ -280,7 +279,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     # This is a template for future "ploid" ambiguity-usage flag, need to change it later:
                     elif qconfig.ambiguity_usage == "ploid":
                         ambiguous_contigs_extra_bases += 0
-                        ca_output.stdout_f.write('\t\tUsing only the very best set (option --ambiguity-usage is set to "one").\n')
+                        ca_output.stdout_f.write('\t\tUsing only the very best set (option --ambiguity-usage is set to "ploid").\n')
                         if len(the_best_set.indexes) < len(used_indexes):
                             ca_output.stdout_f.write('\t\tSo, skipping alignments from other sets:\n')
                             for idx in used_indexes:

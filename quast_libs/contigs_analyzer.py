@@ -23,7 +23,7 @@ import re
 from collections import defaultdict
 from os.path import join, dirname
 
-from quast_libs import reporting, qconfig, qutils, fastaparser
+from quast_libs import reporting, qconfig, qutils, fastaparser, diputils
 from quast_libs.ca_utils import misc
 from quast_libs.ca_utils.analyze_contigs import analyze_contigs
 from quast_libs.ca_utils.analyze_misassemblies import Mapping, IndelsInfo
@@ -37,7 +37,6 @@ from quast_libs.fastaparser import get_genome_stats
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_python2, run_parallel
-from quast_libs.diputils import DipQuastAnalyzer
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -101,11 +100,7 @@ def analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_
                         genome_mapping[align.ref][pos] = 1
             for i in ns_by_chromosomes[align.ref]:
                 genome_mapping[align.ref][i] = 0
-    if qconfig.ambiguity_usage == 'ploid':
-        return genome_mapping, indels_info
-    else:
-        covered_ref_bases = sum([sum(genome_mapping[chrom]) for chrom in genome_mapping])
-        return covered_ref_bases, indels_info
+    return genome_mapping, indels_info
 
 
 # former plantagora and plantakolya
@@ -199,15 +194,16 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:
         log_out_f.write('Writing SNPs into ' + used_snps_fpath + '\n')
-    aligned_ref_bases, indels_info = analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_snps_fpath)
+    genome_mapping, indels_info = analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_snps_fpath)
 
     if qconfig.ambiguity_usage == 'ploid':
-        dip_dict_haplotypes = DipQuastAnalyzer().fill_dip_dict_by_chromosomes(ref_fpath)
-        for key, val in dip_dict_haplotypes.items():
+        for key, val in diputils.dip_genome_by_chr.items():
             for chrom in val:
-                DipQuastAnalyzer.ploid_aligned[key] = DipQuastAnalyzer.ploid_aligned.get(key, 0) + sum(aligned_ref_bases[chrom])
+                diputils.ploid_aligned[key] += sum(genome_mapping[chrom])
+                b = sum(genome_mapping[chrom])
+                a = diputils.ploid_aligned
 
-        aligned_ref_bases = sum([sum(aligned_ref_bases[chrom]) for chrom in aligned_ref_bases])
+    aligned_ref_bases = sum([sum(genome_mapping[chrom]) for chrom in genome_mapping])
 
     total_indels_info += indels_info
     cov_stats = {'SNPs': total_indels_info.mismatches, 'indels_list': total_indels_info.indels_list, 'aligned_ref_bases': aligned_ref_bases}

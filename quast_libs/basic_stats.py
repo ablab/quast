@@ -14,7 +14,7 @@ from os.path import join
 from quast_libs import fastaparser, qconfig, qutils, reporting, plotter
 from quast_libs.circos import set_window_size
 from quast_libs.log import get_logger
-from quast_libs.diputils import DipQuastAnalyzer
+from quast_libs.diputils import length_of_haplotypes
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 MIN_HISTOGRAM_POINTS = 5
@@ -328,9 +328,6 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
             report.add_field(reporting.Fields.REF_FRAGMENTS, reference_fragments)
 
             if qconfig.ambiguity_usage == 'ploid':
-                dipquast = DipQuastAnalyzer()
-                _ = dipquast.fill_dip_dict_by_chromosomes(ref_fpath)
-                length_of_haplotypes = dict(sorted(dipquast.get_haplotypes_len(ref_fpath).items()))
                 report.add_field(reporting.Fields.REFLEN_HAPLOTYPES,
                                  [int(l) for l in length_of_haplotypes.values()])
 

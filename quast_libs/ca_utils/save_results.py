@@ -8,10 +8,9 @@ from __future__ import with_statement
 import os
 from collections import defaultdict
 
-from quast_libs import qconfig, qutils, reporting
+from quast_libs import qconfig, qutils, reporting, diputils
 from quast_libs.ca_utils.analyze_misassemblies import Misassembly
 from quast_libs.ca_utils.misc import print_file, intergenomic_misassemblies_by_asm, ref_labels_by_chromosomes
-from quast_libs.diputils import DipQuastAnalyzer
 
 
 def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result):
@@ -130,15 +129,10 @@ def save_result(result, report, fname, ref_fpath, genome_size):
                                                                  * 100000.0 / float(aligned_assembly_bases)))
 
         if qconfig.ambiguity_usage == 'ploid':
-            dip_dict_haplotypes = DipQuastAnalyzer()
-            _ = dip_dict_haplotypes.fill_dip_dict_by_chromosomes(ref_fpath)
-            genome_len_by_haplotypes = dict(sorted(dip_dict_haplotypes.get_haplotypes_len(ref_fpath).items()))
-            aligned_ref_bases_by_haplotypes = dict(sorted(DipQuastAnalyzer.ploid_aligned.items()))
-
             genome_fraction_by_haplotypes = {}
-            for haplotype in genome_len_by_haplotypes.keys():
-                genome_fraction_by_haplotypes[haplotype] = genome_fraction_by_haplotypes.get(haplotype, 0) + round(aligned_ref_bases_by_haplotypes[haplotype] *
-                                                                                                              100 / genome_len_by_haplotypes[haplotype], 2)
+            for haplotype in diputils.length_of_haplotypes.keys():
+                genome_fraction_by_haplotypes[haplotype] = genome_fraction_by_haplotypes.get(haplotype, 0) + round(diputils.ploid_aligned[haplotype] *
+                                                                                                              100 / diputils.length_of_haplotypes[haplotype], 2)
 
             report.add_field(reporting.Fields.MAPPEDGENOME_BY_HAPLOTYPES,
                              [float(l) for l in genome_fraction_by_haplotypes.values()])

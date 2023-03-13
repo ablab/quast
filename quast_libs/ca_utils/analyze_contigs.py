@@ -210,6 +210,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         skipped_aligns = []
                         while len(top_aligns):
                             if len(used_haplotypes) == ploidy:
+                                skipped_aligns += top_aligns
                                 break
                             for key, value in dip_genome_by_chr.items(): # Create method for this later!
                                 if top_aligns[0].ref in value:
@@ -222,10 +223,9 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                                 contigs_aligned_lengths[-1] = top_aligns[0].len2
                                 ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + '\n')
                                 used_haplotypes.append(haplotype)
-                                top_aligns = top_aligns[1:]
                             else:
                                 skipped_aligns.append(top_aligns[0])
-                                top_aligns = top_aligns[1:]
+                            top_aligns = top_aligns[1:]
                         for align in skipped_aligns:
                             ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
                     elif qconfig.ambiguity_usage == "all":

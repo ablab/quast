@@ -22,6 +22,7 @@ class Misassembly:
     RELOCATION = 2
     TRANSLOCATION = 3
     INTERSPECTRANSLOCATION = 4  # for metaquast, if translocation occurs between chromosomes of different references
+    INTERHAPLOTRANSLOCATION = 5  # for dipquast
     SCAFFOLD_GAP = 5
     LOCAL_SCAFFOLD_GAP = 6
     FRAGMENTED = 7

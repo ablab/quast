@@ -24,6 +24,11 @@ def get_haplotypes_len(fpath):
             length_of_haplotypes[key] = length_of_haplotypes.get(key, 0) + chr_len_d[chrom]
     return dict(sorted(length_of_haplotypes.items()))
 
+def get_haplotype_for_align(align):
+    for haplotype in dip_genome_by_chr.keys():
+        if align in dip_genome_by_chr[haplotype]:
+            return haplotype
+
 
 
 

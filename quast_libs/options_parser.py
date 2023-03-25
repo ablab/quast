@@ -502,7 +502,7 @@ def parse_options(logger, quast_args):
              action='callback',
              callback=check_str_arg_value,
              callback_args=(logger,),
-             callback_kwargs={'available_values': ['none', 'one', 'all']})
+             callback_kwargs={'available_values': ['none', 'one', 'ploid', 'all']})
          ),
         (['--ambiguity-score'], dict(
              dest='ambiguity_score',

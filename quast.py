@@ -12,7 +12,7 @@ import os
 import sys
 import shutil
 
-from quast_libs import qconfig
+from quast_libs import qconfig, diputils
 
 qconfig.check_python_version()
 
@@ -131,6 +131,12 @@ def main(args):
             plotter_data.dict_color_and_ls[label] = (qconfig.used_colors[i], qconfig.used_ls[i])
 
     qconfig.assemblies_fpaths = contigs_fpaths
+
+    # Fill dip_dict and calculate length of haplotypes
+    if qconfig.ambiguity_usage == 'ploid':
+        diputils.dip_genome_by_chr = diputils.fill_dip_dict_by_chromosomes(ref_fpath)
+        diputils.length_of_haplotypes = diputils.get_haplotypes_len(ref_fpath)
+        diputils.ploid_aligned = dict(zip(diputils.dip_genome_by_chr.keys(), [0]*len(diputils.dip_genome_by_chr.keys())))
 
     # Where all pdfs will be saved
     all_pdf_fpath = None
@@ -302,7 +308,6 @@ def main(args):
 
     cleanup(corrected_dirpath)
     return logger.finish_up(check_test=qconfig.test)
-
 
 if __name__ == '__main__':
     try:

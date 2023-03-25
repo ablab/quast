@@ -14,6 +14,7 @@ from quast_libs import qconfig
 from quast_libs.ca_utils.analyze_misassemblies import is_misassembly, exclude_internal_overlaps, Misassembly, \
     is_fragmented_ref_fake_translocation
 from quast_libs.ca_utils.misc import is_same_reference
+from quast_libs.diputils import get_haplotype_for_align
 
 
 class ScoredSet(object):
@@ -199,7 +200,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
                 break
             cur_set_aligns = [sorted_aligns[i] for i in scored_set.indexes] + [align]
             score, uncovered = get_score(scored_set.score, cur_set_aligns, ref_lens, is_cyclic, scored_set.uncovered,
-                                         seq, region_struct_variations, penalties)
+                                         seq, region_struct_variations, penalties, ctg_len)
             if score is None:  # incorrect set, i.e. internal overlap excluding resulted in incorrectly short alignment
                 continue
             if score > local_max_score:
@@ -262,7 +263,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
                 break
             cur_set_aligns = [sorted_aligns[i] for i in scored_set.indexes] + [align]
             score, uncovered = get_score(scored_set.score, cur_set_aligns, ref_lens, is_cyclic, scored_set.uncovered,
-                                         seq, region_struct_variations, penalties)
+                                         seq, region_struct_variations, penalties, ctg_len)
             if score is not None:
                 putative_predecessors[scored_set] = (score, uncovered)
                 if score > local_max_score:
@@ -303,7 +304,7 @@ def get_added_len(set_aligns, cur_align):
     return added_right + added_left
 
 
-def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_struct_variations, penalties):
+def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_struct_variations, penalties, ctg_len):
     if len(aligns) > 1:
         align1, align2 = aligns[-2], aligns[-1] = aligns[-2].clone(), aligns[-1].clone()
         is_fake_translocation = is_fragmented_ref_fake_translocation(align1, align2, ref_lens)
@@ -326,6 +327,8 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
             if align1.ref != align2.ref:
                 if qconfig.is_combined_ref and not is_same_reference(align1.ref, align2.ref):
                     misassembly = Misassembly.INTERSPECTRANSLOCATION
+                elif qconfig.ambiguity_usage == 'ploid' and get_haplotype_for_align(align1.ref) != get_haplotype_for_align(align2.ref):
+                    misassembly = max(Misassembly.INTERHAPLOTRANSLOCATION, ctg_len * 0.001)
                 else:
                     misassembly = Misassembly.TRANSLOCATION
             elif abs(aux_data["inconsistency"]) > qconfig.extensive_misassembly_threshold:

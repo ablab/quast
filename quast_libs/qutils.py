@@ -166,7 +166,6 @@ def add_lengths_to_report(lengths, reporting, contigs_fpath):
                          [sum(l for l in lengths if l >= threshold) if threshold >= min_threshold else None
                           for threshold in qconfig.contig_thresholds])
 
-
 def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
     ## removing from contigs' names special characters because:
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc

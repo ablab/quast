@@ -8,7 +8,7 @@ from __future__ import with_statement
 import os
 from collections import defaultdict
 
-from quast_libs import qconfig, qutils, reporting
+from quast_libs import qconfig, qutils, reporting, diputils
 from quast_libs.ca_utils.analyze_misassemblies import Misassembly
 from quast_libs.ca_utils.misc import print_file, intergenomic_misassemblies_by_asm, ref_labels_by_chromosomes
 
@@ -127,6 +127,16 @@ def save_result(result, report, fname, ref_fpath, genome_size):
         report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(aligned_assembly_bases)))
         report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(report.get_field(reporting.Fields.INDELS))
                                                                  * 100000.0 / float(aligned_assembly_bases)))
+
+        if qconfig.ambiguity_usage == 'ploid':
+            genome_fraction_by_haplotypes = {}
+            for haplotype in diputils.length_of_haplotypes.keys():
+                genome_fraction_by_haplotypes[haplotype] = genome_fraction_by_haplotypes.get(haplotype, 0) + round(diputils.ploid_aligned[haplotype] *
+                                                                                                              100 / diputils.length_of_haplotypes[haplotype], 2)
+
+            report.add_field(reporting.Fields.MAPPEDGENOME_BY_HAPLOTYPES,
+                             [float(l) for l in genome_fraction_by_haplotypes.values()])
+
 
     # for misassemblies report:
     report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, region_misassemblies.count(Misassembly.RELOCATION) +

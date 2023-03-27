@@ -14,7 +14,7 @@ from quast_libs import qconfig
 from quast_libs.ca_utils.analyze_misassemblies import is_misassembly, exclude_internal_overlaps, Misassembly, \
     is_fragmented_ref_fake_translocation
 from quast_libs.ca_utils.misc import is_same_reference
-from quast_libs.diputils import get_haplotype_for_align
+from quast_libs.diputils import compare_aligns
 
 
 class ScoredSet(object):
@@ -327,7 +327,7 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
             if align1.ref != align2.ref:
                 if qconfig.is_combined_ref and not is_same_reference(align1.ref, align2.ref):
                     misassembly = Misassembly.INTERSPECTRANSLOCATION
-                elif qconfig.ambiguity_usage == 'ploid' and get_haplotype_for_align(align1.ref) != get_haplotype_for_align(align2.ref):
+                elif qconfig.ambiguity_usage == 'ploid' and compare_aligns(align1.ref, align2.ref) is True:
                     misassembly = max(Misassembly.INTERHAPLOTRANSLOCATION, ctg_len * 0.001)
                 else:
                     misassembly = Misassembly.TRANSLOCATION

@@ -200,8 +200,6 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
         for key, val in diputils.dip_genome_by_chr.items():
             for chrom in val:
                 diputils.ploid_aligned[key] += sum(genome_mapping[chrom])
-                b = sum(genome_mapping[chrom])
-                a = diputils.ploid_aligned
 
     aligned_ref_bases = sum([sum(genome_mapping[chrom]) for chrom in genome_mapping])
 

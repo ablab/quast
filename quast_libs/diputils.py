@@ -1,6 +1,4 @@
-from collections import OrderedDict
 import os
-import re
 import subprocess
 
 from quast_libs.fastaparser import read_fasta, get_chr_lengths_from_fastafile
@@ -11,26 +9,6 @@ ploid_aligned = {}
 dip_genome_by_chr = {}
 length_of_haplotypes = {}
 homologous_chroms = {}
-
-def fill_dip_dict_by_chromosomes(fasta_fpath):
-    # dip_genome_by_chr = {}
-    for name, _ in read_fasta(fasta_fpath):
-        haplotype = re.findall(r'(haplotype\d+)', name)[0]
-        if haplotype not in dip_genome_by_chr.keys():
-            dip_genome_by_chr[haplotype] = []
-        dip_genome_by_chr[haplotype].append(name)
-    return dict(sorted(dip_genome_by_chr.items()))
-
-def get_haplotypes_len(fpath):
-    # length_of_haplotypes = {}
-    chr_len_d = get_chr_lengths_from_fastafile(fpath)
-    for key, val in dip_genome_by_chr.items():
-        for chrom in val:
-            length_of_haplotypes[key] = length_of_haplotypes.get(key, 0) + chr_len_d[chrom]
-    return dict(sorted(length_of_haplotypes.items()))
-
-def compare_aligns(align1, align2):
-    return align2 in homologous_chroms[align1]
 
 def execute(execute_that):
     PIPE = subprocess.PIPE
@@ -55,15 +33,42 @@ def run_mash(fasta_fpath):
     delete_tmp_file = 'rm -rf tmp_mash_res.txt'
     execute(delete_tmp_file)
 
+def get_max_n_haplotypes(homologous_chroms):
+    n_max_haplotypes = 0
+    for key, val in homologous_chroms.items():
+        if len(val) + 1 > n_max_haplotypes:
+            n_max_haplotypes = len(val) + 1
+    return n_max_haplotypes
 
+def fill_dip_dict_by_chromosomes():
+    check_added_chroms = []
+    counter_haplotypes = 1
 
+    for idx in range(get_max_n_haplotypes(homologous_chroms)):
+        dip_genome_by_chr[f'haplotype_{idx+1}'] = []
 
+    homologous_chroms_sorted = dict(sorted(homologous_chroms.items()))
+    for chrom in homologous_chroms_sorted.keys():
+        if chrom not in check_added_chroms:
+            dip_genome_by_chr[f'haplotype_{counter_haplotypes}'].append(chrom)
+            check_added_chroms.append(chrom)
+            counter_haplotypes += 1
+            for other_chr in homologous_chroms_sorted[chrom]:
+                if other_chr not in check_added_chroms:
+                    dip_genome_by_chr[f'haplotype_{counter_haplotypes}'].append(other_chr)
+                    check_added_chroms.append(other_chr)
+                    counter_haplotypes += 1
+                else:
+                    continue
+        counter_haplotypes = 1
+    return dict(sorted(dip_genome_by_chr.items()))
 
+def get_haplotypes_len(fpath):
+    chr_len_d = get_chr_lengths_from_fastafile(fpath)
+    for key, val in dip_genome_by_chr.items():
+        for chrom in val:
+            length_of_haplotypes[key] = length_of_haplotypes.get(key, 0) + chr_len_d[chrom]
+    return dict(sorted(length_of_haplotypes.items()))
 
-
-
-
-
-
-
-
+def compare_aligns(align1, align2):
+    return align2 in homologous_chroms[align1]

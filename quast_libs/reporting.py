@@ -248,10 +248,10 @@ class Fields:
 
     ### Grouping of metrics and set of main metrics for HTML version of main report
     grouped_order = [
-        ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT, GENES, OPERONS,
+        ('Alignment-based statistics', [MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT, GENES, OPERONS,
                                LARGALIGN, TOTAL_ALIGNED_LEN,
                                NG50, NGx, auNG, NA50, NAx, auNA, NGA50, NGAx, auNGA,
-                               LG50, LGx, LA50, LAx, LGA50, LGAx, BUSCO_COMPLETE, BUSCO_PART]),
+                               LG50, LGx, LA50, LAx, LGA50, LGAx]),
 
         ('Reads mapping', [MAPPED_READS, MAPPED_READS_PCNT, PROPERLY_PAIRED_READS, PROPERLY_PAIRED_READS_PCNT,
                            SINGLETONS, SINGLETONS_PCNT, MISJOINT_READS, MISJOINT_READS_PCNT,
@@ -268,7 +268,7 @@ class Fields:
         ('Unaligned', [UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
                        UNALIGNED_PART_LENGTH, ]),
 
-        ('Mismatches', [SUBSERROR, MISMATCHES,
+        ('Per base quality', [SUBSERROR, MISMATCHES,
                         INDELSERROR, INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES,
                         UNCALLED_PERCENT, UNCALLED, ]),
 
@@ -278,10 +278,12 @@ class Fields:
         ('K-mer-based statistics', [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH,
                                     KMER_MISASSEMBLIES, KMER_TRANSLOCATIONS, KMER_RELOCATIONS]),
 
+        ('BUSCO completeness', [BUSCO_COMPLETE, BUSCO_PART]),
+
         ('Predicted genes', [PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES]),
 
         ('Similarity statistics', [SIMILAR_CONTIGS, SIMILAR_MIS_BLOCKS]),
-        
+
         ('Reference statistics', [REFLEN, ESTREFLEN, REF_FRAGMENTS, REFGC, REF_GENES, REF_OPERONS,
                                   TOTAL_READS, LEFT_READS, RIGHT_READS,
                                   REF_MAPPED_READS, REF_MAPPED_READS_PCNT, REF_PROPERLY_PAIRED_READS, REF_PROPERLY_PAIRED_READS_PCNT,

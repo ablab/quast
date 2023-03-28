@@ -265,7 +265,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         var gbcMetricNames = [];
         for (var group_n = 0; group_n < report.length; group_n++) { // the metrics are in per_ref reports but not in combined_ref
             var groupName = report[group_n][0];
-            if (groupName.startsWith('Genome')) {  // only 'Genome statistics' section is needed
+            if (groupName.startsWith('Alignment-based statistics')) {  // only 'Alignment-based statistics' section is needed
                 for (var report_n = 0; report_n < reports.length; report_n++) {
                     var metrics_by_refs = reports[report_n].report[group_n][1];
                     if (metrics_by_refs.length > 0) { // check for special case -- not_aligned report: length == 0 there

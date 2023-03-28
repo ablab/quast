@@ -115,7 +115,7 @@ function buildTotalReport(assembliesNames, totalReport, order, glossary, qualiti
         $('#reference_name').show().find('.val').html(referenceName);
     }
 
-    if (report[0][0] == 'Genome statistics') {  // if first section is empty (no reference), swap it and w/o reference statistics
+    if (report[0][0] == 'Alignment-based statistics') {  // if first section is empty (no reference), swap it and w/o reference statistics
         var genomeMetrics = report[0][1];
         var isSectionEmpty = true;
         for (var index = 0; index < genomeMetrics.length; index++) {

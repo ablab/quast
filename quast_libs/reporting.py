@@ -79,12 +79,14 @@ class Fields:
     LARGE_MIS_TRANSLOCATION = TAB + '# large translocations'
     LARGE_MIS_INVERTION = TAB + '# large inversions'
     LARGE_MIS_ISTRANSLOCATIONS = TAB + '# large i/s translocations'
+    LARGE_MIS_IHTRANSLOCATIONS = TAB + '# large i/h translocations' # ??
     ### additional list of metrics for detailed misassemblies report
     MIS_ALL_EXTENSIVE = '# misassemblies'
     MIS_RELOCATION = TAB + '# relocations'
     MIS_TRANSLOCATION = TAB + '# translocations'
     MIS_INVERTION = TAB + '# inversions'
     MIS_ISTRANSLOCATIONS = TAB + '# interspecies translocations'
+    MIS_IHTRANSLOCATIONS = TAB + '# interhaplotype translocations'
     MIS_EXTENSIVE_CONTIGS = '# misassembled contigs'
     MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
@@ -103,11 +105,13 @@ class Fields:
     CTG_MIS_TRANSLOCATION = TAB + '# c. translocations'
     CTG_MIS_INVERTION = TAB + '# c. inversions'
     CTG_MIS_ISTRANSLOCATIONS = TAB + '# c. interspecies translocations'
+    CTG_MIS_IHTRANSLOCATIONS = TAB + '# c. interhaplotype translocations'
     SCF_MIS_ALL_EXTENSIVE = HALF_TAB + '# scaffold misassemblies'
     SCF_MIS_RELOCATION = TAB + '# s. relocations'
     SCF_MIS_TRANSLOCATION = TAB + '# s. translocations'
     SCF_MIS_INVERTION = TAB + '# s. inversions'
     SCF_MIS_ISTRANSLOCATIONS = TAB + '# s. interspecies translocations'
+    SCF_MIS_IHTRANSLOCATIONS = TAB + '# s. interhaplotype translocations'
 
     # Unaligned
     UNALIGNED = '# unaligned contigs'
@@ -227,17 +231,17 @@ class Fields:
                    REF_DEPTH, REF_COVERAGE__FOR_THRESHOLDS]
 
     # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
-    classic_misassemblies_order = [MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION, MIS_ISTRANSLOCATIONS]
+    classic_misassemblies_order = [MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION, MIS_ISTRANSLOCATIONS, MIS_IHTRANSLOCATIONS]
     ctg_scf_misassemblies_order = [CTG_MIS_ALL_EXTENSIVE,
-                                   CTG_MIS_RELOCATION, CTG_MIS_TRANSLOCATION, CTG_MIS_INVERTION, CTG_MIS_ISTRANSLOCATIONS,
+                                   CTG_MIS_RELOCATION, CTG_MIS_TRANSLOCATION, CTG_MIS_INVERTION, CTG_MIS_ISTRANSLOCATIONS, CTG_MIS_IHTRANSLOCATIONS,
                                    SCF_MIS_ALL_EXTENSIVE,
-                                   SCF_MIS_RELOCATION, SCF_MIS_TRANSLOCATION, SCF_MIS_INVERTION, SCF_MIS_ISTRANSLOCATIONS]
+                                   SCF_MIS_RELOCATION, SCF_MIS_TRANSLOCATION, SCF_MIS_INVERTION, SCF_MIS_ISTRANSLOCATIONS, ls]
     prefix_misassemblies_order = [NAME, MIS_ALL_EXTENSIVE]
     suffix_misassemblies_order = [MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
                                   CONTIGS_WITH_ISTRANSLOCATIONS, POSSIBLE_MISASSEMBLIES,
                                   MIS_LOCAL, MIS_SCAFFOLDS_GAP, MIS_LOCAL_SCAFFOLDS_GAP,
                                   MIS_FRAGMENTED, STRUCT_VARIATIONS, POTENTIAL_MGE, UNALIGNED_MISASSEMBLED_CTGS,
-                                  MISMATCHES, INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES]
+                                  MISMATCHES, INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES] # need to add CONTIGS_WITH_IHTRANSLOCATIONS!
     misassemblies_order = prefix_misassemblies_order + classic_misassemblies_order + suffix_misassemblies_order
     misassemblies_order_advanced = prefix_misassemblies_order + ctg_scf_misassemblies_order + suffix_misassemblies_order
 
@@ -260,12 +264,12 @@ class Fields:
                            DEPTH, COVERAGE__FOR_THRESHOLDS]),
 
         ('Misassemblies', [LARGE_MIS_EXTENSIVE, LARGE_MIS_RELOCATION, LARGE_MIS_TRANSLOCATION, LARGE_MIS_INVERTION,
-                           LARGE_MIS_ISTRANSLOCATIONS,
+                           LARGE_MIS_ISTRANSLOCATIONS, LARGE_MIS_IHTRANSLOCATIONS,
                            MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
-                           MIS_ISTRANSLOCATIONS, MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
+                           MIS_ISTRANSLOCATIONS, MIS_IHTRANSLOCATIONS, MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
                            CONTIGS_WITH_ISTRANSLOCATIONS, POSSIBLE_MISASSEMBLIES,
                            MIS_LOCAL, MIS_SCAFFOLDS_GAP, MIS_LOCAL_SCAFFOLDS_GAP,
-                           STRUCT_VARIATIONS, POTENTIAL_MGE, UNALIGNED_MISASSEMBLED_CTGS]),
+                           STRUCT_VARIATIONS, POTENTIAL_MGE, UNALIGNED_MISASSEMBLED_CTGS]), # need to add CONTIGS_WITH_IHTRANSLOCATIONS!
 
         ('Unaligned', [UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
                        UNALIGNED_PART_LENGTH, ]),
@@ -333,7 +337,7 @@ class Fields:
              SINGLETONS, SINGLETONS_PCNT, MISJOINT_READS, MISJOINT_READS_PCNT,
              KMER_MIS_LENGTH, KMER_UNDEF_LENGTH, KMER_MISASSEMBLIES,
              LA50, LGA50, LAx, LGAx, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,
-             MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES],
+             MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES], # need to add CONTIGS_WITH_IHTRANSLOCATIONS!
         Quality.EQUAL:
             [REFLEN, ESTREFLEN, GC, CONTIGS, CONTIGS__FOR_THRESHOLDS, REFGC, STRUCT_VARIATIONS, POTENTIAL_MGE, SIMILAR_CONTIGS, SIMILAR_MIS_BLOCKS],
         }

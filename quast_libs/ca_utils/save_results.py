@@ -26,11 +26,13 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     log_out_f.write('\tLocal Misassemblies: %d\n' % region_misassemblies.count(Misassembly.LOCAL))
     log_out_f.write('\tMisassemblies: %d\n' % (region_misassemblies.count(Misassembly.RELOCATION) +
                      region_misassemblies.count(Misassembly.INVERSION) + region_misassemblies.count(Misassembly.TRANSLOCATION) +
-                     region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION)))
+                     region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION) + region_misassemblies.count(Misassembly.INTERHAPLOTRANSLOCATION)))
     log_out_f.write('\t\tRelocations: %d\n' % region_misassemblies.count(Misassembly.RELOCATION))
     log_out_f.write('\t\tTranslocations: %d\n' % region_misassemblies.count(Misassembly.TRANSLOCATION))
     if qconfig.is_combined_ref:
         log_out_f.write('\t\tInterspecies translocations: %d\n' % region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
+    if qconfig.ambiguity_usage == 'ploid':
+        log_out_f.write('\t\tInterhaplotype translocations: %d\n' % region_misassemblies.count(Misassembly.INTERHAPLOTRANSLOCATION))
     log_out_f.write('\t\tInversions: %d\n' % region_misassemblies.count(Misassembly.INVERSION))
     if qconfig.is_combined_ref:
         log_out_f.write('\tPotentially Misassembled Contigs (i/s translocations): %d\n' % region_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
@@ -97,7 +99,7 @@ def save_result(result, report, fname, ref_fpath, genome_size):
     report.add_field(reporting.Fields.MISLOCAL, region_misassemblies.count(Misassembly.LOCAL))
     report.add_field(reporting.Fields.MISASSEMBL, region_misassemblies.count(Misassembly.RELOCATION) +
                      region_misassemblies.count(Misassembly.INVERSION) + region_misassemblies.count(Misassembly.TRANSLOCATION) +
-                     region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
+                     region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION) + region_misassemblies.count(Misassembly.INTERHAPLOTRANSLOCATION))
     report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
     report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
     report.add_field(reporting.Fields.MISINTERNALOVERLAP, misassembly_internal_overlap)
@@ -141,7 +143,7 @@ def save_result(result, report, fname, ref_fpath, genome_size):
     # for misassemblies report:
     report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, region_misassemblies.count(Misassembly.RELOCATION) +
                      region_misassemblies.count(Misassembly.INVERSION) + region_misassemblies.count(Misassembly.TRANSLOCATION) +
-                     region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
+                     region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION) + region_misassemblies.count(Misassembly.INTERHAPLOTRANSLOCATION))
     report.add_field(reporting.Fields.MIS_RELOCATION, region_misassemblies.count(Misassembly.RELOCATION))
     report.add_field(reporting.Fields.MIS_TRANSLOCATION, region_misassemblies.count(Misassembly.TRANSLOCATION))
     report.add_field(reporting.Fields.MIS_INVERTION, region_misassemblies.count(Misassembly.INVERSION))
@@ -151,7 +153,7 @@ def save_result(result, report, fname, ref_fpath, genome_size):
     # special case for separating contig and scaffold misassemblies
     report.add_field(reporting.Fields.SCF_MIS_ALL_EXTENSIVE, region_misassemblies.count(Misassembly.SCF_RELOCATION) +
                      region_misassemblies.count(Misassembly.SCF_INVERSION) + region_misassemblies.count(Misassembly.SCF_TRANSLOCATION) +
-                     region_misassemblies.count(Misassembly.SCF_INTERSPECTRANSLOCATION))
+                     region_misassemblies.count(Misassembly.SCF_INTERSPECTRANSLOCATION) + region_misassemblies.count(Misassembly.SCF_INTERHAPLOTRANSLOCATION))
     report.add_field(reporting.Fields.SCF_MIS_RELOCATION, region_misassemblies.count(Misassembly.SCF_RELOCATION))
     report.add_field(reporting.Fields.SCF_MIS_TRANSLOCATION, region_misassemblies.count(Misassembly.SCF_TRANSLOCATION))
     report.add_field(reporting.Fields.SCF_MIS_INVERTION, region_misassemblies.count(Misassembly.SCF_INVERSION))
@@ -198,6 +200,16 @@ def save_result(result, report, fname, ref_fpath, genome_size):
         report.add_field(reporting.Fields.MIS_LOCAL_SCAFFOLDS_GAP, region_misassemblies.count(Misassembly.LOCAL_SCAFFOLD_GAP))
     if qconfig.check_for_fragmented_ref:
         report.add_field(reporting.Fields.MIS_FRAGMENTED, region_misassemblies.count(Misassembly.FRAGMENTED))
+
+    if qconfig.ambiguity_usage == 'ploid':
+        report.add_field(reporting.Fields.MIS_IHTRANSLOCATIONS,
+                         region_misassemblies.count(Misassembly.INTERHAPLOTRANSLOCATION))
+        report.add_field(reporting.Fields.SCF_MIS_IHTRANSLOCATIONS,
+                         region_misassemblies.count(Misassembly.SCF_INTERHAPLOTRANSLOCATION))
+        report.add_field(reporting.Fields.CTG_MIS_IHTRANSLOCATIONS,
+                         region_misassemblies.count(Misassembly.INTERHAPLOTRANSLOCATION) -
+                         region_misassemblies.count(Misassembly.SCF_INTERHAPLOTRANSLOCATION))
+
     # for unaligned report:
     report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned)
     report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, fully_unaligned_bases)

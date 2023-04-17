@@ -14,6 +14,7 @@ from quast_libs.ca_utils.misc import is_same_reference, get_ref_by_chromosome, p
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 from quast_libs.qutils import correct_name
+from quast_libs.diputils import compare_aligns
 
 
 class Misassembly:
@@ -35,6 +36,7 @@ class Misassembly:
     SCF_RELOCATION = 13
     SCF_TRANSLOCATION = 14
     SCF_INTERSPECTRANSLOCATION = 15
+    SCF_INTERHAPLOTRANSLOCATION = 16
 
 
 class StructuralVariations(object):
@@ -44,9 +46,10 @@ class StructuralVariations(object):
         self.inversions = []
         self.relocations = []
         self.translocations = []
+        self.inter_haplotype_translocations = []
 
     def get_count(self):
-        return len(self.inversions) + len(self.relocations) + len(self.translocations)
+        return len(self.inversions) + len(self.relocations) + len(self.translocations) + len(self.inter_haplotype_translocations)
 
 
 class Mapping(object):
@@ -290,7 +293,10 @@ def find_all_sv(bed_fpath):
                     align1 = Mapping(s1=int(fs[1]), e1=int(fs[2]), ref=correct_name(fs[0]), sv_type=fs[6])
                     align2 = Mapping(s1=int(fs[4]), e1=int(fs[5]), ref=correct_name(fs[3]), sv_type=fs[6])
                     if align1.ref != align2.ref:
-                        region_struct_variations.translocations.append((align1, align2))
+                        if qconfig.ambiguity_usage == 'ploid' and compare_aligns(align1.ref, align2.ref) is True:
+                            region_struct_variations.inter_haplotype_translocations.append((align1, align2))
+                        else:
+                            region_struct_variations.translocations.append((align1, align2))
                     elif 'INV' in fs[6]:
                         region_struct_variations.inversions.append((align1, align2))
                     elif 'DEL' in fs[6] or 'INS' in fs[6] or 'BND' in fs[6]:
@@ -470,6 +476,8 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
             if prev_align.ref != next_align.ref:  # if chromosomes from different references
                 if qconfig.is_combined_ref and prev_ref != next_ref:
                     misassembly_type = 'interspecies translocation'
+                elif qconfig.ambiguity_usage == 'ploid' and compare_aligns(prev_align.ref, next_align.ref) is True:
+                    misassembly_type = 'interhaplotype translocation'
                 else:
                     misassembly_type = 'translocation'
             elif abs(aux_data["inconsistency"]) > qconfig.extensive_misassembly_threshold:
@@ -545,6 +553,8 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
                 misassembly_id = Misassembly.INTERSPECTRANSLOCATION
                 istranslocations_by_ref[prev_ref][next_ref] += 1
                 istranslocations_by_ref[next_ref][prev_ref] += 1
+            elif misassembly_type == 'interhaplotype translocation':
+                misassembly_id = Misassembly.INTERHAPLOTRANSLOCATION
             elif misassembly_type == 'translocation':
                 misassembly_id = Misassembly.TRANSLOCATION
             elif misassembly_type == 'relocation':

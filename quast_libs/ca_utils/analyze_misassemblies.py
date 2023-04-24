@@ -443,6 +443,34 @@ def is_gap_filled_ns(contig_seq, align1, align2):
     return 'N' * qconfig.Ns_break_threshold in gap_in_contig
 
 
+class GFF3Entry():
+    """
+    GFF3 specification:
+    Detailed: https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
+    Short: https://www.ensembl.org/info/website/upload/gff.html
+    Example:
+    NODE_207_length_2625_cov_215.449142	QUAST	possible_assembly_error	778	789	.	.	.	Name=Extensive misassembly;type=relocation;Note=inconsistency is -3031228,scaffold gap is present
+    """
+    def __init__(self, misassembly_type, msg, prev_align, next_align):
+        self.seqname = prev_align.contig
+        self.source = 'QUAST'
+        self.feature = 'possible_assembly_error'  # Ontology (SOFA): SO:0000702, def: "A region of sequence where there may have been an error in the assembly." [SO:ke]
+        self.start = prev_align.end()
+        self.end = next_align.start()
+        self.score = '.'
+        # Note: we report misassemblies with respect to the contig sequence, strand and frame are not defined
+        self.strand = '.'
+        self.frame = '.'
+        self.attributes = ['Name=Extensive misassembly', 'type=%s' % misassembly_type]  # TODO: reuse message
+        if msg:
+            # is msg is not empty, it always starts with ", "
+            self.attributes.append('Note=' + ','.join(map(lambda x: x.strip().replace('=', 'is'), msg[1:].split(','))))
+
+    def __str__(self):
+        return '\t'.join(map(str, [self.seqname, self.source, self.feature, self.start, self.end,
+                                   self.score, self.strand, self.frame, ';'.join(self.attributes)]))
+
+
 def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, region_misassemblies, ref_lens, ref_aligns,
                                 ref_features, contig_seq, misassemblies_by_ref, istranslocations_by_ref, region_struct_variations,
                                 ca_output):
@@ -557,7 +585,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
             if misassembly_id == Misassembly.INTERSPECTRANSLOCATION:  # special case
                 misassemblies_by_ref[next_ref].append(misassembly_id)
             if is_gap_filled_ns(contig_seq, prev_align, next_align):
-                misassembly_type += ', scaffold gap is present'
+                msg += ', scaffold gap is present'
                 region_misassemblies.append(misassembly_id + (Misassembly.SCF_INVERSION - Misassembly.INVERSION))
             ca_output.stdout_f.write(misassembly_type + msg)
             ca_output.misassembly_f.write(misassembly_type + msg)
@@ -565,6 +593,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
             ca_output.stdout_f.write(') between these two alignments\n')
             ca_output.misassembly_f.write(') between %s %s and %s %s' % (prev_align.s2, prev_align.e2, next_align.s2, next_align.e2) + '\n')
             ca_output.icarus_out_f.write('\n')
+            ca_output.misassembly_gff_f.write(str(GFF3Entry(misassembly_type, msg, prev_align, next_align)) + '\n')
             ref_features.setdefault(prev_align.ref, {})[prev_align.e1] = 'M'
             ref_features.setdefault(next_align.ref, {})[next_align.e1] = 'M'
         else:

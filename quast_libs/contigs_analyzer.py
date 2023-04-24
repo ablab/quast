@@ -42,9 +42,10 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 class CAOutput():
-    def __init__(self, stdout_f, misassembly_f=None, coords_filtered_f=None, used_snps_f=None, icarus_out_f=None):
+    def __init__(self, stdout_f, misassembly_f=None, misassembly_gff_f=None, coords_filtered_f=None, used_snps_f=None, icarus_out_f=None):
         self.stdout_f = stdout_f
         self.misassembly_f = misassembly_f
+        self.misassembly_gff_f = misassembly_gff_f
         self.coords_filtered_f = coords_filtered_f
         self.used_snps_f = used_snps_f
         self.icarus_out_f = icarus_out_f
@@ -121,17 +122,21 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
         icarus_out_fpath = join(output_dirpath, qconfig.icarus_report_fname_pattern % corr_assembly_label)
         misassembly_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % corr_assembly_label + '.mis_contigs.info')
         unaligned_info_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % corr_assembly_label + '.unaligned.info')
+        misassembly_gff_fpath = join(output_dirpath, corr_assembly_label + '.misassemblies.gff')
     else:
         log_out_fpath = '/dev/null'
         log_err_fpath = '/dev/null'
         icarus_out_fpath = '/dev/null'
         misassembly_fpath = '/dev/null'
         unaligned_info_fpath = '/dev/null'
+        misassembly_gff_fpath = '/dev/null'
 
     icarus_out_f = open(icarus_out_fpath, 'w')
     icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous', 'Best_group']
     icarus_out_f.write('\t'.join(icarus_header_cols) + '\n')
     misassembly_f = open(misassembly_fpath, 'w')
+    misassembly_gff_f = open(misassembly_gff_fpath, 'w')
+    misassembly_gff_f.write('##gff-version 3\n')
 
     if not qconfig.space_efficient:
         logger.info('  ' + qutils.index_to_str(index) + 'Logging to files ' + log_out_fpath +
@@ -186,8 +191,8 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     log_out_f.write('\tTotal Regions: %d\n' % total_regions)
     log_out_f.write('\tTotal Region Length: %d\n' % total_reg_len)
 
-    ca_output = CAOutput(stdout_f=log_out_f, misassembly_f=misassembly_f, coords_filtered_f=open(coords_filtered_fpath, 'w'),
-                         icarus_out_f=icarus_out_f)
+    ca_output = CAOutput(stdout_f=log_out_f, misassembly_f=misassembly_f, misassembly_gff_f=misassembly_gff_f,
+                         coords_filtered_f=open(coords_filtered_fpath, 'w'), icarus_out_f=icarus_out_f)
 
     log_out_f.write('Analyzing contigs...\n')
     result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs, aligned_lengths_by_contigs =\

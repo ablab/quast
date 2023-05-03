@@ -14,8 +14,7 @@ from quast_libs.ca_utils.misc import is_same_reference, get_ref_by_chromosome, p
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 from quast_libs.qutils import correct_name
-from quast_libs.diputils import compare_aligns
-
+from quast_libs.diputils import is_homologous_ref
 
 class Misassembly:
     LOCAL = 0
@@ -293,7 +292,7 @@ def find_all_sv(bed_fpath):
                     align1 = Mapping(s1=int(fs[1]), e1=int(fs[2]), ref=correct_name(fs[0]), sv_type=fs[6])
                     align2 = Mapping(s1=int(fs[4]), e1=int(fs[5]), ref=correct_name(fs[3]), sv_type=fs[6])
                     if align1.ref != align2.ref:
-                        if qconfig.ambiguity_usage == 'ploid' and compare_aligns(align1.ref, align2.ref) is True:
+                        if qconfig.ambiguity_usage == 'ploid' and is_homologous_ref(align1.ref, align2.ref):
                             region_struct_variations.inter_haplotype_translocations.append((align1, align2))
                         else:
                             region_struct_variations.translocations.append((align1, align2))
@@ -476,7 +475,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
             if prev_align.ref != next_align.ref:  # if chromosomes from different references
                 if qconfig.is_combined_ref and prev_ref != next_ref:
                     misassembly_type = 'interspecies translocation'
-                elif qconfig.ambiguity_usage == 'ploid' and compare_aligns(prev_align.ref, next_align.ref) is True:
+                elif qconfig.ambiguity_usage == 'ploid' and is_homologous_ref(prev_align.ref, next_align.ref):
                     misassembly_type = 'interhaplotype translocation'
                 else:
                     misassembly_type = 'translocation'

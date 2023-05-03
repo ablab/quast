@@ -10,7 +10,7 @@ from quast_libs import fastaparser, qconfig
 from quast_libs.ca_utils.analyze_misassemblies import process_misassembled_contig, IndelsInfo, find_all_sv, Misassembly
 from quast_libs.ca_utils.best_set_selection import get_best_aligns_sets, get_used_indexes, score_single_align
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
-from quast_libs.diputils import dip_genome_by_chr
+from quast_libs.diputils import dip_genome_by_chr, l_names_ambiguity_contigs
 
 
 def add_potential_misassembly(ref, misassemblies_by_ref, refs_with_translocations):
@@ -223,6 +223,8 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                                 contigs_aligned_lengths[-1] = top_aligns[0].len2
                                 ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + '\n')
                                 used_haplotypes.append(haplotype)
+                                if len(used_haplotypes) > 1 and top_aligns[0].contig not in l_names_ambiguity_contigs:
+                                    l_names_ambiguity_contigs.append(top_aligns[0].contig)
                             else:
                                 skipped_aligns.append(top_aligns[0])
                             top_aligns = top_aligns[1:]

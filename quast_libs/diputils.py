@@ -4,7 +4,6 @@ import subprocess
 from quast_libs.fastaparser import get_chr_lengths_from_fastafile
 from quast_libs import qconfig
 
-
 ploid_aligned = {}
 dip_genome_by_chr = {}
 length_of_haplotypes = {}
@@ -47,7 +46,7 @@ def fill_dip_dict_by_chromosomes():
     check_added_chroms = []
     counter_haplotypes = 1
     for idx in range(get_max_n_haplotypes()):
-        dip_genome_by_chr[f'haplotype_{idx+1}'] = []
+        dip_genome_by_chr[f'haplotype_{idx + 1}'] = []
 
     homologous_chroms_sorted = dict(sorted(homologous_chroms.items()))
     for chrom in homologous_chroms_sorted.keys():
@@ -78,7 +77,7 @@ def is_homologous_ref(align1, align2):
     return align2 in homologous_chroms[align1]
 
 
-def genome_coverage_for_single_alignment_contigs(ref_aligns, reference_chromosomes):
+def genome_coverage_for_unambiguity_contigs(ref_aligns, reference_chromosomes):
     genome_mapping = {}
     for chr_name, chr_len in reference_chromosomes.items():
         genome_mapping[chr_name] = [0] * (chr_len + 1)
@@ -105,57 +104,79 @@ def find_ambiguity_alignments(ref_aligns):
             if contig.contig in l_names_ambiguity_contigs:
                 ambiguity_contigs[key].append(contig)
     for key in ambiguity_contigs.keys():
-        ambiguity_contigs[key] = sorted(ambiguity_contigs[key], key=lambda cont: cont.s1)
+        ambiguity_contigs[key] = sorted(ambiguity_contigs[key], key=lambda ctg: ctg.s1)
     return ambiguity_contigs
 
 
-def find_contig_alignment_to_all_haplotypes(ambiguity_contigs_pos, searched_contig_name):
-    contig_alignment_by_haplotypes = []
-    for key in ambiguity_contigs_pos.keys():
-        for contig_idx in range(len(ambiguity_contigs_pos[key])):
-            cur_contig = ambiguity_contigs_pos[key][contig_idx]
-            if cur_contig.contig == searched_contig_name:
-                contig_alignment_by_haplotypes.append(cur_contig)
-    return contig_alignment_by_haplotypes
+def find_contig_alignments_to_haplotypes(ambiguity_contigs_pos):
+    alignments_by_contigs = {}
+    for chrom in ambiguity_contigs_pos.keys():
+        for align in ambiguity_contigs_pos[chrom]:
+            if align.contig not in alignments_by_contigs.keys():
+                alignments_by_contigs[align.contig] = []
+            alignments_by_contigs[align.contig].append(align)
+    return alignments_by_contigs
 
 
-def get_coords_for_non_overlapping_seq(ambiguity_contigs_pos, study_contig):
-    non_overlapping_pos_of_study_contig = set(range(study_contig.s1, study_contig.e1 + 1))
-    align_ref = ambiguity_contigs_pos[study_contig.ref]
-    for compared_contig in align_ref:
-        if study_contig.contig != compared_contig.contig:
-            compared_contig_pos = set(range(compared_contig.s1, compared_contig.e1 + 1))
-            non_overlapping_pos_of_study_contig -= compared_contig_pos
-    return list(non_overlapping_pos_of_study_contig)
+def get_coords_for_non_overlapping_seq(ambiguity_contigs, ctg_under_study):
+    l_non_overlapping_pos = []
+    coords_to_ignore = []
+    coords_of_study_ctg = [[ctg_under_study.s1, ctg_under_study.e1]]  # [[start_coord, stop_coord],...]
+    for study_ctg_coord in coords_of_study_ctg:
+        for compared_ctg in ambiguity_contigs[ctg_under_study.ref]:
+            if compared_ctg.contig != ctg_under_study.contig:
+                if study_ctg_coord[0] >= compared_ctg.s1:  # example: start_interest 20 >= start_compared 10
+                    if study_ctg_coord[0] <= compared_ctg.e1:
+                        if study_ctg_coord[1] > compared_ctg.e1:
+                            study_ctg_coord[0] = compared_ctg.e1 + 1
+                        elif study_ctg_coord[1] <= compared_ctg.e1:
+                            coords_to_ignore.append(study_ctg_coord)
+                            break
+
+                elif study_ctg_coord[0] < compared_ctg.s1:  # example: start_interest 20 < start_compared 30
+                    if study_ctg_coord[1] >= compared_ctg.s1:
+                        if study_ctg_coord[1] <= compared_ctg.e1:
+                            study_ctg_coord[1] = compared_ctg.s1 - 1
+                        elif study_ctg_coord[1] > compared_ctg.e1:
+                            coords_of_study_ctg.append([study_ctg_coord[0], compared_ctg.s1 - 1])
+                            coords_of_study_ctg.append([compared_ctg.e1 + 1, study_ctg_coord[1]])
+                            coords_to_ignore.append(study_ctg_coord)
+                            break
+
+    for coord in coords_of_study_ctg:
+        if coord not in coords_to_ignore:
+            start_coord, stop_coord = coord
+            l_non_overlapping_pos += list(set(range(start_coord, stop_coord + 1)))
+    return l_non_overlapping_pos
 
 
 def leave_best_alignment_for_ambiguity_contigs(ref_aligns, reference_chromosomes, ca_output):
-    genome_mapping = genome_coverage_for_single_alignment_contigs(ref_aligns, reference_chromosomes)
+    genome_mapping = genome_coverage_for_unambiguity_contigs(ref_aligns, reference_chromosomes)
     ambiguity_contigs = find_ambiguity_alignments(ref_aligns)
+    alignments_by_contigs = find_contig_alignments_to_haplotypes(ambiguity_contigs)  # {ambiguity_contig_name: [alignment_haplotype_1, alignment_haplotype_2, ..., alignment_haplotype_n]}
     ca_output.stdout_f.write('\nNOTICE: to the analysis used just one alignment of ambiguity contigs to the best haplotype\n')
     ca_output.stdout_f.write('Best alignment for ambiguity contigs:\n')
 
-    for contig in l_names_ambiguity_contigs:
-        l_of_alignment_to_not_the_best_haplotype = []
-        contig_alignment = find_contig_alignment_to_all_haplotypes(ambiguity_contigs, contig)
-
+    for contig in alignments_by_contigs.keys():
+        l_of_alignment_to_not_the_best_haplotypes = []
         contribution_of_non_overlapping_seq = {}  # {ref_align: [contribution_of_contig_to_genome_mapping, len_align_to_ref]}
-        for align in contig_alignment:
+        for align in alignments_by_contigs[contig]:
             contribution_of_non_overlapping_seq[align.ref] = [0]
             l_non_overlapping_pos = get_coords_for_non_overlapping_seq(ambiguity_contigs, align)
             for position in l_non_overlapping_pos:
                 if genome_mapping[align.ref][position] == 0:
                     contribution_of_non_overlapping_seq[align.ref][0] += 1
-            contribution_of_non_overlapping_seq[align.ref].append(align.e1 - align.s1)
+            contribution_of_non_overlapping_seq[align.ref].append(align.e1 - align.s1 + 1)
 
-        ref_of_best_alignment_of_cont, _ = sorted(contribution_of_non_overlapping_seq.items(), key=lambda x: x[1])[::-1][0]
-        for align in contig_alignment:
-            if align.ref == ref_of_best_alignment_of_cont:
+        ref_of_best_alignment_of_ctg, _ = sorted(contribution_of_non_overlapping_seq.items(), key=lambda x: x[1])[::-1][0]
+        for align in alignments_by_contigs[contig]:
+            if align.ref == ref_of_best_alignment_of_ctg:
                 for pos in range(align.s1, align.e1 + 1):
                     genome_mapping[align.ref][pos] = 1
-                ca_output.stdout_f.write(f'\tContig {align.contig}: best alignment to {ref_of_best_alignment_of_cont}. ')
+                ca_output.stdout_f.write(
+                    f'\tContig {align.contig}: best alignment to {ref_of_best_alignment_of_ctg}. ')
             else:
-                l_of_alignment_to_not_the_best_haplotype.append(align.ref)
+                l_of_alignment_to_not_the_best_haplotypes.append(align.ref)
                 for ambiguity_contig in ambiguity_contigs[align.ref]:
                     if ambiguity_contig.contig == contig:
                         ambiguity_contigs[align.ref].remove(ambiguity_contig)
@@ -164,5 +185,5 @@ def leave_best_alignment_for_ambiguity_contigs(ref_aligns, reference_chromosomes
                     if ambiguity_contig.contig == contig:
                         ref_aligns[align.ref].remove(ambiguity_contig)
                         break
-        alignment_to_not_the_best_haplotype = ', '.join(l_of_alignment_to_not_the_best_haplotype)
-        ca_output.stdout_f.write(f'Skipping alignment to {alignment_to_not_the_best_haplotype}\n')
+        alignment_to_not_the_best_haplotypes = ', '.join(l_of_alignment_to_not_the_best_haplotypes)
+        ca_output.stdout_f.write(f'Skipping alignment to {alignment_to_not_the_best_haplotypes}.\n')

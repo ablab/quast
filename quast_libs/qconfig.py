@@ -83,6 +83,7 @@ unaligned_mis_threshold = 0.5  # former 'umt' in analyze_contigs.py
 all_labels_from_dirs = False
 run_busco = False
 large_genome = False
+ploid_mode = False
 use_kmc = False
 report_all_metrics = False
 var_haplotypes = [1,2,3,4,5,6,7,8]
@@ -355,6 +356,8 @@ def get_mode(binary_path=None):
     mode = 'default'
     if basename(binary_path).startswith("metaquast"):
         mode = 'meta'
+    elif basename(binary_path).startswith("dipquast") or ploid_mode:
+        mode = 'ploid'
     elif basename(binary_path).startswith("quast-lg") or large_genome:
         mode = 'large'
     return mode
@@ -366,6 +369,8 @@ def print_version(mode=None):
     full_version = 'QUAST v' + quast_version()
     if mode == 'meta':
         full_version += ' (MetaQUAST mode)'
+    elif mode == 'ploid':
+        full_version += ' (dipQUAST mode)'
     elif mode == 'large':
         full_version += ' (QUAST-LG mode)'
     sys.stdout.write(full_version + '\n')
@@ -379,6 +384,8 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
     meta = True if mode == 'meta' else False
     if mode == 'meta':
         stream.write('MetaQUAST: Quality Assessment Tool for Metagenome Assemblies\n')
+    elif mode == 'ploid':
+        stream.write('dipQUAST: Quality Assessment Tool for Ploid Genome Assemblies\n')
     elif mode == 'large':
         stream.write('QUAST-LG: Quality Assessment Tool for Large Genome Assemblies\n')
     else:
@@ -427,6 +434,9 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
             stream.write("    --large                           Use optimal parameters for evaluation of large genomes\n")
             stream.write("                                      In particular, imposes '-e -m %d -i %d -x %d' (can be overridden manually)\n" %
                          (LARGE_MIN_CONTIG, LARGE_MIN_ALIGNMENT, LARGE_EXTENSIVE_MIS_THRESHOLD))
+        if mode != 'ploid':
+            stream.write("    --ploid                           Use to evaluate the assembly quality of ploid genomes.\n"
+                         "                                      Works with --ambiguity-usage one only\n")
         stream.write("-k  --k-mer-stats                     Compute k-mer-based quality metrics (recommended for large genomes)\n"
                      "                                      This may significantly increase memory and time consumption on large genomes\n")
         stream.write("    --k-mer-size                      Size of k used in --k-mer-stats [default: %d]\n" % unique_kmer_len)
@@ -460,7 +470,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("                                      By default, QUAST filters Minimap\'s alignments to keep only best ones\n")
         stream.write("-i  --min-alignment <int>             The minimum alignment length [default: %s]\n" % i_default)
         stream.write("    --min-identity <float>            The minimum alignment identity (80.0, 100.0) [default: %.1f]\n" % min_idy_default)
-        stream.write("-a  --ambiguity-usage <option>        Available options: <none|one|ploid|all>. Use none, one, ploidy number, or all alignments of a contig\n")
+        stream.write("-a  --ambiguity-usage <option>        Available options: <none|one|all>. Use none, one or all alignments of a contig\n")
         stream.write("                                      when all of them are almost equally good (see --ambiguity-score) [default: %s]\n" % ambiguity_usage)
         stream.write("    --ambiguity-score <float>         Score S for defining equally good alignments of a single contig. All alignments are sorted \n")
         stream.write("                                      by decreasing LEN * IDY% value. All alignments with LEN * IDY% < S * best(LEN * IDY%) are \n")

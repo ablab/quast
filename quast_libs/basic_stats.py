@@ -327,7 +327,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
             report.add_field(reporting.Fields.REFLEN, int(reference_length))
             report.add_field(reporting.Fields.REF_FRAGMENTS, reference_fragments)
 
-            if qconfig.ambiguity_usage == 'ploid':
+            if qconfig.ploid_mode:
                 report.add_field(reporting.Fields.REFLEN_HAPLOTYPES,
                                  [int(l) for l in length_of_haplotypes.values()])
 

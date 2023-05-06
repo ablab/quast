@@ -190,7 +190,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     log_out_f.write('Analyzing contigs...\n')
     result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs, aligned_lengths_by_contigs =\
         analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, reference_chromosomes, is_cyclic)
-    if qconfig.ambiguity_usage == 'ploid':
+    if qconfig.ploid_mode:
         # drop not the best alignment for ambiguity contigs in ref_aligns
         diputils.leave_best_alignment_for_ambiguity_contigs(ref_aligns, reference_chromosomes, ca_output)
 
@@ -199,7 +199,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
         log_out_f.write('Writing SNPs into ' + used_snps_fpath + '\n')
     genome_mapping, indels_info = analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_snps_fpath)
 
-    if qconfig.ambiguity_usage == 'ploid':
+    if qconfig.ploid_mode:
         for key, val in diputils.dip_genome_by_chr.items():
             for chrom in val:
                 diputils.ploid_aligned[key] += sum(genome_mapping[chrom])

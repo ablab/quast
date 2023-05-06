@@ -327,7 +327,7 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
             if align1.ref != align2.ref:
                 if qconfig.is_combined_ref and not is_same_reference(align1.ref, align2.ref):
                     misassembly = Misassembly.INTERSPECTRANSLOCATION
-                elif qconfig.ambiguity_usage == 'ploid' and is_homologous_ref(align1.ref, align2.ref):
+                elif qconfig.ploid_mode and is_homologous_ref(align1.ref, align2.ref):
                     misassembly = max(Misassembly.INTERHAPLOTRANSLOCATION, ctg_len * 0.001)
                 else:
                     misassembly = Misassembly.TRANSLOCATION

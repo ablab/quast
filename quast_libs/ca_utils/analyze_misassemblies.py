@@ -292,7 +292,7 @@ def find_all_sv(bed_fpath):
                     align1 = Mapping(s1=int(fs[1]), e1=int(fs[2]), ref=correct_name(fs[0]), sv_type=fs[6])
                     align2 = Mapping(s1=int(fs[4]), e1=int(fs[5]), ref=correct_name(fs[3]), sv_type=fs[6])
                     if align1.ref != align2.ref:
-                        if qconfig.ambiguity_usage == 'ploid' and is_homologous_ref(align1.ref, align2.ref):
+                        if qconfig.ploid_mode and is_homologous_ref(align1.ref, align2.ref):
                             region_struct_variations.inter_haplotype_translocations.append((align1, align2))
                         else:
                             region_struct_variations.translocations.append((align1, align2))
@@ -475,7 +475,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
             if prev_align.ref != next_align.ref:  # if chromosomes from different references
                 if qconfig.is_combined_ref and prev_ref != next_ref:
                     misassembly_type = 'interspecies translocation'
-                elif qconfig.ambiguity_usage == 'ploid' and is_homologous_ref(prev_align.ref, next_align.ref):
+                elif qconfig.ploid_mode and is_homologous_ref(prev_align.ref, next_align.ref):
                     misassembly_type = 'interhaplotype translocation'
                 else:
                     misassembly_type = 'translocation'

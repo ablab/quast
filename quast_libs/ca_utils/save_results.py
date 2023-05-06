@@ -31,7 +31,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     log_out_f.write('\t\tTranslocations: %d\n' % region_misassemblies.count(Misassembly.TRANSLOCATION))
     if qconfig.is_combined_ref:
         log_out_f.write('\t\tInterspecies translocations: %d\n' % region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
-    if qconfig.ambiguity_usage == 'ploid':
+    if qconfig.ploid_mode:
         log_out_f.write('\t\tInterhaplotype translocations: %d\n' % region_misassemblies.count(Misassembly.INTERHAPLOTRANSLOCATION))
     log_out_f.write('\t\tInversions: %d\n' % region_misassemblies.count(Misassembly.INVERSION))
     if qconfig.is_combined_ref:
@@ -130,7 +130,7 @@ def save_result(result, report, fname, ref_fpath, genome_size):
         report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(report.get_field(reporting.Fields.INDELS))
                                                                  * 100000.0 / float(aligned_assembly_bases)))
 
-        if qconfig.ambiguity_usage == 'ploid':
+        if qconfig.ploid_mode:
             genome_fraction_by_haplotypes = {}
             for haplotype in diputils.length_of_haplotypes.keys():
                 genome_fraction_by_haplotypes[haplotype] = genome_fraction_by_haplotypes.get(haplotype, 0) + round(diputils.ploid_aligned[haplotype] *
@@ -201,7 +201,7 @@ def save_result(result, report, fname, ref_fpath, genome_size):
     if qconfig.check_for_fragmented_ref:
         report.add_field(reporting.Fields.MIS_FRAGMENTED, region_misassemblies.count(Misassembly.FRAGMENTED))
 
-    if qconfig.ambiguity_usage == 'ploid':
+    if qconfig.ploid_mode:
         report.add_field(reporting.Fields.MIS_IHTRANSLOCATIONS,
                          region_misassemblies.count(Misassembly.INTERHAPLOTRANSLOCATION))
         report.add_field(reporting.Fields.SCF_MIS_IHTRANSLOCATIONS,

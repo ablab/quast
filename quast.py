@@ -133,7 +133,7 @@ def main(args):
     qconfig.assemblies_fpaths = contigs_fpaths
 
     # Fill dip_dict and calculate length of haplotypes
-    if qconfig.ambiguity_usage == 'ploid':
+    if qconfig.ploid_mode:
         diputils.run_mash(ref_fpath)
         diputils.dip_genome_by_chr = diputils.fill_dip_dict_by_chromosomes()
         diputils.length_of_haplotypes = diputils.get_haplotypes_len(ref_fpath)

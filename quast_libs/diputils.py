@@ -150,8 +150,7 @@ def leave_best_alignment_for_ambiguity_contigs(ref_aligns, reference_chromosomes
     genome_mapping = genome_coverage_for_unambiguity_contigs(ref_aligns, reference_chromosomes)
     ambiguity_contigs = find_ambiguity_alignments(ref_aligns)
     alignments_by_contigs = find_contig_alignments_to_haplotypes(ambiguity_contigs)  # {ambiguity_contig_name: [alignment_haplotype_1, alignment_haplotype_2, ..., alignment_haplotype_n]}
-    ca_output.stdout_f.write('\nNOTICE: to the analysis used just one alignment of ambiguity contigs to the best haplotype\n')
-    ca_output.stdout_f.write('Best alignment for ambiguity contigs:\n')
+    ca_output.stdout_f.write('\nNOTICE: used just one alignment of ambiguity contigs to the best haplotype for the analysis.\n')
 
     for contig in alignments_by_contigs.keys():
         l_of_alignment_to_not_the_best_haplotypes = []

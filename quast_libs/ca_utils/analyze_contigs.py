@@ -193,43 +193,46 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         for align in top_aligns:
                             ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
                     elif qconfig.ambiguity_usage == "one":
-                        ca_output.stdout_f.write('\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):\n')
-                        ca_output.stdout_f.write('\t\t\tAlignment: %s\n' % str(top_aligns[0]))
-                        ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
-                        ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
-                        aligned_lengths.append(top_aligns[0].len2)
-                        contigs_aligned_lengths[-1] = top_aligns[0].len2
-                        ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + '\n')
-                        top_aligns = top_aligns[1:]
-                        for align in top_aligns:
-                            ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
-                    elif qconfig.ambiguity_usage == "ploid":
-                        ploidy = len(dip_genome_by_chr)
-                        ca_output.stdout_f.write(f'\t\tThere are {ploidy} haplotypes. Using no more than one alignment for each haplotype\n')
-                        used_haplotypes = []
-                        skipped_aligns = []
-                        while len(top_aligns):
-                            if len(used_haplotypes) == ploidy:
-                                skipped_aligns += top_aligns
-                                break
-                            for key, value in dip_genome_by_chr.items(): # Create method for this later!
-                                if top_aligns[0].ref in value:
-                                    haplotype = key
-                            if haplotype not in used_haplotypes:
-                                ca_output.stdout_f.write('\t\t\tAlignment: %s\n' % str(top_aligns[0]))
-                                ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
-                                ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
-                                aligned_lengths.append(top_aligns[0].len2)
-                                contigs_aligned_lengths[-1] = top_aligns[0].len2
-                                ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + '\n')
-                                used_haplotypes.append(haplotype)
-                                if len(used_haplotypes) > 1 and top_aligns[0].contig not in l_names_ambiguity_contigs:
-                                    l_names_ambiguity_contigs.append(top_aligns[0].contig)
-                            else:
-                                skipped_aligns.append(top_aligns[0])
+                        if qconfig.ploid_mode:
+                            ploidy = len(dip_genome_by_chr)
+                            ca_output.stdout_f.write(
+                                f'\t\tThere are {ploidy} haplotypes. Using no more than one alignment for each haplotype\n')
+                            used_haplotypes = []
+                            skipped_aligns = []
+                            while len(top_aligns):
+                                if len(used_haplotypes) == ploidy:
+                                    skipped_aligns += top_aligns
+                                    break
+                                for key, value in dip_genome_by_chr.items():  # Create method for this later!
+                                    if top_aligns[0].ref in value:
+                                        haplotype = key
+                                if haplotype not in used_haplotypes:
+                                    ca_output.stdout_f.write('\t\t\tAlignment: %s\n' % str(top_aligns[0]))
+                                    ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
+                                    ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
+                                    aligned_lengths.append(top_aligns[0].len2)
+                                    contigs_aligned_lengths[-1] = top_aligns[0].len2
+                                    ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + '\n')
+                                    used_haplotypes.append(haplotype)
+                                    if len(used_haplotypes) > 1 and top_aligns[
+                                        0].contig not in l_names_ambiguity_contigs:
+                                        l_names_ambiguity_contigs.append(top_aligns[0].contig)
+                                else:
+                                    skipped_aligns.append(top_aligns[0])
+                                top_aligns = top_aligns[1:]
+                            for align in skipped_aligns:
+                                ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
+                        else:
+                            ca_output.stdout_f.write('\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):\n')
+                            ca_output.stdout_f.write('\t\t\tAlignment: %s\n' % str(top_aligns[0]))
+                            ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
+                            ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
+                            aligned_lengths.append(top_aligns[0].len2)
+                            contigs_aligned_lengths[-1] = top_aligns[0].len2
+                            ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + '\n')
                             top_aligns = top_aligns[1:]
-                        for align in skipped_aligns:
-                            ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
+                            for align in top_aligns:
+                                ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
                     elif qconfig.ambiguity_usage == "all":
                         ca_output.stdout_f.write('\t\tUsing all these alignments (option --ambiguity-usage is set to "all"):\n')
                         # we count only extra bases, so we shouldn't include bases in the first alignment
@@ -273,15 +276,6 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     elif qconfig.ambiguity_usage == "one":
                         ambiguous_contigs_extra_bases += 0
                         ca_output.stdout_f.write('\t\tUsing only the very best set (option --ambiguity-usage is set to "one").\n')
-                        if len(the_best_set.indexes) < len(used_indexes):
-                            ca_output.stdout_f.write('\t\tSo, skipping alignments from other sets:\n')
-                            for idx in used_indexes:
-                                if idx not in the_best_set.indexes:
-                                    ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(sorted_aligns[idx]) + '\n')
-                    # This is a template for future "ploid" ambiguity-usage flag, need to change it later:
-                    elif qconfig.ambiguity_usage == "ploid":
-                        ambiguous_contigs_extra_bases += 0
-                        ca_output.stdout_f.write('\t\tUsing only the very best set (option --ambiguity-usage is set to "ploid").\n')
                         if len(the_best_set.indexes) < len(used_indexes):
                             ca_output.stdout_f.write('\t\tSo, skipping alignments from other sets:\n')
                             for idx in used_indexes:

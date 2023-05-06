@@ -274,6 +274,7 @@ def parse_options(logger, quast_args):
     mode = get_mode(quast_args[0])
     is_metaquast = True if mode == 'meta' else False
     qconfig.large_genome = True if mode == 'large' else False
+    qconfig.ploid_mode = True if mode == 'ploid' else False
 
     if '-h' in quast_args or '--help' in quast_args or '--help-hidden' in quast_args:
         qconfig.usage('--help-hidden' in quast_args, mode=mode, short=False)
@@ -741,6 +742,10 @@ def parse_options(logger, quast_args):
         (['--agb'], dict(
              dest='is_agb_mode',
              action='store_true')
+         ),
+        (['--ploid'], dict(
+            dest='ploid_mode',
+            action='store_true')
          )
     ]
     if is_metaquast:

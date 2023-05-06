@@ -1,13 +1,15 @@
+from collections import defaultdict
 import os
 import subprocess
 
-from quast_libs.fastaparser import get_chr_lengths_from_fastafile
 from quast_libs import qconfig
+from quast_libs.fastaparser import get_chr_lengths_from_fastafile
+
 
 ploid_aligned = {}
 dip_genome_by_chr = {}
 length_of_haplotypes = {}
-homologous_chroms = {}
+homologous_chroms = defaultdict(list)
 l_names_ambiguity_contigs = []
 
 
@@ -28,8 +30,6 @@ def run_mash(fasta_fpath):
             if line[0] == line[1]:
                 continue
             if float(line[3]) < 0.05:  # p-value
-                if line[0] not in homologous_chroms.keys():
-                    homologous_chroms[line[0]] = []
                 homologous_chroms[line[0]].append(line[1])
     os.remove('tmp_mash_res.txt')
 
@@ -96,10 +96,8 @@ def genome_coverage_for_unambiguity_contigs(ref_aligns, reference_chromosomes):
 
 
 def find_ambiguity_alignments(ref_aligns):
-    ambiguity_contigs = {}
+    ambiguity_contigs = defaultdict(list)
     for key in ref_aligns.keys():
-        if key not in ambiguity_contigs.keys():
-            ambiguity_contigs[key] = []
         for contig in ref_aligns[key]:
             if contig.contig in l_names_ambiguity_contigs:
                 ambiguity_contigs[key].append(contig)
@@ -109,11 +107,9 @@ def find_ambiguity_alignments(ref_aligns):
 
 
 def find_contig_alignments_to_haplotypes(ambiguity_contigs_pos):
-    alignments_by_contigs = {}
+    alignments_by_contigs = defaultdict(list)
     for chrom in ambiguity_contigs_pos.keys():
         for align in ambiguity_contigs_pos[chrom]:
-            if align.contig not in alignments_by_contigs.keys():
-                alignments_by_contigs[align.contig] = []
             alignments_by_contigs[align.contig].append(align)
     return alignments_by_contigs
 

@@ -503,7 +503,7 @@ def parse_options(logger, quast_args):
              action='callback',
              callback=check_str_arg_value,
              callback_args=(logger,),
-             callback_kwargs={'available_values': ['none', 'one', 'ploid', 'all']})
+             callback_kwargs={'available_values': ['none', 'one', 'all']})
          ),
         (['--ambiguity-score'], dict(
              dest='ambiguity_score',
@@ -746,7 +746,16 @@ def parse_options(logger, quast_args):
         (['--ploid'], dict(
             dest='ploid_mode',
             action='store_true')
-         )
+         ),
+        (['--ploid_assembly_type'], dict(
+            dest='ploid_assembly_type',
+            type='string',
+            default=qconfig.ploid_assembly_type,
+            action='callback',
+            callback=check_str_arg_value,
+            callback_args=(logger,),
+            callback_kwargs={'available_values': ['consensus', 'phased']})
+        ),
     ]
     if is_metaquast:
         options += [

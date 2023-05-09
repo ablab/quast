@@ -214,8 +214,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                                     contigs_aligned_lengths[-1] = top_aligns[0].len2
                                     ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + '\n')
                                     used_haplotypes.append(haplotype)
-                                    if len(used_haplotypes) > 1 and top_aligns[
-                                        0].contig not in l_names_ambiguity_contigs:
+                                    if qconfig.ploid_assembly_type == 'phased' and len(used_haplotypes) > 1 and top_aligns[0].contig not in l_names_ambiguity_contigs:
                                         l_names_ambiguity_contigs.append(top_aligns[0].contig)
                                 else:
                                     skipped_aligns.append(top_aligns[0])

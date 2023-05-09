@@ -84,6 +84,7 @@ all_labels_from_dirs = False
 run_busco = False
 large_genome = False
 ploid_mode = False
+ploid_assembly_type = 'consensus'
 use_kmc = False
 report_all_metrics = False
 var_haplotypes = [1,2,3,4,5,6,7,8]
@@ -385,7 +386,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
     if mode == 'meta':
         stream.write('MetaQUAST: Quality Assessment Tool for Metagenome Assemblies\n')
     elif mode == 'ploid':
-        stream.write('dipQUAST: Quality Assessment Tool for Ploid Genome Assemblies\n')
+        stream.write('dipQUAST: Quality Assessment Tool for Diploid Genome Assemblies\n')
     elif mode == 'large':
         stream.write('QUAST-LG: Quality Assessment Tool for Large Genome Assemblies\n')
     else:
@@ -434,9 +435,6 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
             stream.write("    --large                           Use optimal parameters for evaluation of large genomes\n")
             stream.write("                                      In particular, imposes '-e -m %d -i %d -x %d' (can be overridden manually)\n" %
                          (LARGE_MIN_CONTIG, LARGE_MIN_ALIGNMENT, LARGE_EXTENSIVE_MIS_THRESHOLD))
-        if mode != 'ploid':
-            stream.write("    --ploid                           Use to evaluate the assembly quality of ploid genomes.\n"
-                         "                                      Works with --ambiguity-usage one only\n")
         stream.write("-k  --k-mer-stats                     Compute k-mer-based quality metrics (recommended for large genomes)\n"
                      "                                      This may significantly increase memory and time consumption on large genomes\n")
         stream.write("    --k-mer-size                      Size of k used in --k-mer-stats [default: %d]\n" % unique_kmer_len)
@@ -463,6 +461,10 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
             stream.write("    --blast-db <filename>             Custom BLAST database (.nsq file). By default, MetaQUAST searches references in SILVA database\n")
             stream.write("    --use-input-ref-order             Use provided order of references in MetaQUAST summary plots (default order: by the best average value)\n")
         stream.write("    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]\n" % contig_thresholds)
+        if mode != 'ploid':
+            stream.write("    --ploid                           Use to evaluate the assembly quality of ploid genomes.\n"
+                         "                                      Works best with --ambiguity-usage one\n")
+        stream.write("    --ploid_assembly_type <option>    Available options: <consensus|phased>. Use the required type of ploid genome assembly [default: %s]\n" % ploid_assembly_type)
         stream.write("    --x-for-Nx <int>                  Value of 'x' for Nx, Lx, etc metrics reported in addition to N50, L50, etc (0, 100) [default: %s]\n" % x_for_additional_Nx)
         if meta:
             stream.write("    --reuse-combined-alignments       Reuse the alignments from the combined_reference stage on runs_per_reference stages.\n")

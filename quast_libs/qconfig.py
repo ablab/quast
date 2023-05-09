@@ -84,7 +84,7 @@ all_labels_from_dirs = False
 run_busco = False
 large_genome = False
 ploid_mode = False
-ploid_assembly_type = 'consensus'
+ploid_assembly_type = 'phased'
 use_kmc = False
 report_all_metrics = False
 var_haplotypes = [1,2,3,4,5,6,7,8]
@@ -464,7 +464,7 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         if mode != 'ploid':
             stream.write("    --ploid                           Use to evaluate the assembly quality of ploid genomes.\n"
                          "                                      Works best with --ambiguity-usage one\n")
-        stream.write("    --ploid_assembly_type <option>    Available options: <consensus|phased>. Use the required type of ploid genome assembly [default: %s]\n" % ploid_assembly_type)
+        stream.write("    --ploid-assembly-type <option>    Specify ploid genome assembly type. Available options: <consensus|phased> [default: %s]\n" % ploid_assembly_type)
         stream.write("    --x-for-Nx <int>                  Value of 'x' for Nx, Lx, etc metrics reported in addition to N50, L50, etc (0, 100) [default: %s]\n" % x_for_additional_Nx)
         if meta:
             stream.write("    --reuse-combined-alignments       Reuse the alignments from the combined_reference stage on runs_per_reference stages.\n")
@@ -472,8 +472,8 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("                                      By default, QUAST filters Minimap\'s alignments to keep only best ones\n")
         stream.write("-i  --min-alignment <int>             The minimum alignment length [default: %s]\n" % i_default)
         stream.write("    --min-identity <float>            The minimum alignment identity (80.0, 100.0) [default: %.1f]\n" % min_idy_default)
-        stream.write("-a  --ambiguity-usage <option>        Available options: <none|one|all>. Use none, one or all alignments of a contig\n")
-        stream.write("                                      when all of them are almost equally good (see --ambiguity-score) [default: %s]\n" % ambiguity_usage)
+        stream.write("-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments of a contig when all of them\n")
+        stream.write("                                      are almost equally good (see --ambiguity-score) [default: %s]\n" % ambiguity_usage)
         stream.write("    --ambiguity-score <float>         Score S for defining equally good alignments of a single contig. All alignments are sorted \n")
         stream.write("                                      by decreasing LEN * IDY% value. All alignments with LEN * IDY% < S * best(LEN * IDY%) are \n")
         stream.write("                                      discarded. S should be between 0.8 and 1.0 [default: %.2f]\n" % ambiguity_score)

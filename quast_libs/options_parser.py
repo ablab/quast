@@ -747,7 +747,7 @@ def parse_options(logger, quast_args):
             dest='ploid_mode',
             action='store_true')
          ),
-        (['--ploid_assembly_type'], dict(
+        (['--ploid-assembly-type'], dict(
             dest='ploid_assembly_type',
             type='string',
             default=qconfig.ploid_assembly_type,

@@ -411,8 +411,8 @@ def is_valid_bed(bed_fpath):
                 lines_found = f.readlines()
                 break
             lines_found = f.readlines()
-        block_counter -= 1
-    for line in lines_found:
+            block_counter -= 1
+    for line in lines_found[-10:]:
         if not line.startswith(b'#'):
             fs = line.decode().split('\t')
             try:

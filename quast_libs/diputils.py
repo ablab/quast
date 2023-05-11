@@ -11,6 +11,7 @@ dip_genome_by_chr = {}
 length_of_haplotypes = {}
 homologous_chroms = defaultdict(list)
 l_names_ambiguity_contigs = []
+n_missed_heterozygosity = None
 
 
 def execute(execute_that):
@@ -182,3 +183,61 @@ def leave_best_alignment_for_ambiguity_contigs(ref_aligns, reference_chromosomes
                         break
         alignment_to_not_the_best_haplotypes = ', '.join(l_of_alignment_to_not_the_best_haplotypes)
         ca_output.stdout_f.write(f'Skipping alignment to {alignment_to_not_the_best_haplotypes}.\n')
+
+
+def count_missed_heterozygosity(used_snps_fpath, ref1_to_ref2_fpath, ref2_to_ref1_fpath):
+    # Creating dictionary for file ref2_to_ref1
+    # Dictionary contains positions of SNPs on ref2 and corresponding nucleotides on ref1
+    ref2_to_ref1_dict = {}
+    with open(ref2_to_ref1_fpath) as file:
+        for _, line in enumerate(file):
+            if len(line.strip()) != 0:
+                ref1_name, _, ref1_pos, ref1_nucl, ref2_nucl, _ = line.strip().split('\t')
+                ref2_to_ref1_dict[ref1_pos] = ref2_nucl
+
+    # Creating dictionary for file ref2_to_ref1
+    # Dictionary contains positions of SNPs on ref2 and corresponding nucleotides on ref1
+    ref1_to_ref2_dict = {}
+    with open(ref1_to_ref2_fpath) as file:
+        for _, line in enumerate(file):
+            if len(line.strip()) != 0:
+                ref2_name, _, ref2_pos, ref2_nucl, ref1_nucl, _ = line.strip().split('\t')
+                ref1_to_ref2_dict[ref2_pos] = ref1_nucl
+
+    # Counting cases of lost heterozygosity
+    n_missed_heterozygosity = 0
+    with open(used_snps_fpath) as used_snps_file:
+        for l_number, line in enumerate(used_snps_file):
+            if len(line.strip()) != 0:
+                ref_name, ctg_name, ref_pos, ref_nucl, ctg_nucl, ctg_pos = line.strip().split('\t')
+                if ref_name == ref1_name:    # Searching in the ref2_to_ref1_dict
+                    if ref_pos in ref2_to_ref1_dict.keys() and ctg_nucl == ref2_to_ref1_dict[ref_pos]:
+                        n_missed_heterozygosity += 1
+                elif ref_name == ref2_name:  # Searching in the ref1_to_ref2_dict
+                    if ref_pos in ref1_to_ref2_dict.keys() and ctg_nucl == ref1_to_ref2_dict[ref_pos]:
+                        n_missed_heterozygosity += 1
+
+    return n_missed_heterozygosity
+
+
+def split_ref_file_by_haplotypes(ref_fpath, dip_genome_by_chr, aux_files_dirpath):
+    ref1, ref2 = dip_genome_by_chr.keys()
+    ref1_fpath = os.path.join(aux_files_dirpath, ref1 + '.fa')
+    ref2_fpath = os.path.join(aux_files_dirpath, ref2 + '.fa')
+    open(ref1_fpath, 'w').close()
+    open(ref2_fpath, 'w').close()
+
+    with open(ref_fpath, 'r') as ref_file:
+        list_of_ref_chr = ref_file.read().split('>')
+
+    for fasta_entry in list_of_ref_chr:
+        for key, value in dip_genome_by_chr.items():
+            for chrom in value:
+                if fasta_entry.startswith(chrom):
+                    if key == ref1:
+                        with open(ref1_fpath, 'a') as ref1_file:
+                            ref1_file.write('>' + fasta_entry)
+                    elif key == ref2:
+                        with open(ref2_fpath, 'a') as ref2_file:
+                            ref2_file.write('>' + fasta_entry)
+    return ref1_fpath, ref2_fpath

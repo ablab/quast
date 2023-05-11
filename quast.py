@@ -168,9 +168,60 @@ def main(args):
         ########################################################################
         from quast_libs import contigs_analyzer
         is_cyclic = qconfig.prokaryote and not qconfig.check_for_fragmented_ref
+
+        # Counting cases of missed heterozygosity
+        if qconfig.ploid_mode and (not qconfig.large_genome) and qconfig.show_snps:
+            aux_files_dirpath = os.path.join(output_dirpath, 'dipquast_auxiliary_files')
+            if not os.path.isdir(aux_files_dirpath):
+                os.mkdir(aux_files_dirpath)
+
+            # Creating separate reference files for each haplotype
+            ref1_fpath, ref2_fpath = diputils.split_ref_file_by_haplotypes(ref_fpath, diputils.dip_genome_by_chr,
+                                                                           aux_files_dirpath)
+            ref1_fpaths, old_ref1_fpaths = qutils.correct_contigs([ref1_fpath], corrected_dirpath, ['haplotype_1'],
+                                                                  reporting)
+            ref2_fpaths, old_ref2_fpaths = qutils.correct_contigs([ref2_fpath], corrected_dirpath, ['haplotype_2'],
+                                                                  reporting)
+            ref1_fpath, ref2_fpath = ref1_fpaths[0], ref2_fpaths[0]
+
+            # Making initial .used_snps file
+            snps_fpath = contigs_analyzer.do_ref_to_ref_align(
+                ref_fpath, contigs_fpaths, is_cyclic,
+                os.path.join(aux_files_dirpath, qconfig.detailed_contigs_reports_dirname),
+                old_contigs_fpaths, qconfig.bed)
+
+            # Changing ploid_mode temporarily in order to align haplotypes to one another
+            qconfig.ploid_mode = False # Check!
+
+            # Aligning haplotype_1 to haplotype_2:
+            snps_ref1_to_ref2_fpath = contigs_analyzer.do_ref_to_ref_align(
+                ref2_fpath, ref1_fpaths, is_cyclic,
+                os.path.join(aux_files_dirpath, qconfig.detailed_contigs_reports_dirname + '_ref1_to_ref2'),
+                old_ref1_fpaths, qconfig.bed)
+
+            # Aligning haplotype_2 to haplotype_1:
+            snps_ref2_to_ref1_fpath = contigs_analyzer.do_ref_to_ref_align(
+                ref1_fpath, ref2_fpaths, is_cyclic,
+                os.path.join(aux_files_dirpath, qconfig.detailed_contigs_reports_dirname + '_ref2_to_ref1'),
+                old_ref2_fpaths, qconfig.bed)
+            ## Why is 'snps_ref2_to_ref1_fpath' a list?
+
+            # Remove ref to ref alignments from assembly_fpaths
+            reporting.assembly_fpaths.remove(ref1_fpath)
+            reporting.assembly_fpaths.remove(ref2_fpath)
+
+            # Counting cases of missed heterozygosity
+            diputils.n_missed_heterozygosity = diputils.count_missed_heterozygosity(snps_fpath[0],
+                                                                                    snps_ref1_to_ref2_fpath[0],
+                                                                                    snps_ref2_to_ref1_fpath[0])
+
+            # Changing ploid_mode back
+            qconfig.ploid_mode = True
+
         aligner_statuses, aligned_lengths_per_fpath = contigs_analyzer.do(
-            ref_fpath, contigs_fpaths, is_cyclic, os.path.join(output_dirpath, qconfig.detailed_contigs_reports_dirname),
-            old_contigs_fpaths, qconfig.bed)
+            ref_fpath, contigs_fpaths, is_cyclic,
+            os.path.join(output_dirpath, qconfig.detailed_contigs_reports_dirname), old_contigs_fpaths, qconfig.bed)
+
         for contigs_fpath in contigs_fpaths:
             if aligner_statuses[contigs_fpath] == contigs_analyzer.AlignerStatus.OK:
                 aligned_contigs_fpaths.append(contigs_fpath)

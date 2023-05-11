@@ -255,6 +255,95 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     else:
         return AlignerStatus.OK, result, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs
 
+def align_and_analyze_ref_to_ref(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
+                      reference_chromosomes, ns_by_chromosomes, old_contigs_fpath, bed_fpath, threads=1):
+    tmp_output_dirpath = create_minimap_output_dir(output_dirpath)
+    assembly_label = qutils.label_from_fpath(contigs_fpath)
+    corr_assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
+    out_basename = join(tmp_output_dirpath, corr_assembly_label)
+
+    logger.info('  ' + qutils.index_to_str(index) + assembly_label)
+
+    log_out_fpath = '/dev/null'
+    log_err_fpath = '/dev/null'
+    icarus_out_fpath = '/dev/null'
+    misassembly_fpath = '/dev/null'
+    unaligned_info_fpath = '/dev/null'
+
+    icarus_out_f = open(icarus_out_fpath, 'w')
+    icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous', 'Best_group']
+    icarus_out_f.write('\t'.join(icarus_header_cols) + '\n')
+    misassembly_f = open(misassembly_fpath, 'w')
+
+    if not qconfig.space_efficient:
+        logger.info('  ' + qutils.index_to_str(index) + 'Logging to files ' + log_out_fpath +
+                ' and ' + os.path.basename(log_err_fpath) + '...')
+    else:
+        logger.info('  ' + qutils.index_to_str(index) + 'Logging is disabled.')
+
+    coords_fpath, coords_filtered_fpath, unaligned_fpath, used_snps_fpath = get_aux_out_fpaths(out_basename)
+    status = align_contigs(coords_fpath, out_basename, ref_fpath, contigs_fpath, old_contigs_fpath, index, threads,
+                           log_out_fpath, log_err_fpath)
+    if status != AlignerStatus.OK:
+        with open(log_err_fpath, 'a') as log_err_f:
+            if status == AlignerStatus.ERROR:
+                logger.error('  ' + qutils.index_to_str(index) +
+                         'Failed aligning contigs ' + qutils.label_from_fpath(contigs_fpath) +
+                         ' to the reference (non-zero exit code). ' +
+                         ('Run with the --debug flag to see additional information.' if not qconfig.debug else ''))
+            elif status == AlignerStatus.FAILED:
+                log_err_f.write(qutils.index_to_str(index) + 'Alignment failed for ' + contigs_fpath + ':' + coords_fpath + 'doesn\'t exist.\n')
+                logger.info('  ' + qutils.index_to_str(index) + 'Alignment failed for ' + '\'' + assembly_label + '\'.')
+            elif status == AlignerStatus.NOT_ALIGNED:
+                log_err_f.write(qutils.index_to_str(index) + 'Nothing aligned for ' + contigs_fpath + '\n')
+                logger.info('  ' + qutils.index_to_str(index) + 'Nothing aligned for ' + '\'' + assembly_label + '\'.')
+        return status, {}, [], [], []
+
+    log_out_f = open(log_out_fpath, 'a')
+    # Loading the alignment files
+    log_out_f.write('Parsing coords...\n')
+    aligns = {}
+    with open(coords_fpath) as coords_file:
+        for line in coords_file:
+            mapping = Mapping.from_line(line)
+            if not qconfig.alignments_for_reuse_dirpath or mapping.ref in reference_chromosomes.keys():
+                aligns.setdefault(mapping.contig, []).append(mapping)
+
+    # Loading the reference sequences
+    log_out_f.write('Loading reference...\n') # TODO: move up
+    ref_features = {}
+
+    # Loading the regions (if any)
+    regions = {}
+    total_reg_len = 0
+    total_regions = 0
+    # # TODO: gff
+    # log_out_f.write('Loading regions...\n')
+    # log_out_f.write('\tNo regions given, using whole reference.\n')
+    for name, seq_len in reference_chromosomes.items():
+        log_out_f.write('\tLoaded [%s]\n' % name)
+        regions.setdefault(name, []).append([1, seq_len])
+        total_regions += 1
+        total_reg_len += seq_len
+    log_out_f.write('\tTotal Regions: %d\n' % total_regions)
+    log_out_f.write('\tTotal Region Length: %d\n' % total_reg_len)
+
+    ca_output = CAOutput(stdout_f=log_out_f, misassembly_f=misassembly_f, coords_filtered_f=open(coords_filtered_fpath, 'w'),
+                         icarus_out_f=icarus_out_f)
+
+    log_out_f.write('Analyzing contigs...\n')
+    result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs, aligned_lengths_by_contigs =\
+        analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, reference_chromosomes, is_cyclic)
+    if qconfig.ploid_mode and qconfig.ploid_assembly_type == 'phased':
+        # drop not the best alignment for ambiguity contigs in ref_aligns
+        diputils.leave_best_alignment_for_ambiguity_contigs(ref_aligns, reference_chromosomes, ca_output)
+
+    log_out_f.write('Analyzing coverage...\n')
+    if qconfig.show_snps:
+        log_out_f.write('Writing SNPs into ' + used_snps_fpath + '\n')
+    _, _ = analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_snps_fpath)
+
+    return used_snps_fpath
 
 def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed_fpath=None):
     if not os.path.isdir(output_dir):
@@ -323,3 +412,27 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
         logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
 
     return aligner_statuses, aligned_lengths_per_fpath
+
+def do_ref_to_ref_align(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed_fpath=None):
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
+    logger.print_timestamp()
+    logger.main_info('Running Contig analyzer...')
+    success_compilation = compile_aligner(logger)
+    if not success_compilation:
+        logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
+        return dict(zip(contigs_fpaths, [AlignerStatus.FAILED] * len(contigs_fpaths))), None
+
+    create_minimap_output_dir(output_dir)
+    n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
+    threads = max(1, qconfig.max_threads // n_jobs)
+
+    genome_size, reference_chromosomes, ns_by_chromosomes = get_genome_stats(reference, skip_ns=True)
+    threads = qconfig.max_threads if qconfig.memory_efficient else threads
+    args = [(is_cyclic, i, contigs_fpath, output_dir, reference, reference_chromosomes, ns_by_chromosomes,
+            old_contigs_fpath, bed_fpath, threads)
+            for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths))]
+    snps_ref_to_ref_fpath = run_parallel(align_and_analyze_ref_to_ref, args, n_jobs)
+
+    return snps_ref_to_ref_fpath

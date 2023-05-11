@@ -138,6 +138,8 @@ def save_result(result, report, fname, ref_fpath, genome_size):
 
             report.add_field(reporting.Fields.MAPPEDGENOME_BY_HAPLOTYPES,
                              [float(l) for l in genome_fraction_by_haplotypes.values()])
+            report.add_field(reporting.Fields.N_MISSED_HETEROZYGOSITY,
+                             diputils.n_missed_heterozygosity)
 
 
     # for misassemblies report:

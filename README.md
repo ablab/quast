@@ -2,10 +2,11 @@
 
 ### Genome assembly evaluation tool
 
-QUAST stands for QUality ASsessment Tool. It evaluates genome/metagenome assemblies by computing various metrics.
+QUAST stands for QUality ASsessment Tool. It evaluates genome/metagenome/diploid assemblies by computing various metrics.
 The current QUAST toolkit includes the general QUAST tool for genome assemblies, 
 MetaQUAST, the extension for metagenomic datasets, 
-QUAST-LG, the extension for large genomes (e.g., mammalians), and Icarus, the interactive visualizer for these tools.
+QUAST-LG, the extension for large genomes (e.g., mammalians),
+dipQUAST, the extension for diploid datasets, and Icarus, the interactive visualizer for these tools.
 
 The QUAST package works both with and without reference genomes. 
 However, it is much more informative if at least a close reference genome is provided along with the assemblies.
@@ -99,10 +100,12 @@ or MetaGeneMark (for metagenomes).
 
 When a reference is given:
 
-* Numbers of misassemblies of different kinds (inversions, relocations, translocations, interspecies translocations (metaQUAST only) or local).
+* Numbers of misassemblies of different kinds (inversions, relocations, translocations, interspecies translocations (metaQUAST only), interhaplotype translocations (dipQUAST only) or local).
 * Number and total length of unaligned contigs.  
-* Numbers of mismatches and indels, over the assembly and per 100 kb.  
-* Genome fraction %, assembled part of the reference.  
+* Numbers of mismatches and indels, over the assembly and per 100 kb.
+* Number of cases of missed heterozygosity (dipQUAST only).
+* Genome fraction %, assembled part of the reference.
+* Genome fraction % of haplotype 1 / haplotype 2, assembled parts of each haplotype reference (dipQUAST only).
 * Duplication ratio, the total number of aligned bases in the assembly divided by the total number of those in the reference. 
 If the assembly contains many contigs that cover the same regions, its duplication ratio will significantly exceed 1. 
 This occurs due to multiple reasons, including overestimating repeat multiplicities and overlaps between contigs.  

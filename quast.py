@@ -204,7 +204,6 @@ def main(args):
                 ref1_fpath, ref2_fpaths, is_cyclic,
                 os.path.join(aux_files_dirpath, qconfig.detailed_contigs_reports_dirname + '_ref2_to_ref1'),
                 old_ref2_fpaths, qconfig.bed)
-            ## Why is 'snps_ref2_to_ref1_fpath' a list?
 
             # Remove ref to ref alignments from assembly_fpaths
             reporting.assembly_fpaths.remove(ref1_fpath)

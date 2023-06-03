@@ -6,7 +6,7 @@ QUAST stands for QUality ASsessment Tool. It evaluates genome/metagenome/diploid
 The current QUAST toolkit includes the general QUAST tool for genome assemblies, 
 MetaQUAST, the extension for metagenomic datasets, 
 QUAST-LG, the extension for large genomes (e.g., mammalians),
-dipQUAST, the extension for diploid datasets, and Icarus, the interactive visualizer for these tools.
+dipQUAST, the extension for diploid assemblies, and Icarus, the interactive visualizer for these tools.
 
 The QUAST package works both with and without reference genomes. 
 However, it is much more informative if at least a close reference genome is provided along with the assemblies.

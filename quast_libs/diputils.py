@@ -1,6 +1,7 @@
 from collections import defaultdict
 import os
 import subprocess
+import shutil
 
 from quast_libs import qconfig
 from quast_libs.fastaparser import get_chr_lengths_from_fastafile
@@ -21,7 +22,13 @@ def execute(execute_that):
 
 
 def run_mash(fasta_fpath):
-    tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'mash/mash')
+    tool_dirpath = shutil.which('mash')
+    if tool_dirpath is None:
+        if qconfig.platform_name == 'macosx':
+            mash_file = os.path.join('mash', 'mash_osx')
+        else:
+            mash_file = os.path.join('mash', 'mash_linux')
+        tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, mash_file)
     mash_command = f'{tool_dirpath} dist -i {fasta_fpath} {fasta_fpath} > tmp_mash_res.txt'
     execute(mash_command)
 
@@ -162,6 +169,7 @@ def leave_best_alignment_for_ambiguity_contigs(ref_aligns, reference_chromosomes
             for position in l_non_overlapping_pos:
                 if genome_mapping[align.ref][position] == 0:
                     contribution_of_non_overlapping_seq[align.ref][0] += 1
+            contribution_of_non_overlapping_seq[align.ref][0] *= align.idy / 100
             contribution_of_non_overlapping_seq[align.ref].append(align.e1 - align.s1 + 1)
 
         ref_of_best_alignment_of_ctg, _ = sorted(contribution_of_non_overlapping_seq.items(), key=lambda x: x[1])[::-1][0]

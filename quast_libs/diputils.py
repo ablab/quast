@@ -2,9 +2,10 @@ from collections import defaultdict
 import os
 import subprocess
 import shutil
+import re
 
 from quast_libs import qconfig
-from quast_libs.fastaparser import get_chr_lengths_from_fastafile
+from quast_libs.fastaparser import get_chr_lengths_from_fastafile, read_fasta
 
 
 ploid_aligned = {}
@@ -50,7 +51,8 @@ def get_max_n_haplotypes():
     return n_max_haplotypes
 
 
-def fill_dip_dict_by_chromosomes():
+def fill_dip_dict_by_chromosomes_for_unknown_names(ref_fpath):
+    run_mash(ref_fpath)
     check_added_chroms = []
     counter_haplotypes = 1
     for idx in range(get_max_n_haplotypes()):
@@ -70,6 +72,29 @@ def fill_dip_dict_by_chromosomes():
                 else:
                     continue
         counter_haplotypes = 1
+    return dip_genome_by_chr
+
+
+def fill_dip_dict_by_chromosomes_for_conservative_names(ref_fpath):
+    for chrom, _ in read_fasta(ref_fpath):
+        haplotype = re.findall(r'(haplotype\d+)', chrom)[0]
+        if haplotype not in dip_genome_by_chr.keys():
+            dip_genome_by_chr[haplotype] = []
+        dip_genome_by_chr[haplotype].append(chrom)
+    return dip_genome_by_chr
+
+
+def fill_dip_dict_by_chromosomes(ref_fpath):
+    is_conservative_chr_names = True
+    for name, _ in read_fasta(ref_fpath):
+        haplotype = re.findall(r'(haplotype\d+)', name)
+        if haplotype == []:
+            is_conservative_chr_names = False
+            break
+    if is_conservative_chr_names:
+        dip_genome_by_chr = fill_dip_dict_by_chromosomes_for_conservative_names(ref_fpath)
+    else:
+        dip_genome_by_chr = fill_dip_dict_by_chromosomes_for_unknown_names(ref_fpath)
     return dict(sorted(dip_genome_by_chr.items()))
 
 

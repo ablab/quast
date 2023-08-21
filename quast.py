@@ -135,7 +135,6 @@ def main(args):
     # Fill dip_dict and calculate length of haplotypes
     if qconfig.ploid_mode:
         diputils.dip_genome_by_chr = diputils.fill_dip_dict_by_chromosomes(ref_fpath)
-        i = diputils.dip_genome_by_chr
         diputils.length_of_haplotypes = diputils.get_haplotypes_len(ref_fpath)
         diputils.ploid_aligned = dict(zip(diputils.dip_genome_by_chr.keys(), [0]*len(diputils.dip_genome_by_chr.keys())))
 

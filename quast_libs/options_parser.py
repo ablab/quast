@@ -654,7 +654,7 @@ def parse_options(logger, quast_args):
              action='callback',
              callback=set_multiple_variables,
              callback_kwargs={'store_true_values': ['no_gc', 'no_sv', 'no_read_stats'],
-                              'store_false_values': ['show_snps', 'draw_plots', 'html_report', 'create_icarus_html', 'analyze_gaps']},
+                              'store_false_values': ['show_snps', 'draw_plots', 'draw_krona', 'html_report', 'create_icarus_html', 'analyze_gaps']},
              default=False)
          ),
         # (['--no-gzip'], dict(
@@ -678,6 +678,10 @@ def parse_options(logger, quast_args):
         (['--no-plots'], dict(
              dest='draw_plots',
              action='store_false')
+         ),
+        (['--no-krona'], dict(
+            dest='draw_krona',
+            action='store_false')
          ),
         (['--no-html'], dict(
              dest='html_report',

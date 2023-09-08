@@ -59,6 +59,7 @@ strict_NA = False
 split_scaffolds = False
 draw_plots = True
 draw_circos = False
+draw_krona = True
 html_report = True
 save_json = False
 metagenemark = False
@@ -516,7 +517,9 @@ def usage(show_hidden=False, mode=None, short=True, stream=sys.stdout):
         stream.write("\n")
         stream.write("Speedup options:\n")
         stream.write("    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)\n")
-        stream.write("    --no-plots                        Do not draw plots\n")
+        stream.write("    --no-plots                        Do not draw static plots\n")
+        if mode == 'meta':
+            stream.write("    --no-krona                        Do not draw Krona pie charts (in the without references mode)\n")
         stream.write("    --no-html                         Do not build html reports and Icarus viewers\n")
         stream.write("    --no-icarus                       Do not build Icarus viewers\n")
         stream.write("    --no-snps                         Do not report SNPs (may significantly reduce memory consumption on large genomes)\n")

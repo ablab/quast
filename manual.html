@@ -781,7 +781,12 @@ Speedup options:
 <div class='option'>
 <code><a name='no_plots'></a><b>--no-plots</b></code>
 </div>
-Do not draw plots.
+Do not draw static plots (in the PDF format by default).
+
+<div class='option'>
+<code><a name='no_krona'></a><b>--no-krona</b></code>
+</div>
+Do not draw <a href="#krona_charts">Krona pie charts</a>. Note: these plots are created <b>only</b> in the MetaQUAST <i>de novo</i> evaluation mode (without reference genomes).
 
 <div class='option'>
 <code><b>--no-html</b></code>
@@ -1393,7 +1398,7 @@ You can view results separately for each reference genome by clicking on a row p
 </div>
 <p>Note that values for some metrics like # contigs may not sum up, because one contig may be aligned to multiple reference genomes.
     You may read an extended discussion and explanation of this effect in the case of # misassemblies in the <a href="https://github.com/ablab/quast/issues/158">corresponding GitHub issue</a>.</p>
-<p><span class='metric-name'>Krona charts</span><br>
+<p><a name='krona_charts'></a><span class='metric-name'>Krona charts</span><br>
     Krona pie charts show assemblies and dataset taxonomic profiles. Relative species abundance is calculated based on the <a href="#total_length">total aligned length</a> of contigs aligned to corresponding reference genome.
     Charts are created for each assembly and one additional chart is created for all assemblies altogether.<br>
     Note: these plots are created <b>only</b> in <i>de novo</i> evaluation mode (MetaQUAST without reference genomes).</p>

@@ -250,11 +250,12 @@ def create_meta_report(results_dirpath, json_texts):
     if not os.path.isfile(html_fpath):
         init(html_fpath, is_meta=True)
 
-    from quast_libs import search_references_meta
-    taxons_for_krona = search_references_meta.taxons_for_krona
     meta_log = get_logger(qconfig.LOGGER_META_NAME)
-    if taxons_for_krona:
-        create_krona_charts(taxons_for_krona, meta_log, results_dirpath, json_texts)
+    if qconfig.draw_krona:
+        from quast_libs import search_references_meta
+        taxons_for_krona = search_references_meta.taxons_for_krona
+        if taxons_for_krona:
+            create_krona_charts(taxons_for_krona, meta_log, results_dirpath, json_texts)
 
     # reading html template file
     with open(html_fpath) as f_html:

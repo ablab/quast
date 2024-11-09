@@ -207,7 +207,7 @@ setup(
     name=name,
     version=version,
     author='Alexey Gurevich, Vladislav Saveliev, Alla Mikheenko, and others',
-    author_email='quast.support@cab.spbu.ru',
+    author_email='alexey.gurevich@helmholtz-hips.de',
     description='Genome assembly evaluation tool',
     long_description='''QUAST evaluates genome assemblies.
 It works both with and without reference genomes.

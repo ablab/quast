@@ -1,5 +1,13 @@
 -- Version history --
 
+5.3.0
+      1. Compatibility changes:
+       - Linux 32-bit systems are not supported anymore
+
+      2. New option:
+       - "--no-krona" for not drawing Krona pie charts (MetaQUAST de novo mode)
+
+
 5.2.0
       1. Core alignment changes (might affect all alignment-based metrics!):
        - new version of minimap2 (2.24; pre-installed minimap2 in PATH accepted if >=2.19);

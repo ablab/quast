@@ -50,8 +50,7 @@ def install_genemark():
     """
     import filecmp
     base_genemark_dir = os.path.join(qconfig.LIBS_LOCATION, 'genemark')
-    gm_key_fpath = os.path.join(base_genemark_dir, 'gm_keys',
-                                'gm_key_' + ('32' if qconfig.platform_name == 'linux_32' else '64'))
+    gm_key_fpath = os.path.join(base_genemark_dir, 'gm_keys', 'gm_key')
     try:
         gm_key_dst = os.path.expanduser('~/.gm_key')
         if not os.path.isfile(gm_key_dst) or \

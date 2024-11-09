@@ -208,10 +208,6 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         logger.info('Done.')
         return
 
-    if qconfig.platform_name == 'linux_32':
-        logger.warning('  Sorry, can\'t run KMC on this platform, skipping...')
-        return None
-
     kmc_dirpath = get_dir_for_download(kmc_dirname, 'KMC', ['kmc', 'kmc_tools'], logger)
     global kmc_bin_fpath
     global kmc_tools_fpath

@@ -29,7 +29,9 @@ else:
     if platform.architecture()[0] == '64bit':
         platform_name = 'linux_64'
     else:
-        platform_name = 'linux_32'
+        # platform_name = 'linux_32'
+        sys.stderr.write("ERROR! 32-bit operating systems are unsupported. Please use QUAST v.5.2.0 or earlier\n")
+        sys.exit(1)
 
 # default values for options
 contig_thresholds = "0,1000,5000,10000,25000,50000"

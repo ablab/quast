@@ -22,7 +22,7 @@ Please refer to the [LICENSE.txt](http://quast.sf.net/docs/LICENSE.txt) file for
 
 #### System requirements
 
-Linux (64-bit and 32-bit with slightly limited functionality) and macOS are supported.
+Linux 64-bit and macOS are supported.
 
 For the main pipeline:
 - Python2 (2.5 or higher) or Python3 (3.3 or higher)
@@ -33,8 +33,8 @@ For the main pipeline:
 
 For the optional submodules:
 - Time::HiRes perl module for GeneMark-ES (needed when using `--gene-finding --eukaryote`)
-- Java 1.8 or later for GRIDSS (needed for SV detection)
-- R for GRIDSS (needed for SV detection)
+- Java 1.8 or later for GRIDSS (needed for the structural variation detection)
+- R for GRIDSS (needed for the structural variation detection)
 
 Most of those tools are usually preinstalled on Linux. MacOS, however, requires to install
 the Command Line Tools for Xcode to make them available. 

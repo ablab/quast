@@ -417,11 +417,6 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
                        '(failed to compile necessary third-party read processing tools [bwa, bedtools, minimap2]), skipping...')
         return None
 
-    if qconfig.platform_name == 'linux_32':
-        logger.warning('  Sorry, can\'t create Upper Bound Assembly on this platform '
-                       '(only linux64 and macOS are supported), skipping...')
-        return None
-
     red_dirpath = get_dir_for_download('red', 'Red', ['Red'], logger)
     binary_fpath = download_external_tool('Red', red_dirpath, 'red', platform_specific=True, is_executable=True)
     if not binary_fpath or not os.path.isfile(binary_fpath):

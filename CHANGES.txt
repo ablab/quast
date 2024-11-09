@@ -8,7 +8,10 @@
       2. New option:
        - "--no-krona" for not drawing Krona pie charts (MetaQUAST de novo mode).
 
-      3. Documentation:
+      3. Update in embedded tools:
+       - new GeneMark license files.
+
+      4. Documentation:
        - actualized copyrights, citations and support email.
 
 

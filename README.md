@@ -28,7 +28,7 @@ If you would like to contribute, please review our [Contributor Covenant](CODE_O
 Linux 64-bit and macOS are supported.
 
 For the main pipeline:
-- Python2 (2.5 or higher) or Python3 (3.3 or higher)
+- Python3 (3.3 or higher)
 - Perl 5.6.0 or higher
 - GCC 4.7 or higher
 - GNU make and ar

@@ -49,7 +49,7 @@ logger.error('Critical error', exit_with_code=1)
 * We recommend using [PyCharm](https://www.jetbrains.com/pycharm/) for the QUAST development. In particular, this IDE supports code reformating to matching the PEP8 standard and also helps to maintain simultaneous Python2 and Python3 compatibility.
 
 ## Questions and Suggestions
-Please post all your questions regarding these Guidelines and suggestions to its improvement to [our public discussion forum](https://github.com/ablab/quast/discussions). You may also write a private email to <quast.support@cab.spbu.ru>. 
+Please post all your questions regarding these Guidelines and suggestions to its improvement to [our public discussion forum](https://github.com/ablab/quast/discussions). You may also write a private email to <alexey.gurevich@helmholtz-hips.de>. 
 
 
 

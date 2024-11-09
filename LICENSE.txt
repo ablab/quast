@@ -1,5 +1,6 @@
 
 QUAST: QUality ASsessment Tool for Genome Assemblies
+Copyright (c) 2022-2024 Helmholtz Institute for Pharmaceutical Research Saarland (HIPS), HZI
 Copyright (c) 2015-2022 Saint Petersburg State University
 Copyright (c) 2011-2015 Saint Petersburg Academic University
 
@@ -20,8 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 Main authors:
     Alexey Gurevich
-    Vladislav Saveliev
     Alla Mikheenko
+    Vladislav Saveliev
     Nikolay Vyahhi
     Glenn Tesler
 
@@ -29,6 +30,7 @@ Other contributors:
     Andrey Prjibelski
     Gleb Valin
     Aleksey Komissarov
+    Pascal Hirsch
 
 Thanks for testing and feedback:
     Irina Vasilinetc
@@ -38,12 +40,20 @@ Logo design:
     Elena Strelnikova
 
 Contact:
-    quast.support@cab.spbu.ru
+    alexey.gurevich@helmholtz-hips.de
     http://quast.sf.net
 
 -------------------------------------------------------------------------------
 
-If you use QUAST v5.* or QUAST-LG in your research, please include
+If you use the latest QUAST version or WebQUAST, please include our latest paper,
+Mikheenko et al., 2023, into your reference list:
+
+Alla Mikheenko, Vladislav Saveliev, Pascal Hirsch, Alexey Gurevich,
+WebQUAST: online evaluation of genome assemblies,
+Nucleic Acids Research (2023) 51 (W1): W601–W606. doi: 10.1093/nar/gkad406
+First published online: May 17, 2023
+
+If you use QUAST v5.0.* or QUAST-LG in your research, please include
 Mikheenko et al., 2018 into your reference list:
 
 Alla Mikheenko, Andrey Prjibelski, Vladislav Saveliev, Dmitry Antipov, Alexey Gurevich,

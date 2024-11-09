@@ -1,4 +1,5 @@
 ############################################################################
+# Copyright (c) 2022-2024 Helmholtz Institute for Pharmaceutical Research Saarland (HIPS), HZI
 # Copyright (c) 2015-2022 Saint Petersburg State University
 # Copyright (c) 2011-2015 Saint Petersburg Academic University
 # All Rights Reserved
@@ -178,7 +179,7 @@ class QLogger(object):
         if message:
             msg = indent + 'ERROR! ' + str(message)
             if exit_with_code:
-                msg += "\n\nIn case you have troubles running QUAST, you can write to quast.support@cab.spbu.ru\n" \
+                msg += "\n\nIn case you have troubles running QUAST, you can write to alexey.gurevich@helmholtz-hips.de\n" \
                        "or report an issue on our GitHub repository https://github.com/ablab/quast/issues\n" \
                        "Please provide us with quast.log file from the output directory."
         else:

@@ -1,4 +1,5 @@
 ############################################################################
+# Copyright (c) 2022-2024 Helmholtz Institute for Pharmaceutical Research Saarland (HIPS), HZI
 # Copyright (c) 2015-2022 Saint Petersburg State University
 # Copyright (c) 2011-2015 Saint Petersburg Academic University
 # All Rights Reserved
@@ -288,7 +289,7 @@ def do(contigs_fpaths, output_dir, logger):
                        '     Please install the PROPER VERSION of Augustus, we tested BUSCO with augustus-' + augustus_version +
                              ', it may also work with augustus-' + augustus_max_allowed_version + ', the newer/older versions are not supported.\n'
                        '  4. Some other problem with BUSCO. Check the logs (you may need to rerun QUAST with --debug to see all intermediate files).\n'
-                       '     If you cannot solve the problem yourself, post an issue at https://github.com/ablab/quast/issues or write to quast.support@cab.spbu.ru')
+                       '     If you cannot solve the problem yourself, post an issue at https://github.com/ablab/quast/issues or write to alexey.gurevich@helmholtz-hips.de')
     if not qconfig.debug:
         cleanup(output_dir)
     logger.info('Done.')

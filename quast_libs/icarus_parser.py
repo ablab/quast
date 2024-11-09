@@ -1,6 +1,7 @@
 #!/usr/bin/python -O
 
 ############################################################################
+# Copyright (c) 2022-2024 Helmholtz Institute for Pharmaceutical Research Saarland (HIPS), HZI
 # Copyright (c) 2015-2022 Saint Petersburg State University
 # Copyright (c) 2011-2015 Saint Petersburg Academic University
 # All Rights Reserved

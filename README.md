@@ -18,7 +18,10 @@ There are also many more installation methods for the latest stable release of t
 all of them are discussed [here](http://quast.sf.net/install.html). For the cutting-edge version, 
 please clone our [GitHub repo](https://github.com/ablab/quast).
 
-Please refer to the [LICENSE.txt](http://quast.sf.net/docs/LICENSE.txt) file for copyrights and citing instructions. We warmly welcome external contributions to the QUAST project. If you plan to participate, please consult with our [Contributor Covenant](CODE_OF_CONDUCT.md).
+The [Gurevich Lab](https://helmholtz-hips.de/en/hmsb) at the [Helmholtz Institute for Pharmaceutical Research Saarland (HIPS)](https://helmholtz-hips.de/en/) 
+currently maintains and develops the tool. For copyright information and citation instructions, 
+please refer to [LICENSE.txt](LICENSE.txt). We warmly welcome external contributions to the QUAST project. 
+If you would like to contribute, please review our [Contributor Covenant](CODE_OF_CONDUCT.md).
 
 #### System requirements
 
@@ -114,8 +117,8 @@ Thus, NGA50 is the length of a block, such that all the blocks of at least the s
 
 #### Contact & Info 
 
-* Support email: [quast.support@cab.spbu.ru](quast.support@cab.spbu.ru)
+* Support email: [alexey.gurevich@helmholtz-hips.de](alexey.gurevich@helmholtz-hips.de)
 * Issue tracker: [https://github.com/ablab/quast/issues](https://github.com/ablab/quast/issues)
 * Website: [http://quast.sf.net](http://quast.sf.net)
-* Latest news: [https://twitter.com/quast_bioinf](https://twitter.com/quast_bioinf)
+* Latest news: [https://x.com/quast_bioinf](https://x.com/quast_bioinf)
     

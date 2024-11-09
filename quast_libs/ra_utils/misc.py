@@ -221,24 +221,27 @@ def get_correct_names_for_chroms(output_dirpath, fasta_fpath, alignment_fpath, e
 
     inconsistency = ''
     if len(fasta_chr_lengths) != len(alignment_chr_lengths):
-        inconsistency = 'Number of chromosomes'
+        inconsistency = 'Numbers of sequences (chromosomes, contigs, etc)'
     else:
         for fasta_chr, sam_chr in zip(fasta_chr_lengths.keys(), alignment_chr_lengths.keys()):
             if correct_name(sam_chr) == fasta_chr[:len(sam_chr)] and alignment_chr_lengths[sam_chr] == fasta_chr_lengths[fasta_chr]:
                 correct_chr_names[sam_chr] = fasta_chr
             elif alignment_chr_lengths[sam_chr] != fasta_chr_lengths[fasta_chr]:
-                inconsistency = 'Chromosome lengths'
+                inconsistency = 'Lengths of sequences (chromosomes, contigs, etc)'
                 break
             else:
-                inconsistency = 'Chromosome names'
+                inconsistency = 'Names of sequences (chromosomes, contigs, etc)'
                 break
     if inconsistency:
+        min_contig_warning = '' if is_reference else (' One possible reason for the inconsistency is that short contigs '
+                                                      'are skipped during the QUAST pre-processing step. '
+                                                      'To disable this, use `--min-contig 0` (the default value is 500 bp).')
         if reads_fpaths:
-            logger.warning(inconsistency + ' in ' + fasta_fpath + ' and corresponding file ' + alignment_fpath + ' do not match. ' +
-                           'QUAST will try to realign reads to ' + ('the reference genome' if is_reference else fasta_fpath))
+            logger.warning(inconsistency + ' in ' + fasta_fpath + ' and the corresponding alignment file ' + alignment_fpath + ' do not match. ' +
+                           'QUAST will try to realign reads to ' + ('the reference genome' if is_reference else fasta_fpath) + '.' + min_contig_warning)
         else:
-            logger.error(inconsistency + ' in ' + fasta_fpath + ' and corresponding file ' + alignment_fpath + ' do not match. ' +
-                         'Use SAM file obtained by aligning reads to ' + ('the reference genome' if is_reference else fasta_fpath))
+            logger.error(inconsistency + ' in ' + fasta_fpath + ' and the corresponding alignment file ' + alignment_fpath + ' do not match. ' +
+                         'Use SAM/BAM file obtained by aligning reads to ' + ('the reference genome' if is_reference else fasta_fpath) + '.' + min_contig_warning)
         return None
     return correct_chr_names
 

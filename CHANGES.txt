@@ -12,7 +12,8 @@
        - new GeneMark license files.
 
       4. Minor fixes:
-       - proper assembly coloring in the MetaQUAST HTML report for more than 14 assemblies.
+       - proper assembly coloring in the MetaQUAST HTML report for more than 14 assemblies;
+       - cosmetic changes in warning/error messages.
 
       4. Documentation:
        - actualized copyrights, citations and support email.

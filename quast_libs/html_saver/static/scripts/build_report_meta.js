@@ -21,6 +21,10 @@ function buildReport() {
 
     assembliesNames = totalReport.assembliesNames;
 
+    while (assembliesNames.length > colors.length) {  // colors is defined in utils.js
+        colors = colors.concat(colors);
+    }
+
     order = recoverOrderFromCookies() || totalReport.order || Range(0, assembliesNames.length);
 
     mainMetrics = ['# contigs', 'Largest alignment', 'Total aligned length', '# misassemblies', 'Misassembled contigs length',

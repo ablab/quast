@@ -16,6 +16,7 @@
        - proper assembly coloring in the MetaQUAST HTML report for more than 14 assemblies;
        - catching the Krona charts crashes prematurely;
        - proper checking of user BED files in the read alignment mode;
+       - prevent crashes due to multi-threading on macOS and Python 3.8+ (switch to single-thread);
        - cosmetic changes in warning/error messages.
 
       5. Documentation:

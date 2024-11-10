@@ -314,6 +314,14 @@ def set_max_threads(logger):
             max_threads = DEFAULT_MAX_THREADS
         logger.notice('Maximum number of threads is set to ' + str(max_threads) +
                       ' (use --threads option to set it manually)')
+    # FIXME: special case: handling the known bug of macOS & Python3.8+ & joblib
+    # see: https://github.com/ablab/quast/issues/175
+    if max_threads > 1 and platform_name == 'macosx' and sys.version_info.major == 3 and sys.version_info.minor >= 8:
+        max_threads = 1
+        logger.warning('Maximum number of threads is reset to 1 to prevent the crash '
+                       'due to a known bug when using multi-threading in Python 3.8+ on macOS! '
+                       'For multi-threading please downgrade your Python to 3.7. Sorry for the inconvenience! '
+                       'Please find more details in https://github.com/ablab/quast/issues/175')
 
 
 def quast_version():

@@ -14,9 +14,10 @@
 
       4. Minor fixes:
        - proper assembly coloring in the MetaQUAST HTML report for more than 14 assemblies;
+       - catching the Krona charts crashes prematurely;
        - cosmetic changes in warning/error messages.
 
-      4. Documentation:
+      5. Documentation:
        - actualized copyrights, citations and support email.
 
 

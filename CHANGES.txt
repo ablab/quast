@@ -15,6 +15,7 @@
       4. Minor fixes:
        - proper assembly coloring in the MetaQUAST HTML report for more than 14 assemblies;
        - catching the Krona charts crashes prematurely;
+       - proper checking of user BED files in the read alignment mode;
        - cosmetic changes in warning/error messages.
 
       5. Documentation:

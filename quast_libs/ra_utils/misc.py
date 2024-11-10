@@ -403,7 +403,7 @@ def sambamba_view(in_fpath, out_fpath, max_threads, err_fpath, logger, filter_ru
 
 def is_valid_bed(bed_fpath):
     # check last 10 lines
-    with open(bed_fpath, 'r') as f:
+    with open(bed_fpath, 'rb') as f:
         lines_found = []
         block_counter = -1
         _buffer = 1024
@@ -415,10 +415,10 @@ def is_valid_bed(bed_fpath):
                 lines_found = f.readlines()
                 break
             lines_found = f.readlines()
-        block_counter -= 1
-    for line in lines_found:
-        if not line.startswith('#'):
-            fs = line.split('\t')
+            block_counter -= 1
+    for line in lines_found[-10:]:
+        if not line.startswith(b'#'):
+            fs = line.decode().split('\t')
             try:
                 align1 = (int(fs[1]), int(fs[2]), correct_name(fs[0]), fs[6])
                 align2 = (int(fs[4]), int(fs[5]), correct_name(fs[3]), fs[6])

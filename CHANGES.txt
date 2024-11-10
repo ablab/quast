@@ -9,6 +9,7 @@
        - "--no-krona" for not drawing Krona pie charts (MetaQUAST de novo mode).
 
       3. Update in embedded tools:
+       - miminap2 updated from v.2.24 to 2.28 (alignments should remain the same);
        - new GeneMark license files.
 
       4. Minor fixes:

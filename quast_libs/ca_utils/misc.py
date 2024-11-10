@@ -38,7 +38,7 @@ def bin_fpath(fname):
 
 
 def minimap_fpath(just_check=False):
-    minimap_fpath = get_path_to_program('minimap2', contig_aligner_dirpath, min_version='2.19', recommend_version='2.24')
+    minimap_fpath = get_path_to_program('minimap2', contig_aligner_dirpath, min_version='2.19', recommend_version='2.28')
     if not minimap_fpath and not just_check:
         logger.error("Critical! Tried to use minimap2, but it was unavailable despite QUAST's sincere expectations! E.g., the binary file is present but corrupted.\n"
                      "Possible workarounds:\n"

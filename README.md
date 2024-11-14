@@ -1,8 +1,8 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/ablab/quast)](https://github.com/ablab/quast/releases/)
 [![BioConda Install](https://img.shields.io/conda/dn/bioconda/quast.svg?style=flag&label=BioConda%20install)](https://anaconda.org/bioconda/quast)
-[![Download QUAST](https://img.shields.io/sourceforge/dt/quast.svg)](https://sourceforge.net/projects/quast/files/latest/download)
+[![SourceForge Download QUAST](https://img.shields.io/sourceforge/dt/quast.svg?style=flag&label=SourceForge%20download)](https://sourceforge.net/projects/quast/files/latest/download)
+[![PyPI version](https://badge.fury.io/py/quast.svg)](https://badge.fury.io/py/quast)
 [![GitHub Downloads](https://img.shields.io/github/downloads/ablab/quast/total.svg?style=social&logo=github&label=Download)](https://github.com/ablab/quast/releases)
-[![Python version](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/licence-GPLv2-blue)](https://www.gnu.org/licenses/old-licenses/gpl-2.0)
 
 <img src="quast_libs/html_saver/static/img/quast_logo_black.png" width="300" title="QUAST">

@@ -128,6 +128,8 @@ def save_result(result, report, fname, ref_fpath, genome_size):
         report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(aligned_assembly_bases)))
         report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(report.get_field(reporting.Fields.INDELS))
                                                                  * 100000.0 / float(aligned_assembly_bases)))
+        report.add_field(reporting.Fields.ANI, "%.2f" % (100 - (float(SNPs) + float(report.get_field(reporting.Fields.INDELS)))
+                                                                / float(aligned_assembly_bases) * 100.0))
 
     # for misassemblies report:
     report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, region_misassemblies.count(Misassembly.RELOCATION) +

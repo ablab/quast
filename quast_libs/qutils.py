@@ -13,6 +13,7 @@ import hashlib
 import shutil
 import subprocess
 import os
+import platform
 import stat
 import sys
 import re
@@ -892,10 +893,18 @@ def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, 
             call_subprocess(['./configure'] + configure_args, stdout=open(make_logs_basepath + '.log', 'a'),
                             stderr=open(make_logs_basepath + '.err', 'a'))
             os.chdir(prev_dir)
+
+        current_make_command_parts = (['make', make_cmd] if make_cmd else ['make'])
+        if name == 'Minimap2' and (platform.machine() == 'arm64' or platform.machine() == 'aarch64'):
+            logger.main_info(f'Detected 64-bit ARM ({platform.machine()}). Applying ARM-specific make flags for Minimap2.')
+            current_make_command_parts.extend(['arm_neon=1', 'aarch64=1'])
+
+        final_make_command_for_subprocess = current_make_command_parts + ['-C', dirpath]
+        
         try:
-            return_code = call_subprocess((['make', make_cmd] if make_cmd else ['make']) + ['-C', dirpath],
-                                      stdout=open(make_logs_basepath + '.log', 'a'),
-                                      stderr=open(make_logs_basepath + '.err', 'a'), logger=logger)
+            return_code = call_subprocess(final_make_command_for_subprocess,
+                                          stdout=open(make_logs_basepath + '.log', 'a'),
+                                          stderr=open(make_logs_basepath + '.err', 'a'), logger=logger)
         except IOError:
             msg = 'Permission denied accessing ' + dirpath + '. Did you forget sudo?'
             if just_notice:

@@ -133,6 +133,7 @@ class Fields:
     MIS_LONG_INDELS = TAB + '# indels (> 5 bp)'
     UNCALLED = "# N's"
     UNCALLED_PERCENT = "# N's per 100 kbp"
+    ANI = "Average nucleotide identity (%)"
 
     # Genome statistics
     MAPPEDGENOME = 'Genome fraction (%)'
@@ -211,7 +212,7 @@ class Fields:
              MISLOCAL, MIS_SCAFFOLDS_GAP, MIS_LOCAL_SCAFFOLDS_GAP,
              STRUCT_VARIATIONS, POTENTIAL_MGE, UNALIGNED_MISASSEMBLED_CTGS,
              UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT,
-             UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS,
+             UNCALLED_PERCENT, SUBSERROR, INDELSERROR, ANI, GENES, OPERONS,
              BUSCO_COMPLETE, BUSCO_PART,
              PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES,
              LARGALIGN, TOTAL_ALIGNED_LEN, NA50, NGA50, NAx, NGAx, auNA, auNGA, LA50, LGA50, LAx, LGAx,
@@ -271,7 +272,7 @@ class Fields:
 
         ('Per base quality', [SUBSERROR, MISMATCHES,
                         INDELSERROR, INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES,
-                        UNCALLED_PERCENT, UNCALLED, ]),
+                        UNCALLED_PERCENT, UNCALLED, ANI, ]),
 
         ('Statistics without reference', [CONTIGS, CONTIGS__FOR_THRESHOLDS, LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS,
                                           N50, Nx, auN, L50, Lx, GC,]),
@@ -323,7 +324,7 @@ class Fields:
              BUSCO_COMPLETE,
              MAPPED_READS, MAPPED_READS_PCNT, PROPERLY_PAIRED_READS, PROPERLY_PAIRED_READS_PCNT,
              KMER_COMPLETENESS, KMER_CORR_LENGTH,
-             DEPTH, COVERAGE__FOR_THRESHOLDS],
+             DEPTH, COVERAGE__FOR_THRESHOLDS, ANI],
         Quality.LESS_IS_BETTER:
             [L50, LG50, Lx, LGx,
              MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISINTERNALOVERLAP,

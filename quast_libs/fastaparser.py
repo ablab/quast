@@ -114,10 +114,11 @@ def get_chr_lengths_from_fastafile(fpath):
                     chr_lengths[chr_name] = l
                     l = 0
                 chr_name = __get_entry_name(line)
-            else:
+            elif chr_name is not None:  # skip any lines before the first header, as read_fasta() does
                 l += len(line.strip())
 
-    chr_lengths[chr_name] = l
+    if chr_name is not None:
+        chr_lengths[chr_name] = l
     fasta_file.close()
     return chr_lengths
 
@@ -152,6 +153,9 @@ def create_fai_file(fasta_fpath):
                 lines = [raw_line]
             for line in lines:
                 if not line:
+                    continue
+                if chr_name is None and line[0] != '>':  # skip lines before the first header
+                    total_offset += len(line)
                     continue
                 if line[0] == '>':
                     if l:  # not the first sequence in FASTA
